@@ -7,7 +7,7 @@ module.exports = {
         },
         gethtest: {
             host: "localhost",
-            port: 8548,
+            port: 8545,
             network_id: 58342
         }
     }

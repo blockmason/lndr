@@ -46,7 +46,7 @@ pubkeys=("198e13017d2333712bd942d8b028610b95c363da" "8c12aab5ffbe1f95b890f608320
 geth --datadir geth/privchain init geth/genesis.json
 
 geth --port 3001 --networkid 58342 --nodiscover --datadir="geth/privchain" --maxpeers=0 \
-     --rpc --rpcport 8548 --rpcaddr 127.0.0.1 --rpccorsdomain "*" --rpcapi "eth,net,web3,personal" --mine --minerthreads=1 --etherbase "0x198e13017d2333712bd942d8b028610b95c363da" &
+     --rpc --rpcport 8545 --rpcaddr 127.0.0.1 --rpccorsdomain "*" --rpcapi "eth,net,web3,personal" --mine --minerthreads=1 --etherbase "0x198e13017d2333712bd942d8b028610b95c363da" &
 geth_pid=$!
 
 sleep 1
@@ -63,7 +63,7 @@ c='", "pass", 0],"id":67}'
 for i in "${pubkeys[@]}"
 do
     b="0x$i"
-    curl -X POST --data "$a$b$c" http://localhost:8548
+    curl -X POST --data "$a$b$c" http://localhost:8545
 done
 
 truffle migrate --reset --network gethtest

@@ -1,13 +1,14 @@
 name:                fid-cli
 version:             0.1.0.0
--- synopsis:
--- description:
+synopsis:            friend-in-debt terminal interface
+description:         friend-in-debt terminal interface that interfaces with
+                     FiD UCAC via an ethereum client
 homepage:            https://github.com/githubuser/fid-cli#readme
 license:             BSD3
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2017 Author name here
+author:              Roy Blankman
+maintainer:          riblankman@gmail.com
+copyright:           2017 Blockmason
 category:            Web
 build-type:          Simple
 extra-source-files:  README.md
@@ -15,11 +16,13 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib
+  exposed-modules:     FiD.Cli.Main
   build-depends:       base >= 4.7 && < 5
+                     , cmdargs
+                     , web3
   default-language:    Haskell2010
 
-executable fid-cli-exe
+executable fiddy
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N

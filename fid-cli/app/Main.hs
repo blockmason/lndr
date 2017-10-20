@@ -1,6 +1,6 @@
 module Main where
 
-import Lib
+import qualified FiD.Cli.Main
 
 main :: IO ()
-main = someFunc
+main = FiD.Cli.Main.main

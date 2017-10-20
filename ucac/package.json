@@ -1,0 +1,35 @@
+{
+  "name": "friend-in-debt",
+  "version": "1.0.0",
+  "description": "UCAC-based venmo clone",
+  "main": "truffle.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blockmason/friend-in-debt.git"
+  },
+  "keywords": [
+    "ethereum"
+  ],
+  "author": "Roy Blankman",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/blockmason/friend-in-debt/issues"
+  },
+  "homepage": "https://github.com/blockmason/friend-in-debt#readme",
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "chai-bignumber": "^2.0.1",
+    "ethereumjs-testrpc": "4.1.1",
+    "tce-contracts": "git@github.com:blockmason/tce-contracts.git#92de2e06e55581e3d3a6c9fcd2a2bd30a53c4ff5",
+    "credit-protocol": "git@github.com:blockmason/credit-protocol.git#2530553af56c3cf2088027cbd124cf09787844df",
+    "truffle": "3.4.9",
+    "zeppelin-solidity": "1.3.0"
+  }
+}

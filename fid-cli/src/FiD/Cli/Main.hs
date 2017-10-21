@@ -60,7 +60,8 @@ allLogs = eth_getLogs (Filter Nothing Nothing (Just "0x0") Nothing)
 -- verify that these are proper logs
 fidLogs :: Provider a => FiDConfig -> Web3 a [IssueCreditLog]
 fidLogs config = fmap interpretUcacLog <$>
-    eth_getLogs (Filter (rightToMaybe . Addr.fromText $ fidAddress config)
+    -- TODO throw and error if `Addr.fromText` returns `Left`
+    eth_getLogs (Filter (rightToMaybe . Addr.fromText $ cpAddress config)
                         Nothing
                         (Just "0x0") -- start from block 0
                         Nothing)

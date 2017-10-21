@@ -8,14 +8,15 @@ module FiD.Cli.Main
     ( main
     ) where
 
-import Data.Text
+import           Data.Either.Combinators (rightToMaybe)
+import           Data.Text
 import qualified Data.Text.Lazy as LT
-import Dhall hiding (Text)
-import Network.Ethereum.Web3
-import Network.Ethereum.Web3.Address
-import Network.Ethereum.Web3.Api
-import Network.Ethereum.Web3.Types
-import System.Console.CmdArgs hiding (auto)
+import           Dhall hiding (Text)
+import           Network.Ethereum.Web3
+import qualified Network.Ethereum.Web3.Address as Addr
+import           Network.Ethereum.Web3.Api
+import           Network.Ethereum.Web3.Types
+import           System.Console.CmdArgs hiding (auto)
 
 -- TODO can I get rid of this redundant configFile param via Cmd Product Type?
 data FiDCmd = Info    {config :: Text, scope :: Text}
@@ -40,16 +41,15 @@ data FiDConfig = FiDConfig { fidAddress :: Text
 instance Interpret FiDConfig
 
 main :: IO ()
-main = do mode <- cmdArgs (modes [Info "" "all", Request "" "" 0, Send "" "" 0])
+main = do mode <- cmdArgs (modes [Info "" "fid", Request "" "" 0, Send "" "" 0])
           let configFilePath = config mode
-          x <- input auto $ LT.fromStrict configFilePath
-          print (x :: FiDConfig)
-          runMode mode
+          config <- input auto $ LT.fromStrict configFilePath
+          runMode config mode
 
-runMode :: FiDCmd -> IO ()
-runMode (Info _ "fid") = print =<< runWeb3 fidLogs
-runMode (Info _ "all") = print =<< runWeb3 allLogs
-runMode _ = putStrLn "Not yet implemented"
+runMode :: FiDConfig -> FiDCmd -> IO ()
+runMode config (Info _ "fid") = print =<< runWeb3 (fidLogs config)
+runMode _ (Info _ "all") = print =<< runWeb3 allLogs
+runMode _ _ = putStrLn "Not yet implemented"
 
 -- fetch all logs
 -- terminal equivalent: curl -X POST --data {"jsonrpc":"2.0","method":"eth_getLogs","params":[{"fromBlock": "0x0"}],"id":73} localhost:8545
@@ -58,11 +58,11 @@ allLogs = eth_getLogs (Filter Nothing Nothing (Just "0x0") Nothing)
 
 -- fetch cp logs related to FiD UCAC
 -- verify that these are proper logs
-fidLogs :: Provider a => Web3 a [IssueCreditLog]
-fidLogs = fmap interpretUcacLog <$>
-    eth_getLogs (Filter (Just "0xd5ec73eac35fc9dd6c3f440bce314779fed09f60")
+fidLogs :: Provider a => FiDConfig -> Web3 a [IssueCreditLog]
+fidLogs config = fmap interpretUcacLog <$>
+    eth_getLogs (Filter (rightToMaybe . Addr.fromText $ fidAddress config)
                         Nothing
-                        (Just "0x0")
+                        (Just "0x0") -- start from block 0
                         Nothing)
 
 interpretUcacLog :: Change -> IssueCreditLog

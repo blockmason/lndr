@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 const CreditProtocol = artifacts.require('credit-protocol/contracts/CreditProtocol.sol');
 const CPToken = artifacts.require('tce-contracts/contracts/CPToken.sol');
 const FriendInDebt = artifacts.require('./FriendInDebt.sol');
@@ -87,9 +89,22 @@ module.exports = function(deployer, network, accounts) {
             return makeTransaction( creditProtocolContract, ucacId1, web3.eth.accounts[0]
                                   , web3.eth.accounts[1], web3.toBigNumber(10));
         }).then(() => {
-            console.log(( cpTokenContract.address
-                        , creditProtocolContract.address
-                        , fidContract.address));
+            fs.writeFile('../test/config1'
+                  , "{ fidAddress = \"" + fidContract.address
+                    + "\", cpAddress = \"" + creditProtocolContract.address
+                    + "\", userAddress = \"" + web3.eth.accounts[0] + "\"}"
+                  , (err) => {
+                        if (err) throw err;
+                        console.log('config1 has been saved.');
+                  });
+            fs.writeFile('../test/config2'
+                  , "{ fidAddress = \"" + fidContract.address
+                    + "\", cpAddress = \"" + creditProtocolContract.address
+                    + "\", userAddress = \"" + web3.eth.accounts[1] + "\"}"
+                  , (err) => {
+                        if (err) throw err;
+                        console.log('config2 has been saved.');
+                  });
         }).catch(function(e) {
             console.log(e);
         });

@@ -17,6 +17,7 @@ import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Network.Ethereum.Web3.Api
 import           Network.Ethereum.Web3.Types
+import           Numeric (readHex)
 import           System.Console.CmdArgs hiding (auto)
 
 -- TODO can I get rid of this redundant configFile param via Cmd Product Type?
@@ -31,7 +32,7 @@ data FiDCmd = Info    {config :: Text, scope :: Text}
 data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , creditor :: Address
                                      , debtor :: Address
-                                     , amount :: Text -- TOOD Uint256
+                                     , amount :: Integer
                                      } deriving Show
 
 data FiDConfig = FiDConfig { fidAddress :: Text
@@ -72,13 +73,18 @@ fidLogs config = fmap interpretUcacLog <$>
 bytes32ToAddress :: Text -> Text
 bytes32ToAddress = T.drop 26
 
+hexToInteger :: Text -> Integer
+hexToInteger = fst . head . readHex . dropHexPrefix . T.unpack
+    where dropHexPrefix ('0' : 'x' : xs) = xs
+          dropHexPrefix xs = xs
+
 interpretUcacLog :: Change -> Either String IssueCreditLog
 interpretUcacLog change = do creditorAddr <- Addr.fromText . bytes32ToAddress . (!! 2) $ changeTopics change
                              debtorAddr <- Addr.fromText . bytes32ToAddress . (!! 3) $ changeTopics change
                              pure $ IssueCreditLog (changeAddress change)
                                                    creditorAddr
                                                    debtorAddr
-                                                   (changeData change)
+                                                   (hexToInteger $ changeData change)
 
 -- fetch cp logs related to a particular users use of the FiD UCAC
 

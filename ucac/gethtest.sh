@@ -53,6 +53,7 @@ sleep 1
 
 for i in "${privkeys[@]}"
 do
+    echo "importing account $i"
     geth --datadir geth/privchain --password <(echo "pass") account import <(echo $i)
 done
 
@@ -62,6 +63,7 @@ a='{"jsonrpc":"2.0","method":"personal_unlockAccount","params":["'
 c='", "pass", 0],"id":67}'
 for i in "${pubkeys[@]}"
 do
+    echo "unlocking account $i"
     b="0x$i"
     curl -X POST --data "$a$b$c" http://localhost:8545
 done

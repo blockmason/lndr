@@ -86,6 +86,10 @@ module.exports = function(deployer, network, accounts) {
         }).then(() => {
             return makeTransaction( creditProtocolContract, ucacId1, web3.eth.accounts[0]
                                   , web3.eth.accounts[1], web3.toBigNumber(10));
+        }).then(() => {
+            console.log(( cpTokenContract.address
+                        , creditProtocolContract.address
+                        , fidContract.address));
         }).catch(function(e) {
             console.log(e);
         });

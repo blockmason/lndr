@@ -56,7 +56,7 @@ runMode config (Info _ "fid") = print =<< runWeb3 (fidLogs config)
 runMode config (Info _ "user") = print =<< runWeb3 (userLogs config)
 runMode _      (Info _ "all") = print =<< runWeb3 allLogs
 runMode config (Send _ creditor amount) =
-    print =<< runWeb3 (eth_sign (fromRight Addr.zero . bytes32ToAddress $ userAddress config) creditor)
+    print =<< runWeb3 (eth_sign (fromRight Addr.zero . Addr.fromText $ userAddress config) creditor)
 runMode _ _ = putStrLn "Not yet implemented"
 
 

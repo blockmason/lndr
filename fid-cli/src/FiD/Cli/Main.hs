@@ -9,7 +9,7 @@ module FiD.Cli.Main
     ) where
 
 import           Data.Aeson
-import           Data.Either.Combinators (rightToMaybe)
+import           Data.Either.Combinators (rightToMaybe, fromRight)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
@@ -53,8 +53,10 @@ main = do mode <- cmdArgs (modes [Info "" "fid", Request "" "" 0, Send "" "" 0])
 
 runMode :: FiDConfig -> FiDCmd -> IO ()
 runMode config (Info _ "fid") = print =<< runWeb3 (fidLogs config)
-runMode _      (Info _ "all") = print =<< runWeb3 allLogs
 runMode config (Info _ "user") = print =<< runWeb3 (userLogs config)
+runMode _      (Info _ "all") = print =<< runWeb3 allLogs
+runMode config (Send _ creditor amount) =
+    print =<< runWeb3 (eth_sign (fromRight Addr.zero . bytes32ToAddress $ userAddress config) creditor)
 runMode _ _ = putStrLn "Not yet implemented"
 
 
@@ -92,12 +94,11 @@ userLogs config = do asCreditor <- fmap interpretUcacLog <$> eth_getLogs credFil
 
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the
 -- 40-char hex representation of an address
-bytes32ToAddress :: Text -> Text
-bytes32ToAddress = T.drop 26
+bytes32ToAddress :: Text -> Either String Address
+bytes32ToAddress = Addr.fromText . T.drop 26
 
 addressToBytes32 :: Text -> Text
 addressToBytes32 = T.append "0x000000000000000000000000" . T.drop 2
-
 
 
 hexToInteger :: Text -> Integer
@@ -107,8 +108,8 @@ hexToInteger = fst . head . readHex . dropHexPrefix . T.unpack
 
 
 interpretUcacLog :: Change -> Either String IssueCreditLog
-interpretUcacLog change = do creditorAddr <- Addr.fromText . bytes32ToAddress . (!! 2) $ changeTopics change
-                             debtorAddr <- Addr.fromText . bytes32ToAddress . (!! 3) $ changeTopics change
+interpretUcacLog change = do creditorAddr <- bytes32ToAddress . (!! 2) $ changeTopics change
+                             debtorAddr <- bytes32ToAddress . (!! 3) $ changeTopics change
                              pure $ IssueCreditLog (changeAddress change)
                                                    creditorAddr
                                                    debtorAddr

@@ -18,6 +18,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     FiD.Cli.Main
   build-depends:       base >= 4.7 && < 5
+                     , aeson
                      , cmdargs
                      , dhall
                      , either

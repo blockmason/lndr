@@ -18,8 +18,10 @@ import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Network.Ethereum.Web3.Api
 import           Network.Ethereum.Web3.Types
-import           Numeric (readHex)
+import           Numeric (readHex, showHex)
 import           System.Console.CmdArgs hiding (auto)
+
+import Debug.Trace
 
 -- TODO can I get rid of this redundant configFile param via Cmd Product Type?
 data FiDCmd = Info    {config :: Text, scope :: Text}
@@ -43,9 +45,23 @@ data FiDConfig = FiDConfig { fidAddress :: Text
 
 instance Interpret FiDConfig
 
+-- getNonce
+
+--     // id -> id -> # of transactions in all UCACs
+--     // lesser id is must always be the first argument
+--     mapping(address => mapping(address => uint256)) public nonces;
+--     // the standard prefix appended to 32-byte-long messages when signed by an
+--     // Ethereum client
+--     bytes prefix = "\x19Ethereum Signed Message:\n32";
+--
+--     event IssueCredit(bytes32 indexed ucac, address indexed creditor, address indexed debtor, uint256 amount);
+--     function getNonce(address p1, address p2) public constant returns (uint256) {
+--         return p1 < p2 ? nonces[p1][p2] : nonces[p2][p1];
+--     }
 
 main :: IO ()
 main = do mode <- cmdArgs (modes [Info "" "fid", Request "" "" 0, Send "" "" 0])
+          -- print =<< runWeb3 eth_protocolVersion
           let configFilePath = config mode
           config <- input auto $ LT.fromStrict configFilePath
           runMode config mode
@@ -55,8 +71,16 @@ runMode :: FiDConfig -> FiDCmd -> IO ()
 runMode config (Info _ "fid") = print =<< runWeb3 (fidLogs config)
 runMode config (Info _ "user") = print =<< runWeb3 (userLogs config)
 runMode _      (Info _ "all") = print =<< runWeb3 allLogs
-runMode config (Send _ creditor amount) =
-    print =<< runWeb3 (eth_sign (fromRight Addr.zero . Addr.fromText $ userAddress config) creditor)
+runMode config (Send _ creditorAddr sendAmount) = do
+    print message
+    print =<< runWeb3 (web3_sha3 message)
+    print =<< runWeb3 (eth_sign senderAddr creditorAddr)
+    where message = T.append "0x" . T.concat $
+            stripHexPrefix <$> [ fidAddress config
+                               , creditorAddr
+                               , userAddress config
+                               , integerToHex sendAmount ]
+          senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
 runMode _ _ = putStrLn "Not yet implemented"
 
 
@@ -92,6 +116,15 @@ userLogs config = do asCreditor <- fmap interpretUcacLog <$> eth_getLogs credFil
           userAddrBytes = addressToBytes32 $ userAddress config
 
 
+interpretUcacLog :: Change -> Either String IssueCreditLog
+interpretUcacLog change = do creditorAddr <- bytes32ToAddress . (!! 2) $ changeTopics change
+                             debtorAddr <- bytes32ToAddress . (!! 3) $ changeTopics change
+                             pure $ IssueCreditLog (changeAddress change)
+                                                   creditorAddr
+                                                   debtorAddr
+                                                   (hexToInteger $ changeData change)
+
+
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the
 -- 40-char hex representation of an address
 bytes32ToAddress :: Text -> Either String Address
@@ -106,11 +139,11 @@ hexToInteger = fst . head . readHex . dropHexPrefix . T.unpack
     where dropHexPrefix ('0' : 'x' : xs) = xs
           dropHexPrefix xs = xs
 
+stripHexPrefix :: Text -> Text
+stripHexPrefix x | T.isPrefixOf "0x" x = T.drop 2 x
+                 | otherwise = x
 
-interpretUcacLog :: Change -> Either String IssueCreditLog
-interpretUcacLog change = do creditorAddr <- bytes32ToAddress . (!! 2) $ changeTopics change
-                             debtorAddr <- bytes32ToAddress . (!! 3) $ changeTopics change
-                             pure $ IssueCreditLog (changeAddress change)
-                                                   creditorAddr
-                                                   debtorAddr
-                                                   (hexToInteger $ changeData change)
+integerToHex :: Integer -> Text
+integerToHex x = T.pack strRep'
+    where strRep = showHex x ""
+          strRep' = "0x" ++ replicate (64 - length strRep) '0' ++ strRep

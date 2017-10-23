@@ -102,13 +102,20 @@ runMode config (Test _) = do
     -- print =<< runWeb3 (eth_getTransactionCount userAddr (BlockNumberHex "0x10"))
     -- print =<< runWeb3 (eth_getCode fidAddr Latest)
     print "round 2"
-    -- Right block <- runWeb3 $ eth_getBlockByNumber "0x9"
+    Right block <- runWeb3 $ eth_getBlockByNumber "0x9"
+    print block
     -- print =<< runWeb3 (eth_getBlockTransactionCountByHash $ blockHash block)
     -- print =<< runWeb3 (eth_getUncleCountByBlockHash $ blockHash block)
     -- print =<< runWeb3 (eth_getUncleCountByBlockNumber "0x9")
     -- print =<< runWeb3 (eth_getStorageAt fidAddr "0x0" Latest)
 
-    print =<< runWeb3 (eth_estimateGas call)
+    -- print =<< runWeb3 (eth_estimateGas call)
+    Right filterId <- runWeb3 eth_newPendingTransactionFilter
+    print $ T.append "filterID: " filterId
+    print =<< runWeb3 (eth_getFilterLogs filterId)
+    print =<< runWeb3 (eth_getUncleByBlockNumberAndIndex (BlockNumberHex "0x9") "0x0")
+    print =<< runWeb3 (eth_getUncleByBlockHashAndIndex (blockHash block) "0x0")
+
     -- print =<< runWeb3 eth_getWork
     -- print =<< runWeb3 (eth_submitWork "0x9999999999999999"
     --                                   "0x1111FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"

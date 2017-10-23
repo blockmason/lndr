@@ -22,6 +22,7 @@ library
                      , cmdargs
                      , dhall
                      , either
+                     , listsafe
                      , text
                      , web3
   default-language:    Haskell2010

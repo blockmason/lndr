@@ -8,8 +8,12 @@ module FiD.Cli.Main
     ( main
     ) where
 
+import           Control.Exception
+import           Control.Monad
 import           Data.Aeson
-import           Data.Either.Combinators (rightToMaybe, fromRight)
+import           Data.Either (rights)
+import           Data.Either.Combinators (rightToMaybe, fromRight, mapLeft)
+import           Data.List.Safe ((!!))
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
@@ -19,6 +23,7 @@ import qualified Network.Ethereum.Web3.Address as Addr
 import           Network.Ethereum.Web3.Api
 import           Network.Ethereum.Web3.Types
 import           Numeric (readHex, showHex)
+import           Prelude hiding ((!!))
 import           System.Console.CmdArgs hiding (auto)
 
 import Debug.Trace
@@ -107,8 +112,8 @@ allLogs = eth_getLogs (Filter Nothing Nothing (Just "0x0") Nothing)
 
 -- fetch cp logs related to FiD UCAC
 -- verify that these are proper logs
-fidLogs :: Provider a => FiDConfig -> Web3 a [Either String IssueCreditLog]
-fidLogs config = fmap interpretUcacLog <$>
+fidLogs :: Provider a => FiDConfig -> Web3 a [IssueCreditLog]
+fidLogs config = rights . fmap interpretUcacLog <$>
     -- TODO throw and error if `Addr.fromText` returns `Left`
     eth_getLogs (Filter (rightToMaybe . Addr.fromText $ cpAddress config)
                         Nothing
@@ -117,9 +122,9 @@ fidLogs config = fmap interpretUcacLog <$>
 
 
 -- TODO throw and error if `Addr.fromText` returns `Left`
-userLogs :: Provider a => FiDConfig -> Web3 a [Either String IssueCreditLog]
-userLogs config = do asCreditor <- fmap interpretUcacLog <$> eth_getLogs credFilter
-                     asDebtor <- fmap interpretUcacLog <$> eth_getLogs debtFilter
+userLogs :: Provider a => FiDConfig -> Web3 a [IssueCreditLog]
+userLogs config = do asCreditor <- rights . fmap interpretUcacLog <$> eth_getLogs credFilter
+                     asDebtor <- rights . fmap interpretUcacLog <$> eth_getLogs debtFilter
                      return $ asCreditor ++ asDebtor
     where filterWithTopics topics =
                        Filter (rightToMaybe . Addr.fromText $ cpAddress config)
@@ -131,9 +136,9 @@ userLogs config = do asCreditor <- fmap interpretUcacLog <$> eth_getLogs credFil
           userAddrBytes = addressToBytes32 $ userAddress config
 
 
-interpretUcacLog :: Change -> Either String IssueCreditLog
-interpretUcacLog change = do creditorAddr <- bytes32ToAddress . (!! 2) $ changeTopics change
-                             debtorAddr <- bytes32ToAddress . (!! 3) $ changeTopics change
+interpretUcacLog :: Change -> Either SomeException IssueCreditLog
+interpretUcacLog change = do creditorAddr <- bytes32ToAddress <=< (!! 2) $ changeTopics change
+                             debtorAddr <- bytes32ToAddress <=< (!! 3) $ changeTopics change
                              pure $ IssueCreditLog (changeAddress change)
                                                    creditorAddr
                                                    debtorAddr
@@ -142,8 +147,8 @@ interpretUcacLog change = do creditorAddr <- bytes32ToAddress . (!! 2) $ changeT
 
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the
 -- 40-char hex representation of an address
-bytes32ToAddress :: Text -> Either String Address
-bytes32ToAddress = Addr.fromText . T.drop 26
+bytes32ToAddress :: Text -> Either SomeException Address
+bytes32ToAddress = mapLeft (toException . TypeError) . Addr.fromText . T.drop 26
 
 addressToBytes32 :: Text -> Text
 addressToBytes32 = T.append "0x000000000000000000000000" . T.drop 2

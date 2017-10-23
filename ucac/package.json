@@ -29,7 +29,7 @@
     "ethereumjs-testrpc": "4.1.1",
     "tce-contracts": "git@github.com:blockmason/tce-contracts.git#92de2e06e55581e3d3a6c9fcd2a2bd30a53c4ff5",
     "credit-protocol": "git@github.com:blockmason/credit-protocol.git#d05d031545150723b6f6d8146f8d2f0b4734063e",
-    "truffle": "3.4.9",
+    "truffle": "4.0.0-beta.2",
     "zeppelin-solidity": "1.3.0"
   }
 }

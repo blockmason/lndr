@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 module FiD.Cli.Main
@@ -21,12 +22,15 @@ import           Dhall hiding (Text)
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Network.Ethereum.Web3.Api
+import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
 import           Numeric (readHex, showHex)
 import           Prelude hiding ((!!))
 import           System.Console.CmdArgs hiding (auto)
 
 import Debug.Trace
+
+-- [abiFrom|data/CreditProtocol.abi|]
 
 -- TODO can I get rid of this redundant configFile param via Cmd Product Type?
 data FiDCmd = Info    {config :: Text, scope :: Text}

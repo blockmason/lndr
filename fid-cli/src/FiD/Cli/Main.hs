@@ -27,6 +27,8 @@ import Debug.Trace
 data FiDCmd = Info    {config :: Text, scope :: Text}
             | Request {config :: Text, debtor :: Text, amount :: Integer}
             | Send    {config :: Text, creditor :: Text, amount :: Integer}
+            | Nonce   {config :: Text, counterparty :: Text}
+            | Test    {config :: Text}
             deriving (Show, Data, Typeable)
 
 --  validate these to make sure they're all valid
@@ -60,7 +62,12 @@ instance Interpret FiDConfig
 --     }
 
 main :: IO ()
-main = do mode <- cmdArgs (modes [Info "" "fid", Request "" "" 0, Send "" "" 0])
+main = do mode <- cmdArgs (modes [ Info "" "fid"
+                                 , Request "" "" 0
+                                 , Send "" "" 0
+                                 , Nonce "" ""
+                                 , Test ""
+                                 ])
           -- print =<< runWeb3 eth_protocolVersion
           let configFilePath = config mode
           config <- input auto $ LT.fromStrict configFilePath
@@ -81,6 +88,46 @@ runMode config (Send _ creditorAddr sendAmount) = do
                                , userAddress config
                                , integerToHex sendAmount ]
           senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
+runMode config (Nonce _ _) = print =<< runWeb3 (eth_call call Latest)
+    where call = Call Nothing
+                      (fromRight Addr.zero . Addr.fromText $ cpAddress config)
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing -- Tuple of the creditor and debtor ordered appropriately
+runMode config (Test _) = do
+    -- print =<< runWeb3 (eth_getBalance userAddr Earliest)
+    -- print =<< runWeb3 (eth_getBalance userAddr Latest)
+    -- print =<< runWeb3 (eth_getBalance userAddr (BlockNumberHex "0x10"))
+    -- print =<< runWeb3 (eth_getTransactionCount userAddr (BlockNumberHex "0x10"))
+    -- print =<< runWeb3 (eth_getCode fidAddr Latest)
+    print "round 2"
+    -- Right block <- runWeb3 $ eth_getBlockByNumber "0x9"
+    -- print =<< runWeb3 (eth_getBlockTransactionCountByHash $ blockHash block)
+    -- print =<< runWeb3 (eth_getUncleCountByBlockHash $ blockHash block)
+    -- print =<< runWeb3 (eth_getUncleCountByBlockNumber "0x9")
+    -- print =<< runWeb3 (eth_getStorageAt fidAddr "0x0" Latest)
+
+    print =<< runWeb3 (eth_estimateGas call)
+    -- print =<< runWeb3 eth_getWork
+    -- print =<< runWeb3 (eth_submitWork "0x9999999999999999"
+    --                                   "0x1111FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+    --                                   "0x1111FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+    -- print =<< runWeb3 (eth_submitHashrate "0x33" "0x1111FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+
+    -- print =<< runWeb3 (eth_getTransactionByBlockNumberAndIndex (BlockNumberHex "0x3") "0x0")
+    -- print =<< runWeb3 (eth_getTransactionByBlockNumberAndIndex (BlockNumberHex "0x9") "0x0")
+    -- print =<< runWeb3 (eth_getTransactionByHash "0x173e4ce8816eaa082fa67193d93914e7bc5bcc4ecf14bfbca84bef16d5e43651")
+    -- print =<< runWeb3 (eth_getTransactionByBlockHashAndIndex "0x01cad21243ce45bb865b23a1627e6ae4a1f1964dc8995ee2f002149c914ffb4f" "0x0")
+
+    where userAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
+          fidAddr = fromRight Addr.zero . Addr.fromText $ fidAddress config
+          call = Call (Just . fromRight Addr.zero . Addr.fromText $ userAddress config)
+                      (fromRight Addr.zero . Addr.fromText $ cpAddress config)
+                      Nothing
+                      (Just "0x2233")
+                      Nothing
+                      (Just "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 runMode _ _ = putStrLn "Not yet implemented"
 
 

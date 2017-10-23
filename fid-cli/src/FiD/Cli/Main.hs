@@ -95,46 +95,7 @@ runMode config (Nonce _ _) = print =<< runWeb3 (eth_call call Latest)
                       Nothing
                       Nothing
                       Nothing -- Tuple of the creditor and debtor ordered appropriately
-runMode config (Test _) = do
-    -- print =<< runWeb3 (eth_getBalance userAddr Earliest)
-    -- print =<< runWeb3 (eth_getBalance userAddr Latest)
-    -- print =<< runWeb3 (eth_getBalance userAddr (BlockNumberHex "0x10"))
-    -- print =<< runWeb3 (eth_getTransactionCount userAddr (BlockNumberHex "0x10"))
-    -- print =<< runWeb3 (eth_getCode fidAddr Latest)
-    print "round 2"
-    Right block <- runWeb3 $ eth_getBlockByNumber "0x9"
-    print block
-    -- print =<< runWeb3 (eth_getBlockTransactionCountByHash $ blockHash block)
-    -- print =<< runWeb3 (eth_getUncleCountByBlockHash $ blockHash block)
-    -- print =<< runWeb3 (eth_getUncleCountByBlockNumber "0x9")
-    -- print =<< runWeb3 (eth_getStorageAt fidAddr "0x0" Latest)
-
-    print =<< runWeb3 (eth_estimateGas call)
-    Right filterId <- runWeb3 eth_newPendingTransactionFilter
-    print $ T.append "filterID: " filterId
-    print =<< runWeb3 (eth_getFilterLogs filterId)
-    print =<< runWeb3 (eth_getUncleByBlockNumberAndIndex (BlockNumberHex "0x9") "0x0")
-    print =<< runWeb3 (eth_getUncleByBlockHashAndIndex (blockHash block) "0x0")
-
-    -- print =<< runWeb3 eth_getWork
-    -- print =<< runWeb3 (eth_submitWork "0x9999999999999999"
-    --                                   "0x1111FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-    --                                   "0x1111FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
-    -- print =<< runWeb3 (eth_submitHashrate "0x33" "0x1111FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
-
-    -- print =<< runWeb3 (eth_getTransactionByBlockNumberAndIndex (BlockNumberHex "0x3") "0x0")
-    -- print =<< runWeb3 (eth_getTransactionByBlockNumberAndIndex (BlockNumberHex "0x9") "0x0")
-    -- print =<< runWeb3 (eth_getTransactionByHash "0x173e4ce8816eaa082fa67193d93914e7bc5bcc4ecf14bfbca84bef16d5e43651")
-    -- print =<< runWeb3 (eth_getTransactionByBlockHashAndIndex "0x01cad21243ce45bb865b23a1627e6ae4a1f1964dc8995ee2f002149c914ffb4f" "0x0")
-
-    where userAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
-          fidAddr = fromRight Addr.zero . Addr.fromText $ fidAddress config
-          call = Call (Just . fromRight Addr.zero . Addr.fromText $ userAddress config)
-                      (fromRight Addr.zero . Addr.fromText $ cpAddress config)
-                      (Just "0x23")
-                      (Just "0x23")
-                      (Just "0x0")
-                      (Just "")
+runMode config (Test _) = putStrLn "Nothing to see"
 runMode _ _ = putStrLn "Not yet implemented"
 
 

@@ -109,7 +109,7 @@ runMode config (Test _) = do
     -- print =<< runWeb3 (eth_getUncleCountByBlockNumber "0x9")
     -- print =<< runWeb3 (eth_getStorageAt fidAddr "0x0" Latest)
 
-    -- print =<< runWeb3 (eth_estimateGas call)
+    print =<< runWeb3 (eth_estimateGas call)
     Right filterId <- runWeb3 eth_newPendingTransactionFilter
     print $ T.append "filterID: " filterId
     print =<< runWeb3 (eth_getFilterLogs filterId)
@@ -131,10 +131,10 @@ runMode config (Test _) = do
           fidAddr = fromRight Addr.zero . Addr.fromText $ fidAddress config
           call = Call (Just . fromRight Addr.zero . Addr.fromText $ userAddress config)
                       (fromRight Addr.zero . Addr.fromText $ cpAddress config)
-                      Nothing
-                      (Just "0x2233")
-                      Nothing
-                      (Just "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+                      (Just "0x23")
+                      (Just "0x23")
+                      (Just "0x0")
+                      (Just "")
 runMode _ _ = putStrLn "Not yet implemented"
 
 

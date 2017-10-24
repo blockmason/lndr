@@ -5,9 +5,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
-module FiD.Cli.Main
-    ( main
-    ) where
+module FiD.Cli.Main where
 
 import           Control.Exception
 import           Control.Monad
@@ -17,6 +15,7 @@ import           Data.Either.Combinators (rightToMaybe, fromRight, mapLeft)
 import           Data.List.Safe ((!!))
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import           Dhall hiding (Text)
 import           Network.Ethereum.Web3
@@ -27,8 +26,12 @@ import           Network.Ethereum.Web3.Types
 import           Numeric (readHex, showHex)
 import           Prelude hiding ((!!))
 import           System.Console.CmdArgs hiding (auto)
+import qualified Data.ByteArray as BA
+import qualified Data.ByteString.Base16 as BS16
 
 import Debug.Trace
+
+bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
 
 -- Contract:
 --         Constructor (address,uint256,uint256)
@@ -79,6 +82,7 @@ data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      } deriving Show
 
 data FiDConfig = FiDConfig { fidAddress :: Text
+                           , fidUcacId :: Text
                            , cpAddress :: Text
                            , userAddress :: Text
                            } deriving (Show, Generic)
@@ -126,13 +130,46 @@ runMode config (Send _ creditorAddress sendAmount) = do
                                                      , integerToHex sendAmount
                                                      , integerToHex nonce
                                                      ]
-                            return message
+                            hash <- web3_sha3 message
+                            sig <- eth_sign senderAddr hash
+                            txReceipt <- issueCredit cpAddr
+                                                     (0 :: Ether)
+                                                     ucacId
+                                                     creditorAddr
+                                                     senderAddr
+                                                     sendAmount
+                                                     caBS
+                                                     caBS
+                                                     0
+                                                     caBS
+                                                     caBS
+                                                     0
+-- issueCredit
+--   :: (Unit t0, Provider p) =>
+--      Address
+--      -> t0
+--      -> Bytes32
+--      -> Address
+--      -> Address
+--      -> Integer
+--      -> Bytes32
+--      -> Bytes32
+--      -> Integer
+--      -> Bytes32
+--      -> Bytes32
+--      -> Integer
+--      -> Web3 p TxHash
+-- function issueCredit( bytes32 ucac, address creditor, address debtor, uint256 amount
+--                     , bytes32 sig1r, bytes32 sig1s, uint8 sig1v
+--                     , bytes32 sig2r, bytes32 sig2s, uint8 sig2v
+--                     ) public {
+                            return (message, hash, sig, txReceipt)
     print message
-    -- print =<< runWeb3 (web3_sha3 message)
-    -- print =<< runWeb3 (eth_sign senderAddr creditorAddr)
     where senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
           creditorAddr = fromRight Addr.zero . Addr.fromText $ creditorAddress
           cpAddr = fromRight Addr.zero . Addr.fromText $ cpAddress config
+          caBS = (Bytes32 . bytesDecode $ creditorAddress)
+          ucacId = (Bytes32 . bytesDecode $ fidUcacId config)
 runMode config (Nonce _ _) = print =<< runWeb3 (getNonce fidAddr senderAddr senderAddr)
     where call = Call Nothing
                       (fromRight Addr.zero . Addr.fromText $ cpAddress config)

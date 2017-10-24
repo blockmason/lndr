@@ -44,7 +44,6 @@ module.exports = function(deployer, network, accounts) {
     if (network == "gethtest") {
         const usd = web3.fromAscii("USD");
         const ucacId1 = web3.sha3("hi");
-        const ucacId2 = web3.sha3("yo");
         const creationStake = web3.toBigNumber(web3.toWei(3500));
         const mintAmount = web3.toBigNumber(web3.toWei(20000))
         var cpTokenContract;
@@ -91,6 +90,7 @@ module.exports = function(deployer, network, accounts) {
         }).then(() => {
             fs.writeFile('../test/config1'
                   , "{ fidAddress = \"" + fidContract.address
+                    + "\", fidUcacId = \"" + ucacId1
                     + "\", cpAddress = \"" + creditProtocolContract.address
                     + "\", userAddress = \"" + web3.eth.accounts[0] + "\"}"
                   , (err) => {
@@ -99,6 +99,7 @@ module.exports = function(deployer, network, accounts) {
                   });
             fs.writeFile('../test/config2'
                   , "{ fidAddress = \"" + fidContract.address
+                    + "\", fidUcacId = \"" + ucacId1
                     + "\", cpAddress = \"" + creditProtocolContract.address
                     + "\", userAddress = \"" + web3.eth.accounts[1] + "\"}"
                   , (err) => {

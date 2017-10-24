@@ -40,7 +40,8 @@ decomposeSig sig = (sigR, sigS, sigV)
     where strippedSig = T.drop 2 sig
           sigR = BytesN . bytesDecode $ T.take 64 strippedSig
           sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
-          sigV = 27 -- TODO update
+          sigV = hexToInteger . T.take 2 . T.drop 128 $ strippedSig
+
 
 -- Contract:
 --         Constructor (address,uint256,uint256)
@@ -125,20 +126,22 @@ runMode config (Send _ creditorAddress sendAmount) = do
                                                      ]
                             hash <- web3_sha3 message
                             sig <- eth_sign senderAddr hash
+                            sig2 <- eth_sign creditorAddr hash
                             let (sigr, sigs, sigv) = decomposeSig sig
+                            let (sig2r, sig2s, sig2v) = decomposeSig sig2
                             txReceipt <- issueCredit cpAddr
                                                      (0 :: Ether)
                                                      ucacId
                                                      creditorAddr
                                                      senderAddr
                                                      sendAmount
+                                                     sig2r
+                                                     sig2s
+                                                     sig2v
                                                      sigr
                                                      sigs
                                                      sigv
-                                                     sigr
-                                                     sigs
-                                                     sigv
-                            return (message, hash, sig, txReceipt)
+                            return (message, hash, sig, sig2, txReceipt)
     print message
     where senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
           creditorAddr = fromRight Addr.zero . Addr.fromText $ creditorAddress

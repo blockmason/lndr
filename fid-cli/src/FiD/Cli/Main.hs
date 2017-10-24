@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -31,7 +32,15 @@ import qualified Data.ByteString.Base16 as BS16
 
 import Debug.Trace
 
+bytesDecode :: Text -> Bytes
 bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
+
+decomposeSig :: Text -> (BytesN 32, BytesN 32, Integer)
+decomposeSig sig = (sigR, sigS, sigV)
+    where strippedSig = T.drop 2 sig
+          sigR = BytesN . bytesDecode $ T.take 64 strippedSig
+          sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
+          sigV = 27 -- TODO update
 
 -- Contract:
 --         Constructor (address,uint256,uint256)
@@ -89,20 +98,6 @@ data FiDConfig = FiDConfig { fidAddress :: Text
 
 instance Interpret FiDConfig
 
--- getNonce
-
---     // id -> id -> # of transactions in all UCACs
---     // lesser id is must always be the first argument
---     mapping(address => mapping(address => uint256)) public nonces;
---     // the standard prefix appended to 32-byte-long messages when signed by an
---     // Ethereum client
---     bytes prefix = "\x19Ethereum Signed Message:\n32";
---
---     event IssueCredit(bytes32 indexed ucac, address indexed creditor, address indexed debtor, uint256 amount);
---     function getNonce(address p1, address p2) public constant returns (uint256) {
---         return p1 < p2 ? nonces[p1][p2] : nonces[p2][p1];
---     }
-
 main :: IO ()
 main = do mode <- cmdArgs (modes [ Info "" "fid"
                                  , Request "" "" 0
@@ -110,17 +105,15 @@ main = do mode <- cmdArgs (modes [ Info "" "fid"
                                  , Nonce "" ""
                                  , Test ""
                                  ])
-          -- print =<< runWeb3 eth_protocolVersion
           let configFilePath = config mode
-          config <- input auto $ LT.fromStrict configFilePath
-          runMode config mode
+          configData <- input auto $ LT.fromStrict configFilePath
+          runMode configData mode
 
 
 runMode :: FiDConfig -> FiDCmd -> IO ()
 runMode config (Info _ "fid") = print =<< runWeb3 (fidLogs config)
 runMode config (Info _ "user") = print =<< runWeb3 (userLogs config)
 runMode _      (Info _ "all") = print =<< runWeb3 allLogs
--- stack exec -- fiddy send --amount 10 --config "../test/config1" --creditor=0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf
 runMode config (Send _ creditorAddress sendAmount) = do
     message <- runWeb3 $ do nonce <- getNonce cpAddr senderAddr creditorAddr
                             let message = T.append "0x" . T.concat $
@@ -132,44 +125,26 @@ runMode config (Send _ creditorAddress sendAmount) = do
                                                      ]
                             hash <- web3_sha3 message
                             sig <- eth_sign senderAddr hash
+                            let (sigr, sigs, sigv) = decomposeSig sig
                             txReceipt <- issueCredit cpAddr
                                                      (0 :: Ether)
                                                      ucacId
                                                      creditorAddr
                                                      senderAddr
                                                      sendAmount
-                                                     caBS
-                                                     caBS
-                                                     0
-                                                     caBS
-                                                     caBS
-                                                     0
--- issueCredit
---   :: (Unit t0, Provider p) =>
---      Address
---      -> t0
---      -> Bytes32
---      -> Address
---      -> Address
---      -> Integer
---      -> Bytes32
---      -> Bytes32
---      -> Integer
---      -> Bytes32
---      -> Bytes32
---      -> Integer
---      -> Web3 p TxHash
--- function issueCredit( bytes32 ucac, address creditor, address debtor, uint256 amount
---                     , bytes32 sig1r, bytes32 sig1s, uint8 sig1v
---                     , bytes32 sig2r, bytes32 sig2s, uint8 sig2v
---                     ) public {
+                                                     sigr
+                                                     sigs
+                                                     sigv
+                                                     sigr
+                                                     sigs
+                                                     sigv
                             return (message, hash, sig, txReceipt)
     print message
     where senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
           creditorAddr = fromRight Addr.zero . Addr.fromText $ creditorAddress
           cpAddr = fromRight Addr.zero . Addr.fromText $ cpAddress config
-          caBS = (Bytes32 . bytesDecode $ creditorAddress)
-          ucacId = (Bytes32 . bytesDecode $ fidUcacId config)
+          ucacId = (BytesN . bytesDecode $ fidUcacId config)
+
 runMode config (Nonce _ _) = print =<< runWeb3 (getNonce fidAddr senderAddr senderAddr)
     where call = Call Nothing
                       (fromRight Addr.zero . Addr.fromText $ cpAddress config)

@@ -28,8 +28,8 @@
     "chai-bignumber": "^2.0.1",
     "ethereumjs-testrpc": "4.1.1",
     "tce-contracts": "git@github.com:blockmason/tce-contracts.git#92de2e06e55581e3d3a6c9fcd2a2bd30a53c4ff5",
-    "credit-protocol": "git@github.com:blockmason/credit-protocol.git#d05d031545150723b6f6d8146f8d2f0b4734063e",
-    "truffle": "4.0.0-beta.2",
+    "credit-protocol": "git@github.com:blockmason/credit-protocol.git#00e8d3b5c2153ce2ad0eb88c99f2f6a42b6a4553",
+    "truffle": "3.4.9",
     "zeppelin-solidity": "1.3.0"
   }
 }

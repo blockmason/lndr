@@ -30,7 +30,36 @@ import           System.Console.CmdArgs hiding (auto)
 
 import Debug.Trace
 
--- [abiFrom|data/CreditProtocol.abi|]
+-- Contract:
+--         Constructor (address,uint256,uint256)
+--         Events:
+--                 IssueCredit(bytes32,address,address,uint256)
+--                 UcacCreation(bytes32,address,bytes32)
+--                 OwnershipTransferred(address,address)
+--         Methods:
+--                 0x110d9221 ucacs(bytes32)
+--                 0x13c506dc stakeTokens(bytes32,address,uint256)
+--                 0x1752bb6c txPerGigaTokenPerHour()
+--                 0x20c4410e setTokensToOwnUcac(uint256)
+--                 0x2d473b26 issueCredit(bytes32,address,address,uint256,bytes32,bytes32,uint8,bytes32,bytes32,uint8)
+--                 0x444a49d3 createAndStakeUcac(address,bytes32,bytes32,uint256)
+--                 0x5af41713 Stake(address,uint256,uint256)
+--                 0x5f7772c9 getUcacAddr(bytes32)
+--                 0x8da5cb5b owner()
+--                 0x9333fbda nonces(address,address)
+--                 0x97a2f01b unstakeTokens(bytes32,uint256)
+--                 0x9eac6024 stakedTokensMap(bytes32,address)
+--                 0xb4c89ec0 executeUcacTx(bytes32)
+--                 0xbb2d3208 setTxPerTokenPerHour(uint256)
+--                 0xd828435d getNonce(address,address)
+--                 0xd93d7361 balances(bytes32,address)
+--                 0xe4b08555 currentTxLevel(bytes32)
+--                 0xea5a2cc2 tokensToOwnUcac()
+--                 0xf2fde38b transferOwnership(address)
+--                 0xfc0c546a token()
+
+[abiFrom|data/CreditProtocol.abi|]
+-- [abiFrom|data/ERC20.json|]
 
 -- TODO can I get rid of this redundant configFile param via Cmd Product Type?
 data FiDCmd = Info    {config :: Text, scope :: Text}
@@ -97,13 +126,15 @@ runMode config (Send _ creditorAddr sendAmount) = do
                                , userAddress config
                                , integerToHex sendAmount ]
           senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
-runMode config (Nonce _ _) = print =<< runWeb3 (eth_call call Latest)
+runMode config (Nonce _ _) = print =<< runWeb3 (getNonce fidAddr senderAddr senderAddr)
     where call = Call Nothing
                       (fromRight Addr.zero . Addr.fromText $ cpAddress config)
                       Nothing
                       Nothing
                       Nothing
                       Nothing -- Tuple of the creditor and debtor ordered appropriately
+          senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
+          fidAddr = fromRight Addr.zero . Addr.fromText $ cpAddress config
 runMode config (Test _) = putStrLn "Nothing to see"
 runMode _ _ = putStrLn "Not yet implemented"
 

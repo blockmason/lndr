@@ -116,16 +116,23 @@ runMode :: FiDConfig -> FiDCmd -> IO ()
 runMode config (Info _ "fid") = print =<< runWeb3 (fidLogs config)
 runMode config (Info _ "user") = print =<< runWeb3 (userLogs config)
 runMode _      (Info _ "all") = print =<< runWeb3 allLogs
-runMode config (Send _ creditorAddr sendAmount) = do
+-- stack exec -- fiddy send --amount 10 --config "../test/config1" --creditor=0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf
+runMode config (Send _ creditorAddress sendAmount) = do
+    message <- runWeb3 $ do nonce <- getNonce cpAddr senderAddr creditorAddr
+                            let message = T.append "0x" . T.concat $
+                                  stripHexPrefix <$> [ fidAddress config
+                                                     , creditorAddress
+                                                     , userAddress config
+                                                     , integerToHex sendAmount
+                                                     , integerToHex nonce
+                                                     ]
+                            return message
     print message
-    print =<< runWeb3 (web3_sha3 message)
-    print =<< runWeb3 (eth_sign senderAddr creditorAddr)
-    where message = T.append "0x" . T.concat $
-            stripHexPrefix <$> [ fidAddress config
-                               , creditorAddr
-                               , userAddress config
-                               , integerToHex sendAmount ]
-          senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
+    -- print =<< runWeb3 (web3_sha3 message)
+    -- print =<< runWeb3 (eth_sign senderAddr creditorAddr)
+    where senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
+          creditorAddr = fromRight Addr.zero . Addr.fromText $ creditorAddress
+          cpAddr = fromRight Addr.zero . Addr.fromText $ cpAddress config
 runMode config (Nonce _ _) = print =<< runWeb3 (getNonce fidAddr senderAddr senderAddr)
     where call = Call Nothing
                       (fromRight Addr.zero . Addr.fromText $ cpAddress config)

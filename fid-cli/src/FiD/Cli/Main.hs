@@ -42,37 +42,7 @@ decomposeSig sig = (sigR, sigS, sigV)
           sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
           sigV = hexToInteger . T.take 2 . T.drop 128 $ strippedSig
 
-
--- Contract:
---         Constructor (address,uint256,uint256)
---         Events:
---                 IssueCredit(bytes32,address,address,uint256)
---                 UcacCreation(bytes32,address,bytes32)
---                 OwnershipTransferred(address,address)
---         Methods:
---                 0x110d9221 ucacs(bytes32)
---                 0x13c506dc stakeTokens(bytes32,address,uint256)
---                 0x1752bb6c txPerGigaTokenPerHour()
---                 0x20c4410e setTokensToOwnUcac(uint256)
---                 0x2d473b26 issueCredit(bytes32,address,address,uint256,bytes32,bytes32,uint8,bytes32,bytes32,uint8)
---                 0x444a49d3 createAndStakeUcac(address,bytes32,bytes32,uint256)
---                 0x5af41713 Stake(address,uint256,uint256)
---                 0x5f7772c9 getUcacAddr(bytes32)
---                 0x8da5cb5b owner()
---                 0x9333fbda nonces(address,address)
---                 0x97a2f01b unstakeTokens(bytes32,uint256)
---                 0x9eac6024 stakedTokensMap(bytes32,address)
---                 0xb4c89ec0 executeUcacTx(bytes32)
---                 0xbb2d3208 setTxPerTokenPerHour(uint256)
---                 0xd828435d getNonce(address,address)
---                 0xd93d7361 balances(bytes32,address)
---                 0xe4b08555 currentTxLevel(bytes32)
---                 0xea5a2cc2 tokensToOwnUcac()
---                 0xf2fde38b transferOwnership(address)
---                 0xfc0c546a token()
-
 [abiFrom|data/CreditProtocol.abi|]
--- [abiFrom|data/ERC20.json|]
 
 -- TODO can I get rid of this redundant configFile param via Cmd Product Type?
 data FiDCmd = Info    {config :: Text, scope :: Text}
@@ -118,37 +88,38 @@ runMode _      (Info _ "all") = print =<< runWeb3 allLogs
 runMode config (Send _ creditorAddress sendAmount) = do
     message <- runWeb3 $ do nonce <- getNonce cpAddr senderAddr creditorAddr
                             let message = T.append "0x" . T.concat $
-                                  stripHexPrefix <$> [ fidAddress config
+                                  stripHexPrefix <$> [ fidUcacId config
                                                      , creditorAddress
                                                      , userAddress config
                                                      , integerToHex sendAmount
                                                      , integerToHex nonce
                                                      ]
                             hash <- web3_sha3 message
-                            sig <- eth_sign senderAddr hash
-                            sig2 <- eth_sign creditorAddr hash
-                            let (sigr, sigs, sigv) = decomposeSig sig
-                            let (sig2r, sig2s, sig2v) = decomposeSig sig2
+                            sig1 <- eth_sign creditorAddr hash
+                            sig2 <- eth_sign senderAddr hash
+                            let s1@(sig1r, sig1s, sig1v) = decomposeSig sig1
+                            let s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
                             txReceipt <- issueCredit cpAddr
                                                      (0 :: Ether)
                                                      ucacId
                                                      creditorAddr
                                                      senderAddr
                                                      sendAmount
+                                                     sig1r
+                                                     sig1s
+                                                     sig1v
                                                      sig2r
                                                      sig2s
                                                      sig2v
-                                                     sigr
-                                                     sigs
-                                                     sigv
-                            return (message, hash, sig, sig2, txReceipt)
+                            return (sig1, sig2, txReceipt)
     print message
     where senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
           creditorAddr = fromRight Addr.zero . Addr.fromText $ creditorAddress
           cpAddr = fromRight Addr.zero . Addr.fromText $ cpAddress config
-          ucacId = (BytesN . bytesDecode $ fidUcacId config)
+          ucacId :: BytesN 32
+          ucacId = BytesN . bytesDecode . T.take 64 . T.drop 2 $ fidUcacId config
 
-runMode config (Nonce _ _) = print =<< runWeb3 (getNonce fidAddr senderAddr senderAddr)
+runMode config (Nonce _ counter) = print =<< runWeb3 (getNonce fidAddr senderAddr counterAddr)
     where call = Call Nothing
                       (fromRight Addr.zero . Addr.fromText $ cpAddress config)
                       Nothing
@@ -157,6 +128,7 @@ runMode config (Nonce _ _) = print =<< runWeb3 (getNonce fidAddr senderAddr send
                       Nothing -- Tuple of the creditor and debtor ordered appropriately
           senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
           fidAddr = fromRight Addr.zero . Addr.fromText $ cpAddress config
+          counterAddr = fromRight Addr.zero . Addr.fromText $ counter
 runMode config (Test _) = putStrLn "Nothing to see"
 runMode _ _ = putStrLn "Not yet implemented"
 

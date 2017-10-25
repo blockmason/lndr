@@ -28,12 +28,10 @@ async function makeTransaction(cp, ucacId, creditor, debtor, _amount) {
     let nonce = creditor < debtor ? await cp.nonces(creditor, debtor) : await cp.nonces(debtor, creditor);
     nonce = bignumToHexString(nonce);
     let amount = bignumToHexString(_amount);
-    let content1 = ucacId + creditor.substr(2, creditor.length) + debtor.substr(2, debtor.length)
+    let content = ucacId + creditor.substr(2, creditor.length) + debtor.substr(2, debtor.length)
                           + amount.substr(2, amount.length) + nonce.substr(2, nonce.length);
-    let sig1 = sign(creditor, content1);
-    let content2 = ucacId + creditor.substr(2, creditor.length) + debtor.substr(2, debtor.length)
-                          + amount.substr(2, amount.length) + nonce.substr(2, nonce.length);
-    let sig2 = sign(debtor, content2);
+    let sig1 = sign(creditor, content);
+    let sig2 = sign(debtor, content);
     let txReciept = await cp.issueCredit( ucacId, creditor, debtor, amount
                                    , sig1.r, sig1.s, sig1.v
                                    , sig2.r, sig2.s, sig2.v, {from: creditor});
@@ -77,16 +75,13 @@ module.exports = function(deployer, network, accounts) {
         }).then(() => {
             return cpTokenContract.endSale({from: web3.eth.accounts[0]});
         }).then(() => {
-            return cpTokenContract.approve(creditProtocolContract.address, web3.toWei(1), {from: web3.eth.accounts[0]});
+            return cpTokenContract.approve(creditProtocolContract.address, web3.toWei(100), {from: web3.eth.accounts[0]});
         }).then(() => {
             return creditProtocolContract.createAndStakeUcac( fidContract.address
                                                             , ucacId1
                                                             , usd
-                                                            , web3.toWei(1)
+                                                            , web3.toWei(100)
                                                             , {from: web3.eth.accounts[0]});
-        }).then(() => {
-            return makeTransaction( creditProtocolContract, ucacId1, web3.eth.accounts[0]
-                                  , web3.eth.accounts[1], web3.toBigNumber(10));
         }).then(() => {
             fs.writeFile('../test/config1'
                   , "{ fidAddress = \"" + fidContract.address
@@ -109,28 +104,5 @@ module.exports = function(deployer, network, accounts) {
         }).catch(function(e) {
             console.log(e);
         });
-        // deployer.deploy(CreditProtocol, this.cpToken.address
-        // deployer.deploy(FriendInDebt);
-        // this.cpToken = await CPToken.new({from: admin});
-        // this.creditProtocol =
-        //     await CreditProtocol.new( this.cpToken.address
-        //                             , web3.toBigNumber(2 * 10 ** 9)
-        //                             , web3.toBigNumber(1)
-        //                             , {from: admin});
-        // deployer.deploy(CreditProtocol);
-        // this.basicUCAC = await BasicUCAC.new({from: admin});
-
-        // await this.cpToken.mint(admin, web3.toWei(20000));
-        // await this.cpToken.mint(p1, web3.toWei(20000));
-        // await this.cpToken.mint(p2, web3.toWei(20000));
-        // await this.cpToken.finishMinting();
-        // await this.cpToken.endSale();
-
-        // await this.cpToken.approve(this.creditProtocol.address, web3.toWei(1), {from: p1}).should.be.fulfilled;
-        // await this.creditProtocol.createAndStakeUcac( this.basicUCAC.address
-        //                                    , ucacId1, usd, web3.toWei(1), {from: p1}).should.be.fulfilled;
-
-        // await makeTransaction(this.creditProtocol, ucacId1, p1, p2, web3.toBigNumber(10));
-        // await makeTransaction(this.creditProtocol, ucacId1, p1, p2, web3.toBigNumber(10));
     }
 };

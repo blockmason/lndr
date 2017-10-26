@@ -19,31 +19,31 @@ import           Data.Aeson
 import           GHC.Generics
 import           Network.Wai
 import qualified Network.Wai.Handler.Warp as N
+import qualified Network.Ethereum.Web3.Address as Address
 import           Servant
 import           STMContainers.Map
+
+import Web3Interface
 
 data UcacCreationLog = UcacCreationLog { ucac :: String }
                         deriving Generic
 
 instance ToJSON UcacCreationLog
 
-data TransactionLog = TransactionLog { ucac :: String }
-    deriving Generic
+data PendingTransaction = PendingTransaction { }
 
-instance ToJSON TransactionLog
+type API = "ucacs" :> Get '[JSON] [UcacCreationLog]
+      :<|> "fid"   :> Get '[JSON] [IssueCreditLog]
 
-type LogsAPI = "ucacs" :> Get '[JSON] [UcacCreationLog]
-          :<|> "fid"   :> Get '[JSON] [TransactionLog]
+server :: Server API
+server = return [UcacCreationLog "hi"]
+    :<|> return [IssueCreditLog Address.zero Address.zero Address.zero 0]
 
-logsServer :: Server LogsAPI
-logsServer = return [UcacCreationLog "hi"]
-        :<|> return [TransactionLog "goodbye"]
-
-api :: Proxy LogsAPI
+api :: Proxy API
 api = Proxy
 
 app :: Application
-app = serve api logsServer
+app = serve api server
 
 main :: IO ()
 main = N.run 80 app

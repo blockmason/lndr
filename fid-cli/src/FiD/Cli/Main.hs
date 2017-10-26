@@ -30,8 +30,6 @@ import           System.Console.CmdArgs hiding (auto)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base16 as BS16
 
-import Debug.Trace
-
 bytesDecode :: Text -> Bytes
 bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
 

@@ -40,6 +40,8 @@ executable fid-server
                      , servant-server
                      , stm
                      , stm-containers
+                     , text
+                     , transformers
                      , wai
                      , warp
                      , web3

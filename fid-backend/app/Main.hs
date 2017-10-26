@@ -30,24 +30,23 @@ data UcacCreationLog = UcacCreationLog { ucac :: String }
 
 instance ToJSON UcacCreationLog
 
-data PendingTransaction = PendingTransaction { }
-
-data ServerResponse = ServerResponse { code :: Int }
-
 type API = "transactions" :> Get '[JSON] [IssueCreditLog]
---       :<|> "pending" :> Get '[JSON] [PendingTransaction]
---       :<|> "submit"   :> ReqBody '[JSON] ClientInfo :> Post '[JSON] ServerResponse
--- :<|> "ucacs"   :> Get '[JSON] [UcacCreationLog]
+--       :<|> "pending" :> Get '[JSON] [SignedCredit]
+      :<|> "submit"   :> ReqBody '[JSON] SignedCredit :> Post '[JSON] ServerResponse
 
 server :: Server API
-server = fidLogsServer
---     :<|> return [UcacCreationLog "hi"]
+server = transactionsHandler
+    :<|> submitHandler
 
-fidLogsServer = do a <- runWeb3 fidLogs
-                   return $ case a of
-                                Right ls -> ls
-                                Left _ -> []
---     return [IssueCreditLog Address.zero Address.zero Address.zero 0]
+transactionsHandler :: Handler [IssueCreditLog]
+transactionsHandler = do
+    a <- runWeb3 fidLogs
+    return $ case a of
+                Right ls -> ls
+                Left _ -> []
+
+submitHandler :: SignedCredit -> Handler ServerResponse
+submitHandler signedCredit = return $ ServerResponse 10
 
 api :: Proxy API
 api = Proxy

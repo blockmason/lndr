@@ -4,6 +4,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 module Web3Interface where
@@ -11,6 +12,7 @@ module Web3Interface where
 import           Control.Exception
 import           Control.Monad
 import           Data.Aeson
+import           Data.Aeson.TH
 import           Data.Data
 import           Data.Either (rights)
 import           Data.Either.Combinators (rightToMaybe, fromRight, mapLeft)
@@ -31,6 +33,23 @@ import           Prelude hiding ((!!))
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base16 as BS16
 
+data IssueCreditLog = IssueCreditLog { ucac :: Address
+                                     , creditor :: Address
+                                     , debtor :: Address
+                                     , amount :: Integer
+                                     } deriving Show
+$(deriveJSON defaultOptions ''IssueCreditLog)
+
+data SignedCredit = SignedCredit { creditor :: Text
+                                 , debtor :: Text
+                                 , amount :: Integer
+                                 , signature :: Text
+                                 }
+$(deriveJSON defaultOptions ''SignedCredit)
+
+data ServerResponse = ServerResponse { code :: Int }
+$(deriveJSON defaultOptions ''ServerResponse)
+
 bytesDecode :: Text -> Bytes
 bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
 
@@ -42,24 +61,6 @@ decomposeSig sig = (sigR, sigS, sigV)
           sigV = hexToInteger . T.take 2 . T.drop 128 $ strippedSig
 
 [abiFrom|data/CreditProtocol.abi|]
-
--- TODO can I get rid of this redundant configFile param via Cmd Product Type?
-data FiDCmd = Info    {config :: Text, scope :: Text}
-            | Request {config :: Text, debtor :: Text, amount :: Integer}
-            | Send    {config :: Text, creditor :: Text, amount :: Integer}
-            | Nonce   {config :: Text, counterparty :: Text}
-            | Test    {config :: Text}
-            deriving (Show, Data, Typeable)
-
---  validate these to make sure they're all valid
---  should they all be integers? why not?
---  is there aleardy an efficient uint256 type in haskell?
-data IssueCreditLog = IssueCreditLog { ucac :: Address
-                                     , creditor :: Address
-                                     , debtor :: Address
-                                     , amount :: Integer
-                                     } deriving (Show, Generic)
-instance ToJSON IssueCreditLog
 
 -- runMode :: FiDConfig -> FiDCmd -> IO ()
 -- runMode config (Info _ "fid") = print =<< runWeb3 (fidLogs config)
@@ -105,6 +106,7 @@ allLogs :: Provider a => Web3 a [Change]
 allLogs = eth_getLogs (Filter Nothing Nothing (Just "0x0") Nothing)
 
 
+-- TODO THIS CAN BE DONE IN A CLEANER WAY
 -- fetch cp logs related to FiD UCAC
 -- verify that these are proper logs
 fidLogs :: Provider a => Web3 a [IssueCreditLog]

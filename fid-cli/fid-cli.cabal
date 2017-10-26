@@ -23,6 +23,7 @@ library
                      , bytestring
                      , cmdargs
                      , either
+                     , fid-backend
                      , http-conduit
                      , listsafe
                      , memory

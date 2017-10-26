@@ -1,16 +1,11 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS_GHC -fno-cse #-}
 
 module FiD.Cli.Main where
 
 import           Data.Aeson
-import           Data.Aeson.TH
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -20,6 +15,8 @@ import qualified Network.Ethereum.Web3.Address as Addr
 import           Network.Ethereum.Web3.Types hiding (Pending)
 import qualified Network.HTTP.Simple as HTTP
 import           System.Console.CmdArgs
+
+import Web3Interface
 
 data FiDCmd = Transactions
             | Pending
@@ -33,23 +30,9 @@ data FiDCmd = Transactions
                      }
             deriving (Show, Data, Typeable)
 
-data SignedCredit = SignedCredit { creditor :: Text
-                                 , debtor :: Text
-                                 , amount :: Integer
-                                 , signature :: Text
-                                 }
-
-data IssueCreditLog = IssueCreditLog { ucac :: Address
-                                     , creditor :: Address
-                                     , debtor :: Address
-                                     , amount :: Integer
-                                     } deriving Show
-
-$(deriveJSON defaultOptions ''IssueCreditLog)
-$(deriveJSON defaultOptions ''SignedCredit)
-
 runMode :: FiDCmd -> IO ()
 runMode Transactions = do resp <- HTTP.httpJSON "http://localhost:80/transactions"
+                          -- TODO prettyprint
                           print $ (HTTP.getResponseBody resp :: [IssueCreditLog])
 runMode Pending = print "pending"
 runMode Lend{} = print "lend"

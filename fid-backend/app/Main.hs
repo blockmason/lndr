@@ -17,6 +17,7 @@ import           Control.Monad.Trans.Either
 import           Control.Lens
 import           Data.Aeson
 import           GHC.Generics
+import           Network.Ethereum.Web3
 import           Network.Wai
 import qualified Network.Wai.Handler.Warp as N
 import qualified Network.Ethereum.Web3.Address as Address
@@ -32,12 +33,23 @@ instance ToJSON UcacCreationLog
 
 data PendingTransaction = PendingTransaction { }
 
-type API = "ucacs" :> Get '[JSON] [UcacCreationLog]
-      :<|> "fid"   :> Get '[JSON] [IssueCreditLog]
+data ServerResponse = ServerResponse { code :: Int }
+
+type API = "ucacs"   :> Get '[JSON] [UcacCreationLog]
+      :<|> "fid"     :> Get '[JSON] [IssueCreditLog]
+--       :<|> "pending" :> Get '[JSON] [PendingTransaction]
+--       :<|> "submit"   :> ReqBody '[JSON] ClientInfo :> Post '[JSON] ServerResponse
+
 
 server :: Server API
 server = return [UcacCreationLog "hi"]
-    :<|> return [IssueCreditLog Address.zero Address.zero Address.zero 0]
+    :<|> fidLogsServer
+
+fidLogsServer = do a <- runWeb3 fidLogs
+                   return $ case a of
+                                Right ls -> ls
+                                Left _ -> []
+--     return [IssueCreditLog Address.zero Address.zero Address.zero 0]
 
 api :: Proxy API
 api = Proxy

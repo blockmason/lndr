@@ -107,14 +107,13 @@ allLogs = eth_getLogs (Filter Nothing Nothing (Just "0x0") Nothing)
 
 -- fetch cp logs related to FiD UCAC
 -- verify that these are proper logs
--- fidLogs :: Provider a => FiDConfig -> Web3 a [IssueCreditLog]
--- fidLogs config = rights . fmap interpretUcacLog <$>
---     -- TODO throw and error if `Addr.fromText` returns `Left`
---     eth_getLogs (Filter (rightToMaybe . Addr.fromText $ cpAddress config)
---                         Nothing
---                         (Just "0x0") -- start from block 0
---                         Nothing)
-
+fidLogs :: Provider a => Web3 a [IssueCreditLog]
+fidLogs = rights . fmap interpretUcacLog <$>
+    eth_getLogs (Filter (rightToMaybe . Addr.fromText $ cpAddr)
+                        Nothing
+                        (Just "0x0") -- start from block 0
+                        Nothing)
+    where cpAddr = "0xd5ec73eac35fc9dd6c3f440bce314779fed09f60"
 
 -- TODO throw and error if `Addr.fromText` returns `Left`
 -- userLogs :: Provider a => FiDConfig -> Web3 a [IssueCreditLog]

@@ -4,6 +4,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 module FiD.Cli.Main where
@@ -11,6 +12,8 @@ module FiD.Cli.Main where
 import           Control.Exception
 import           Control.Monad
 import           Data.Aeson
+import           Data.Aeson.TH
+import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Either (rights)
 import           Data.Either.Combinators (rightToMaybe, fromRight, mapLeft)
 import           Data.List.Safe ((!!))
@@ -18,12 +21,13 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
-import           Dhall hiding (Text)
+import           GHC.Generics
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Network.Ethereum.Web3.Api
 import           Network.Ethereum.Web3.TH
-import           Network.Ethereum.Web3.Types
+import           Network.Ethereum.Web3.Types hiding (Pending)
+import qualified Network.HTTP.Simple as HTTP
 import           Numeric (readHex, showHex)
 import           Prelude hiding ((!!))
 import           System.Console.CmdArgs hiding (auto)
@@ -33,21 +37,23 @@ import qualified Data.ByteString.Base16 as BS16
 bytesDecode :: Text -> Bytes
 bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
 
-decomposeSig :: Text -> (BytesN 32, BytesN 32, Integer)
-decomposeSig sig = (sigR, sigS, sigV)
-    where strippedSig = T.drop 2 sig
-          sigR = BytesN . bytesDecode $ T.take 64 strippedSig
-          sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
-          sigV = hexToInteger . T.take 2 . T.drop 128 $ strippedSig
+-- decomposeSig :: Text -> (BytesN 32, BytesN 32, Integer)
+-- decomposeSig sig = (sigR, sigS, sigV)
+--     where strippedSig = T.drop 2 sig
+--           sigR = BytesN . bytesDecode $ T.take 64 strippedSig
+--           sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
+--           sigV = hexToInteger . T.take 2 . T.drop 128 $ strippedSig
 
 [abiFrom|data/CreditProtocol.abi|]
 
 -- TODO can I get rid of this redundant configFile param via Cmd Product Type?
-data FiDCmd = Info    {config :: Text, scope :: Text}
-            | Request {config :: Text, debtor :: Text, amount :: Integer}
-            | Send    {config :: Text, creditor :: Text, amount :: Integer}
-            | Nonce   {config :: Text, counterparty :: Text}
-            | Test    {config :: Text}
+data FiDCmd = Transactions
+            | Submit
+            | Pending
+--             | Request {config :: Text, debtor :: Text, amount :: Integer}
+--             | Send    {config :: Text, creditor :: Text, amount :: Integer}
+--             | Nonce   {config :: Text, counterparty :: Text}
+--             | Test    {config :: Text}
             deriving (Show, Data, Typeable)
 
 --  validate these to make sure they're all valid
@@ -59,77 +65,81 @@ data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , amount :: Integer
                                      } deriving Show
 
+$(deriveJSON defaultOptions ''IssueCreditLog)
+
 data FiDConfig = FiDConfig { fidAddress :: Text
                            , fidUcacId :: Text
                            , cpAddress :: Text
                            , userAddress :: Text
                            } deriving (Show, Generic)
 
-instance Interpret FiDConfig
-
 main :: IO ()
-main = do mode <- cmdArgs (modes [ Info "" "fid"
-                                 , Request "" "" 0
-                                 , Send "" "" 0
-                                 , Nonce "" ""
-                                 , Test ""
+main = do mode <- cmdArgs (modes [ Transactions
+                                 , Submit
+                                 , Pending
+                         --         , Request "" "" 0
+                         --         , Send "" "" 0
+                         --         , Nonce "" ""
+                         --         , Test ""
                                  ])
-          let configFilePath = config mode
-          configData <- input auto $ LT.fromStrict configFilePath
-          runMode configData mode
+          runMode mode
 
 
-runMode :: FiDConfig -> FiDCmd -> IO ()
-runMode config (Info _ "fid") = print =<< runWeb3 (fidLogs config)
-runMode config (Info _ "user") = print =<< runWeb3 (userLogs config)
-runMode _      (Info _ "all") = print =<< runWeb3 allLogs
-runMode config (Send _ creditorAddress sendAmount) = do
-    message <- runWeb3 $ do nonce <- getNonce cpAddr senderAddr creditorAddr
-                            let message = T.append "0x" . T.concat $
-                                  stripHexPrefix <$> [ fidUcacId config
-                                                     , creditorAddress
-                                                     , userAddress config
-                                                     , integerToHex sendAmount
-                                                     , integerToHex nonce
-                                                     ]
-                            hash <- web3_sha3 message
-                            sig1 <- eth_sign creditorAddr hash
-                            sig2 <- eth_sign senderAddr hash
-                            let s1@(sig1r, sig1s, sig1v) = decomposeSig sig1
-                            let s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
-                            txReceipt <- issueCredit cpAddr
-                                                     (0 :: Ether)
-                                                     ucacId
-                                                     creditorAddr
-                                                     senderAddr
-                                                     sendAmount
-                                                     sig1r
-                                                     sig1s
-                                                     sig1v
-                                                     sig2r
-                                                     sig2s
-                                                     sig2v
-                            return (sig1, sig2, txReceipt)
-    print message
-    where senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
-          creditorAddr = fromRight Addr.zero . Addr.fromText $ creditorAddress
-          cpAddr = fromRight Addr.zero . Addr.fromText $ cpAddress config
-          ucacId :: BytesN 32
-          ucacId = BytesN . bytesDecode . T.take 64 . T.drop 2 $ fidUcacId config
-
-runMode config (Nonce _ counter) = print =<< runWeb3 (getNonce fidAddr senderAddr counterAddr)
-    where call = Call Nothing
-                      (fromRight Addr.zero . Addr.fromText $ cpAddress config)
-                      Nothing
-                      Nothing
-                      Nothing
-                      Nothing -- Tuple of the creditor and debtor ordered appropriately
-          senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
-          fidAddr = fromRight Addr.zero . Addr.fromText $ cpAddress config
-          counterAddr = fromRight Addr.zero . Addr.fromText $ counter
-runMode config (Test _) = putStrLn "Nothing to see"
-runMode _ _ = putStrLn "Not yet implemented"
-
+runMode :: FiDCmd -> IO ()
+runMode Transactions = do resp <- HTTP.httpJSON "http://localhost:80/transactions"
+                          print $ (HTTP.getResponseBody resp :: [IssueCreditLog])
+runMode Submit = print "submit"
+runMode Pending = print "pending"
+-- runMode config (Info _ "fid") = print =<< runWeb3 (fidLogs config)
+-- runMode config (Info _ "user") = print =<< runWeb3 (userLogs config)
+-- runMode _      (Info _ "all") = print =<< runWeb3 allLogs
+-- runMode config (Send _ creditorAddress sendAmount) = do
+--     message <- runWeb3 $ do nonce <- getNonce cpAddr senderAddr creditorAddr
+--                             let message = T.append "0x" . T.concat $
+--                                   stripHexPrefix <$> [ fidUcacId config
+--                                                      , creditorAddress
+--                                                      , userAddress config
+--                                                      , integerToHex sendAmount
+--                                                      , integerToHex nonce
+--                                                      ]
+--                             hash <- web3_sha3 message
+--                             sig1 <- eth_sign creditorAddr hash
+--                             sig2 <- eth_sign senderAddr hash
+--                             let s1@(sig1r, sig1s, sig1v) = decomposeSig sig1
+--                             let s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
+--                             txReceipt <- issueCredit cpAddr
+--                                                      (0 :: Ether)
+--                                                      ucacId
+--                                                      creditorAddr
+--                                                      senderAddr
+--                                                      sendAmount
+--                                                      sig1r
+--                                                      sig1s
+--                                                      sig1v
+--                                                      sig2r
+--                                                      sig2s
+--                                                      sig2v
+--                             return (sig1, sig2, txReceipt)
+--     print message
+--     where senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
+--           creditorAddr = fromRight Addr.zero . Addr.fromText $ creditorAddress
+--           cpAddr = fromRight Addr.zero . Addr.fromText $ cpAddress config
+--           ucacId :: BytesN 32
+--           ucacId = BytesN . bytesDecode . T.take 64 . T.drop 2 $ fidUcacId config
+-- 
+-- runMode config (Nonce _ counter) = print =<< runWeb3 (getNonce fidAddr senderAddr counterAddr)
+--     where call = Call Nothing
+--                       (fromRight Addr.zero . Addr.fromText $ cpAddress config)
+--                       Nothing
+--                       Nothing
+--                       Nothing
+--                       Nothing -- Tuple of the creditor and debtor ordered appropriately
+--           senderAddr = fromRight Addr.zero . Addr.fromText $ userAddress config
+--           fidAddr = fromRight Addr.zero . Addr.fromText $ cpAddress config
+--           counterAddr = fromRight Addr.zero . Addr.fromText $ counter
+-- runMode config (Test _) = putStrLn "Nothing to see"
+-- runMode _ _ = putStrLn "Not yet implemented"
+-- 
 
 -- fetch all logs
 -- terminal equivalent: curl -X POST --data {"jsonrpc":"2.0","method":"eth_getLogs","params":[{"fromBlock": "0x0"}],"id":73} localhost:8545

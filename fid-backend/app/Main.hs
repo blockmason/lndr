@@ -35,15 +35,14 @@ data PendingTransaction = PendingTransaction { }
 
 data ServerResponse = ServerResponse { code :: Int }
 
-type API = "ucacs"   :> Get '[JSON] [UcacCreationLog]
-      :<|> "fid"     :> Get '[JSON] [IssueCreditLog]
+type API = "transactions" :> Get '[JSON] [IssueCreditLog]
 --       :<|> "pending" :> Get '[JSON] [PendingTransaction]
 --       :<|> "submit"   :> ReqBody '[JSON] ClientInfo :> Post '[JSON] ServerResponse
-
+-- :<|> "ucacs"   :> Get '[JSON] [UcacCreationLog]
 
 server :: Server API
-server = return [UcacCreationLog "hi"]
-    :<|> fidLogsServer
+server = fidLogsServer
+--     :<|> return [UcacCreationLog "hi"]
 
 fidLogsServer = do a <- runWeb3 fidLogs
                    return $ case a of

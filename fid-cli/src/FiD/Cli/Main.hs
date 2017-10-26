@@ -48,7 +48,7 @@ submitCredit signedCredit = do
     let req = HTTP.setRequestBodyJSON signedCredit $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpJSON req
-    print $ (HTTP.getResponseBody resp :: [ServerResponse])
+    print $ (HTTP.getResponseBody resp :: ServerResponse)
 
 main :: IO ()
 main = do mode <- cmdArgs (modes [ Transactions

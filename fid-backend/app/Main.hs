@@ -1,11 +1,12 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Main where
 
@@ -50,7 +51,7 @@ pendingHandler :: Handler [CreditRecord Signed]
 pendingHandler = return []
 
 submitHandler :: CreditRecord Signed -> Handler ServerResponse
-submitHandler signedCredit = return $ ServerResponse 10
+submitHandler (CreditRecord _ _ a _) = return $ ServerResponse $ fromInteger a
 
 api :: Proxy API
 api = Proxy

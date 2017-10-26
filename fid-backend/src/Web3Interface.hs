@@ -51,10 +51,10 @@ data CreditRecord a = CreditRecord { creditor :: Text
                                    , debtor :: Text
                                    , amount :: Integer
                                    , signature :: Text
-                                   } deriving Show
+                                   } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''CreditRecord)
 
-data ServerResponse = ServerResponse { code :: Int } deriving Show
+data ServerResponse = ServerResponse { code :: Int } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''ServerResponse)
 
 bytesDecode :: Text -> Bytes

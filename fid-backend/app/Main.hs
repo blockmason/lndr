@@ -31,11 +31,12 @@ data UcacCreationLog = UcacCreationLog { ucac :: String }
 instance ToJSON UcacCreationLog
 
 type API = "transactions" :> Get '[JSON] [IssueCreditLog]
---       :<|> "pending" :> Get '[JSON] [SignedCredit]
-      :<|> "submit"   :> ReqBody '[JSON] SignedCredit :> Post '[JSON] ServerResponse
+      :<|> "pending" :> Get '[JSON] [SignedCredit]
+      :<|> "submit" :> ReqBody '[JSON] SignedCredit :> Post '[JSON] ServerResponse
 
 server :: Server API
 server = transactionsHandler
+    :<|> pendingHandler
     :<|> submitHandler
 
 transactionsHandler :: Handler [IssueCreditLog]
@@ -44,6 +45,9 @@ transactionsHandler = do
     return $ case a of
                 Right ls -> ls
                 Left _ -> []
+
+pendingHandler :: Handler [SignedCredit]
+pendingHandler = return []
 
 submitHandler :: SignedCredit -> Handler ServerResponse
 submitHandler signedCredit = return $ ServerResponse 10

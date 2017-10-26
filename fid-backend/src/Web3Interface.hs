@@ -40,14 +40,21 @@ data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      } deriving Show
 $(deriveJSON defaultOptions ''IssueCreditLog)
 
-data SignedCredit = SignedCredit { creditor :: Text
-                                 , debtor :: Text
-                                 , amount :: Integer
-                                 , signature :: Text
-                                 }
-$(deriveJSON defaultOptions ''SignedCredit)
+-- Types that populate `CreditRecord`'s phantom type field
+data Signed = Signed
+$(deriveJSON defaultOptions ''Signed)
+data Unsigned = Unsigned
+$(deriveJSON defaultOptions ''Unsigned)
 
-data ServerResponse = ServerResponse { code :: Int }
+-- `a` is a phantom type that indicates whether a record has been signed or not
+data CreditRecord a = CreditRecord { creditor :: Text
+                                   , debtor :: Text
+                                   , amount :: Integer
+                                   , signature :: Text
+                                   } deriving Show
+$(deriveJSON defaultOptions ''CreditRecord)
+
+data ServerResponse = ServerResponse { code :: Int } deriving Show
 $(deriveJSON defaultOptions ''ServerResponse)
 
 bytesDecode :: Text -> Bytes

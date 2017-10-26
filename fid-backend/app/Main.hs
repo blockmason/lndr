@@ -9,7 +9,6 @@
 
 module Main where
 
-
 import           Control.Concurrent.STM
 import           Control.Monad.IO.Class
 import           Control.Monad.State

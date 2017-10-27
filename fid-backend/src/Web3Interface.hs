@@ -54,10 +54,10 @@ data CreditRecord a = CreditRecord { creditor :: Text
                                    } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''CreditRecord)
 
-data ServerResponse = ServerResponse { hash :: Text
+data SubmissionResponse = SubmissionResponse { hash :: Text
                                      , nonce :: Integer
                                      } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''ServerResponse)
+$(deriveJSON defaultOptions ''SubmissionResponse)
 
 ucacId :: Text
 ucacId = "0x7624778dedc75f8b322b9fa1632a610d40b85e106c7d9bf0e743a9ce291b9c6f"
@@ -83,9 +83,9 @@ decomposeSig sig = (sigR, sigS, sigV)
 -- create functions to call CreditProtocol contract
 [abiFrom|data/CreditProtocol.abi|]
 
-signatureAndNonceFromCreditRecord :: CreditRecord Signed
-                                  -> IO (Either Web3Error (Integer, Text))
-signatureAndNonceFromCreditRecord r@(CreditRecord c d a s) = runWeb3 $ do
+signCreditRecord :: CreditRecord Unsigned
+                 -> IO (Either Web3Error (Integer, Text, CreditRecord Signed))
+signCreditRecord r@(CreditRecord c d a _) = runWeb3 $ do
             nonce <- getNonce cpAddr debtorAddr creditorAddr
             let message = T.append "0x" . T.concat $
                   stripHexPrefix <$> [ ucacId
@@ -95,7 +95,8 @@ signatureAndNonceFromCreditRecord r@(CreditRecord c d a s) = runWeb3 $ do
                                      , integerToHex nonce
                                      ]
             hash <- web3_sha3 message
-            return (nonce, hash)
+            sig <- eth_sign creditorAddr hash
+            return (nonce, hash, r { signature = sig })
     where debtorAddr = textToAddress d
           creditorAddr = textToAddress c
 

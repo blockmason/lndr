@@ -42,13 +42,15 @@ runMode Pending = do resp <- HTTP.httpJSON "http://localhost:80/pending"
 runMode (Lend user friend amount) = submitCredit $ CreditRecord user friend amount ""
 runMode (Borrow user friend amount) = submitCredit $ CreditRecord friend user amount ""
 
+
 submitCredit :: CreditRecord Unsigned -> IO ()
-submitCredit signedCredit = do
+submitCredit unsignedCredit = do
     initReq <- HTTP.parseRequest "http://localhost:80/submit"
-    let req = HTTP.setRequestBodyJSON signedCredit $
+    let req = HTTP.setRequestBodyJSON unsignedCredit $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpJSON req
-    print $ (HTTP.getResponseBody resp :: ServerResponse)
+    print $ (HTTP.getResponseBody resp :: SubmissionResponse)
+
 
 main :: IO ()
 main = do mode <- cmdArgs (modes [ Transactions

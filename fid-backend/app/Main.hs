@@ -35,7 +35,7 @@ type ServerState = Map.Map Text (CreditRecord Signed)
 
 type API = "transactions" :> Get '[JSON] [IssueCreditLog]
       :<|> "pending" :> Get '[JSON] [(Text, CreditRecord Signed)]
-      :<|> "submit" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] ServerResponse
+      :<|> "submit" :> ReqBody '[JSON] (CreditRecord Unsigned) :> Post '[JSON] SubmissionResponse
 
 transactionsHandler :: ReaderT ServerState IO [IssueCreditLog]
 transactionsHandler = do
@@ -49,12 +49,12 @@ pendingHandler = do creditMap <- ask
                     list <- liftIO . atomically . toList $ Map.stream creditMap
                     return $ list
 
-submitHandler :: CreditRecord Signed -> ReaderT ServerState IO ServerResponse
+submitHandler :: (CreditRecord Unsigned) -> ReaderT ServerState IO SubmissionResponse
 submitHandler record = do
     creditMap <- ask
-    Right (nonce, hash) <- liftIO $ signatureAndNonceFromCreditRecord record
-    liftIO . atomically $ Map.insert record hash creditMap
-    return $ ServerResponse hash nonce
+    Right (nonce, hash, signedRecord) <- liftIO $ signCreditRecord record
+    liftIO . atomically $ Map.insert signedRecord hash creditMap
+    return $ SubmissionResponse hash nonce
 
 api :: Proxy API
 api = Proxy

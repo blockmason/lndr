@@ -50,18 +50,32 @@ pendingHandler = do creditMap <- ask
                     return $ list
 
 submitHandler :: (CreditRecord Unsigned) -> ReaderT ServerState IO SubmissionResponse
-submitHandler record@(CreditRecord creditor _ _ _) = do
+submitHandler record@(CreditRecord creditor _ _ user) = do
     creditMap <- ask
+    -- TODO handle this appropriately
     Right (nonce, hash, signedRecord) <- liftIO $ signCreditRecord record
+
     -- check if hash is already registered in pending txs
     val <- liftIO . atomically $ Map.lookup hash creditMap
 
     case val of
-        -- if matching transaction is found, submit finalized transaction to
-        -- blockchain
-        Just storedRec -> liftIO . void $ case (creditor == signature record) of
-            True -> finalizeTransaction (signature storedRec) (signature record) signedRecord
-            False -> finalizeTransaction (signature record) (signature storedRec) signedRecord
+        Just storedRec -> liftIO $ if signature storedRec == signature signedRecord
+
+            -- if the credit record has already been seen, do nothing
+            then return ()
+
+            -- if the submitted credit record has a matching pending record,
+            -- finalize the transaction on the blockchain
+            else void $ if creditor /= user
+                    then do print "debtor finalized"
+                            finalizeTransaction (signature storedRec)
+                                                (signature signedRecord)
+                                                signedRecord
+                    else do print "creditor finalized"
+                            finalizeTransaction (signature signedRecord)
+                                                (signature storedRec)
+                                                signedRecord
+
         -- if no matching transaction is found, create pending transaction
         Nothing -> liftIO . atomically $ Map.insert signedRecord hash creditMap
 

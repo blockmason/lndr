@@ -1,0 +1,8 @@
+resolver: lts-9.10
+
+packages:
+- fid-backend/
+- fid-cli/
+- location:
+    git: git@github.com:aupiff/hs-web3.git
+    commit: b28f5cfae35843515e5c02a3e2d72440f3cd7b65

@@ -49,8 +49,8 @@ submitCredit unsignedCredit = do
     print $ (HTTP.getResponseBody resp :: SubmissionResponse)
 
 
-programModes =  (modes [ Transactions
-                       , Pending
+programModes =  (modes [ Transactions &= help "list all transactions processed by FiD UCAC"
+                       , Pending &= help "list all pending transactions"
                        , Lend "0x198e13017d2333712bd942d8b028610b95c363da"
                               "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
                               123

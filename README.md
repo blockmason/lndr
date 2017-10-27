@@ -42,4 +42,11 @@ sudo apt-get install software-properties-common
 sudo add-apt-repository -y ppa:ethereum/ethereum
 sudo apt-get update
 sudo apt-get install ethereum
+
+# start a local blockchain in the background
+cd friend-in-debt/ucac
+./gethtest.sh &
+
+# install ghc and fid-server application
+
 ```

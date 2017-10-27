@@ -19,6 +19,7 @@ import           Control.Monad.Trans.Except
 import           Control.Lens
 import           Data.Aeson
 import           Data.Text (Text)
+import qualified Data.Text as T
 import           GHC.Generics
 import           ListT
 import           Network.Ethereum.Web3
@@ -30,10 +31,7 @@ import qualified STMContainers.Map as Map
 
 import Web3Interface
 
-data UcacCreationLog = UcacCreationLog { ucac :: String }
-                        deriving Generic
-
-instance ToJSON UcacCreationLog
+type ServerState = Map.Map Text (CreditRecord Signed)
 
 type API = "transactions" :> Get '[JSON] [IssueCreditLog]
       :<|> "pending" :> Get '[JSON] [CreditRecord Signed]
@@ -51,14 +49,12 @@ pendingHandler = do creditMap <- ask
                     list <- liftIO . atomically . toList $ Map.stream creditMap
                     return $ snd <$> list
 
-
 submitHandler :: CreditRecord Signed -> ReaderT ServerState IO ServerResponse
-submitHandler r@(CreditRecord _ _ a _) = do liftIO $ print r
-                                            creditMap <- ask
-                                            liftIO . atomically $ Map.insert r "hi" creditMap
-                                            list <- liftIO . atomically . toList $ Map.stream creditMap
-                                            liftIO $ print list
-                                            return $ ServerResponse $ fromInteger a
+submitHandler record = do
+    creditMap <- ask
+    Right (nonce, hash) <- liftIO $ signatureAndNonceFromCreditRecord record
+    liftIO . atomically $ Map.insert record hash creditMap
+    return $ ServerResponse hash nonce
 
 api :: Proxy API
 api = Proxy
@@ -66,9 +62,9 @@ api = Proxy
 readerToHandler' :: forall a. ServerState -> ReaderT ServerState IO a -> Handler a
 readerToHandler' state r = liftIO (runReaderT r state)
 
-
 readerToHandler :: ServerState -> ReaderT ServerState IO :~> Handler
 readerToHandler state = NT (readerToHandler' state)
+
 
 server :: ServerT API (ReaderT ServerState IO)
 server = transactionsHandler
@@ -76,20 +72,8 @@ server = transactionsHandler
     :<|> submitHandler
 
 
-
--- readerToExcept :: Config -> AppM :~> ExceptT ServantErr IO
--- readerToExcept cfg =
---   Nat $ \appm -> evalStateT (runReaderT appm cfg) Map.empty
---
 readerServer :: ServerState -> Server API
 readerServer state = enter (readerToHandler state) server
-
--- testServer' :: Int -> Server TestAPI
--- testServer' code = enter (Nat $ liftIO . (`runReaderT` code)) testServerT
-
-type ServerState = Map.Map Text (CreditRecord Signed)
-
-type App = ReaderT ServerState (ExceptT ServantErr IO)
 
 app :: ServerState -> Application
 app state = serve api (readerServer state)

@@ -54,11 +54,24 @@ data CreditRecord a = CreditRecord { creditor :: Text
                                    } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''CreditRecord)
 
-data ServerResponse = ServerResponse { code :: Int } deriving (Show, Generic)
+data ServerResponse = ServerResponse { hash :: Text
+                                     , nonce :: Integer
+                                     } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''ServerResponse)
+
+ucacId :: Text
+ucacId = "0x7624778dedc75f8b322b9fa1632a610d40b85e106c7d9bf0e743a9ce291b9c6f"
+
+cpAddress :: Text
+cpAddress = "0xd5ec73eac35fc9dd6c3f440bce314779fed09f60"
+
+cpAddr :: Address
+cpAddr = fromRight Addr.zero . Addr.fromText $ cpAddress
+
 
 bytesDecode :: Text -> Bytes
 bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
+
 
 decomposeSig :: Text -> (BytesN 32, BytesN 32, Integer)
 decomposeSig sig = (sigR, sigS, sigV)
@@ -67,7 +80,24 @@ decomposeSig sig = (sigR, sigS, sigV)
           sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
           sigV = hexToInteger . T.take 2 . T.drop 128 $ strippedSig
 
+-- create functions to call CreditProtocol contract
 [abiFrom|data/CreditProtocol.abi|]
+
+signatureAndNonceFromCreditRecord :: CreditRecord Signed -> IO (Either Web3Error (Integer, Text))
+signatureAndNonceFromCreditRecord r@(CreditRecord c d a s) = runWeb3 $ do
+            nonce <- getNonce cpAddr debtorAddr creditorAddr
+            let message = T.append "0x" . T.concat $
+                  stripHexPrefix <$> [ ucacId
+                                     , c
+                                     , d
+                                     , integerToHex a
+                                     , integerToHex nonce
+                                     ]
+            hash <- web3_sha3 message
+            return (nonce, hash)
+             -- TODO make textToAddress functions
+    where debtorAddr = fromRight Addr.zero . Addr.fromText $ d
+          creditorAddr = fromRight Addr.zero . Addr.fromText $ c
 
 -- runMode :: FiDConfig -> FiDCmd -> IO ()
 -- runMode config (Info _ "fid") = print =<< runWeb3 (fidLogs config)

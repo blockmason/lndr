@@ -38,9 +38,9 @@ runMode Transactions = do resp <- HTTP.httpJSON "http://localhost:80/transaction
                           print $ (HTTP.getResponseBody resp :: [IssueCreditLog])
 runMode Pending = do resp <- HTTP.httpJSON "http://localhost:80/pending"
                           -- TODO prettyprint
-                     print $ (HTTP.getResponseBody resp :: [CreditRecord Signed])
-runMode (Lend user friend amount) = submitCredit $ CreditRecord "" "" amount ""
-runMode (Borrow user friend amount) = submitCredit $ CreditRecord "" "" amount ""
+                     print $ (HTTP.getResponseBody resp :: [(Text, CreditRecord Signed)])
+runMode (Lend user friend amount) = submitCredit $ CreditRecord user friend amount ""
+runMode (Borrow user friend amount) = submitCredit $ CreditRecord friend user amount ""
 
 submitCredit :: CreditRecord Unsigned -> IO ()
 submitCredit signedCredit = do

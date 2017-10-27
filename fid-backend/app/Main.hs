@@ -34,7 +34,7 @@ import Web3Interface
 type ServerState = Map.Map Text (CreditRecord Signed)
 
 type API = "transactions" :> Get '[JSON] [IssueCreditLog]
-      :<|> "pending" :> Get '[JSON] [CreditRecord Signed]
+      :<|> "pending" :> Get '[JSON] [(Text, CreditRecord Signed)]
       :<|> "submit" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] ServerResponse
 
 transactionsHandler :: ReaderT ServerState IO [IssueCreditLog]
@@ -44,10 +44,10 @@ transactionsHandler = do
                 Right ls -> ls
                 Left _ -> []
 
-pendingHandler :: ReaderT ServerState IO [CreditRecord Signed]
+pendingHandler :: ReaderT ServerState IO [(Text, CreditRecord Signed)]
 pendingHandler = do creditMap <- ask
                     list <- liftIO . atomically . toList $ Map.stream creditMap
-                    return $ snd <$> list
+                    return $ list
 
 submitHandler :: CreditRecord Signed -> ReaderT ServerState IO ServerResponse
 submitHandler record = do

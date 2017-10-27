@@ -83,7 +83,8 @@ decomposeSig sig = (sigR, sigS, sigV)
 -- create functions to call CreditProtocol contract
 [abiFrom|data/CreditProtocol.abi|]
 
-signatureAndNonceFromCreditRecord :: CreditRecord Signed -> IO (Either Web3Error (Integer, Text))
+signatureAndNonceFromCreditRecord :: CreditRecord Signed
+                                  -> IO (Either Web3Error (Integer, Text))
 signatureAndNonceFromCreditRecord r@(CreditRecord c d a s) = runWeb3 $ do
             nonce <- getNonce cpAddr debtorAddr creditorAddr
             let message = T.append "0x" . T.concat $
@@ -95,9 +96,8 @@ signatureAndNonceFromCreditRecord r@(CreditRecord c d a s) = runWeb3 $ do
                                      ]
             hash <- web3_sha3 message
             return (nonce, hash)
-             -- TODO make textToAddress functions
-    where debtorAddr = fromRight Addr.zero . Addr.fromText $ d
-          creditorAddr = fromRight Addr.zero . Addr.fromText $ c
+    where debtorAddr = textToAddress d
+          creditorAddr = textToAddress c
 
 -- runMode :: FiDConfig -> FiDCmd -> IO ()
 -- runMode config (Info _ "fid") = print =<< runWeb3 (fidLogs config)
@@ -186,6 +186,9 @@ bytes32ToAddress = mapLeft (toException . TypeError) . Addr.fromText . T.drop 26
 addressToBytes32 :: Text -> Text
 addressToBytes32 = T.append "0x000000000000000000000000" . T.drop 2
 
+-- TODO keep this in either
+textToAddress :: Text -> Address
+textToAddress = fromRight Addr.zero . Addr.fromText
 
 hexToInteger :: Text -> Integer
 hexToInteger = fst . head . readHex . dropHexPrefix . T.unpack

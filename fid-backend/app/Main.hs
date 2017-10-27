@@ -20,6 +20,7 @@ import           Control.Lens
 import           Data.Aeson
 import           Data.Text (Text)
 import           GHC.Generics
+import           ListT
 import           Network.Ethereum.Web3
 import           Network.Wai
 import qualified Network.Wai.Handler.Warp as N
@@ -46,30 +47,42 @@ transactionsHandler = do
                 Left _ -> []
 
 pendingHandler :: ReaderT ServerState IO [CreditRecord Signed]
-pendingHandler = return []
+pendingHandler = do creditMap <- ask
+                    list <- liftIO . atomically . toList $ Map.stream creditMap
+                    return $ snd <$> list
+
 
 submitHandler :: CreditRecord Signed -> ReaderT ServerState IO ServerResponse
 submitHandler r@(CreditRecord _ _ a _) = do liftIO $ print r
+                                            creditMap <- ask
+                                            liftIO . atomically $ Map.insert r "hi" creditMap
+                                            list <- liftIO . atomically . toList $ Map.stream creditMap
+                                            liftIO $ print list
                                             return $ ServerResponse $ fromInteger a
 
 api :: Proxy API
 api = Proxy
 
-readerToHandler' :: forall a. ReaderT ServerState IO a -> Handler a
-readerToHandler' r = do emptyMap <- liftIO $ atomically Map.new
-                        liftIO (runReaderT r emptyMap)
+readerToHandler' :: forall a. ServerState -> ReaderT ServerState IO a -> Handler a
+readerToHandler' state r = liftIO (runReaderT r state)
 
 
-readerToHandler :: ReaderT ServerState IO :~> Handler
-readerToHandler = NT readerToHandler'
+readerToHandler :: ServerState -> ReaderT ServerState IO :~> Handler
+readerToHandler state = NT (readerToHandler' state)
 
 server :: ServerT API (ReaderT ServerState IO)
 server = transactionsHandler
     :<|> pendingHandler
     :<|> submitHandler
 
-readerServer :: Server API
-readerServer = enter readerToHandler server
+
+
+-- readerToExcept :: Config -> AppM :~> ExceptT ServantErr IO
+-- readerToExcept cfg =
+--   Nat $ \appm -> evalStateT (runReaderT appm cfg) Map.empty
+--
+readerServer :: ServerState -> Server API
+readerServer state = enter (readerToHandler state) server
 
 -- testServer' :: Int -> Server TestAPI
 -- testServer' code = enter (Nat $ liftIO . (`runReaderT` code)) testServerT
@@ -78,10 +91,10 @@ type ServerState = Map.Map Text (CreditRecord Signed)
 
 type App = ReaderT ServerState (ExceptT ServantErr IO)
 
-app :: Application
-app = serve api readerServer
+app :: ServerState -> Application
+app state = serve api (readerServer state)
 
 main :: IO ()
 main = do
     pendingMap <- atomically Map.new
-    N.run 80 app
+    N.run 80 $ app pendingMap

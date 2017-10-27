@@ -36,6 +36,7 @@ executable fid-server
                      , aeson
                      , either
                      , lens
+                     , list-t
                      , mtl
                      , servant-server
                      , stm

@@ -7,7 +7,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
-module Web3Interface where
+module EthInterface where
 
 import           Control.Exception
 import           Control.Monad

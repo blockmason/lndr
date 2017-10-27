@@ -13,7 +13,7 @@ import           GHC.Generics
 import qualified Network.HTTP.Simple as HTTP
 import           System.Console.CmdArgs
 
-import           Web3Interface
+import           EthInterface
 
 data FiDCmd = Transactions
             | Pending

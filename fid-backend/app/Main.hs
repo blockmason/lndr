@@ -29,7 +29,7 @@ import qualified Network.Ethereum.Web3.Address as Address
 import           Servant
 import qualified STMContainers.Map as Map
 
-import           Web3Interface
+import           EthInterface
 
 type ServerState = Map.Map Text (CreditRecord Signed)
 

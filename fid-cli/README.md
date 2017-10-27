@@ -1,5 +1,12 @@
 # fid-cli
 
+## Example usage
+
+```
+```
+
+## `fiddy` Help Docs
+
 ```
 stack exec -- fiddy --help
 fiddy v0.1

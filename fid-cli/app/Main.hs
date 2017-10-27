@@ -11,7 +11,7 @@ import qualified Data.Text as T
 import           GHC.Generics
 import qualified Network.HTTP.Simple as HTTP
 import           System.Console.CmdArgs
-
+import qualified Text.Pretty.Simple as Pr
 import           EthInterface
 
 data FiDCmd = Transactions
@@ -29,12 +29,14 @@ data FiDCmd = Transactions
 -- TODO put this in ReaderT to handle config vars loaded at runtime
 -- (config var to implement: web address, userid)
 runMode :: FiDCmd -> IO ()
-runMode Transactions = do resp <- HTTP.httpJSON "http://localhost:80/transactions"
-                          -- TODO prettyprint
-                          print (HTTP.getResponseBody resp :: [IssueCreditLog])
-runMode Pending = do resp <- HTTP.httpJSON "http://localhost:80/pending"
-                          -- TODO prettyprint
-                     print (HTTP.getResponseBody resp :: [(Text, CreditRecord Signed)])
+runMode Transactions = do
+    resp <- HTTP.httpJSON "http://localhost:80/transactions"
+    -- TODO prettyprint
+    Pr.pPrintNoColor (HTTP.getResponseBody resp :: [IssueCreditLog])
+runMode Pending = do
+    resp <- HTTP.httpJSON "http://localhost:80/pending"
+         -- TODO prettyprint
+    Pr.pPrintNoColor (HTTP.getResponseBody resp :: [(Text, CreditRecord Signed)])
 runMode (Lend user friend amount) = submitCredit $ CreditRecord user friend amount user
 runMode (Borrow user friend amount) = submitCredit $ CreditRecord friend user amount user
 
@@ -45,7 +47,7 @@ submitCredit unsignedCredit = do
     let req = HTTP.setRequestBodyJSON unsignedCredit $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpJSON req
-    print (HTTP.getResponseBody resp :: SubmissionResponse)
+    Pr.pPrintNoColor (HTTP.getResponseBody resp :: SubmissionResponse)
 
 
 programModes = modes [ Transactions &= help "list all transactions processed by FiD UCAC"

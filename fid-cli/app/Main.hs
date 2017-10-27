@@ -52,10 +52,10 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
                      , Pending &= help "list all pending transactions"
                      , Lend "0x198e13017d2333712bd942d8b028610b95c363da"
                             "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
-                            123
+                            123 &= help "submit a unilateral transaction as a creditor"
                      , Borrow "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
                               "0x198e13017d2333712bd942d8b028610b95c363da"
-                              123
+                              123 &= help "submit a unilateral transaction as a debtor"
                      ] &= help "Lend and borrow money" &= program "fiddy" &= summary "fiddy v0.1"
 
 

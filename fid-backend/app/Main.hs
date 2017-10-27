@@ -34,6 +34,12 @@ type API = "transactions" :> Get '[JSON] [IssueCreditLog]
       :<|> "pending" :> Get '[JSON] [(Text, CreditRecord Signed)]
       :<|> "submit" :> ReqBody '[JSON] (CreditRecord Unsigned) :> Post '[JSON] SubmissionResponse
 
+server :: ServerT API (ReaderT ServerState IO)
+server = transactionsHandler
+    :<|> pendingHandler
+    :<|> submitHandler
+
+
 transactionsHandler :: ReaderT ServerState IO [IssueCreditLog]
 transactionsHandler = do
     a <- runWeb3 fidLogs
@@ -73,13 +79,6 @@ submitHandler record@(CreditRecord creditor _ _ user) = do
 
     return $ SubmissionResponse hash nonce
 
-api :: Proxy API
-api = Proxy
-
-server :: ServerT API (ReaderT ServerState IO)
-server = transactionsHandler
-    :<|> pendingHandler
-    :<|> submitHandler
 
 readerToHandler' :: forall a. ServerState -> ReaderT ServerState IO a -> Handler a
 readerToHandler' state r = liftIO (runReaderT r state)
@@ -90,8 +89,11 @@ readerToHandler state = NT (readerToHandler' state)
 readerServer :: ServerState -> Server API
 readerServer state = enter (readerToHandler state) server
 
+
 app :: ServerState -> Application
 app state = serve api (readerServer state)
+    where api :: Proxy API
+          api = Proxy
 
 main :: IO ()
 main = do

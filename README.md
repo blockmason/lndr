@@ -16,6 +16,9 @@ Currently, the server has access to the following accounts which are unlocking o
 0x2a91f48f0e84317d8dfaf939fea487031acbc46b
 ```
 
+The CLI application `fiddy` currently does no siging itself though this will
+change in the near future.
+
 ## fid-backend
 
 [fid-backend README](fid-backend/README.md)

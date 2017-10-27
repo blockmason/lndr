@@ -1,10 +1,7 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -46,10 +43,9 @@ transactionsHandler = do
 
 pendingHandler :: ReaderT ServerState IO [(Text, CreditRecord Signed)]
 pendingHandler = do creditMap <- ask
-                    list <- liftIO . atomically . toList $ Map.stream creditMap
-                    return $ list
+                    liftIO . atomically . toList $ Map.stream creditMap
 
-submitHandler :: (CreditRecord Unsigned) -> ReaderT ServerState IO SubmissionResponse
+submitHandler :: CreditRecord Unsigned -> ReaderT ServerState IO SubmissionResponse
 submitHandler record@(CreditRecord creditor _ _ user) = do
     creditMap <- ask
     -- TODO handle this appropriately
@@ -59,24 +55,18 @@ submitHandler record@(CreditRecord creditor _ _ user) = do
     val <- liftIO . atomically $ Map.lookup hash creditMap
 
     case val of
-        Just storedRecord -> liftIO $ if signature storedRecord == signature signedRecord
-
-            -- if the credit record has already been seen, do nothing
-            then return ()
-
+        Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do
             -- if the submitted credit record has a matching pending record,
             -- finalize the transaction on the blockchain
-            else do if creditor /= user
-                        then do print "debtor finalized"
-                                finalizeTransaction (signature storedRecord)
-                                                    (signature signedRecord)
-                                                    signedRecord
-                        else do print "creditor finalized"
-                                finalizeTransaction (signature signedRecord)
-                                                    (signature storedRecord)
-                                                    signedRecord
-                    -- delete pending record after transaction finalization
-                    atomically $ Map.delete hash creditMap
+            if creditor /= user
+                then finalizeTransaction (signature storedRecord)
+                                         (signature signedRecord)
+                                         signedRecord
+                else finalizeTransaction (signature signedRecord)
+                                         (signature storedRecord)
+                                         signedRecord
+            -- delete pending record after transaction finalization
+            atomically $ Map.delete hash creditMap
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> liftIO . atomically $ Map.insert signedRecord hash creditMap

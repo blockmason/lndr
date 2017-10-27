@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -32,10 +31,10 @@ data FiDCmd = Transactions
 runMode :: FiDCmd -> IO ()
 runMode Transactions = do resp <- HTTP.httpJSON "http://localhost:80/transactions"
                           -- TODO prettyprint
-                          print $ (HTTP.getResponseBody resp :: [IssueCreditLog])
+                          print (HTTP.getResponseBody resp :: [IssueCreditLog])
 runMode Pending = do resp <- HTTP.httpJSON "http://localhost:80/pending"
                           -- TODO prettyprint
-                     print $ (HTTP.getResponseBody resp :: [(Text, CreditRecord Signed)])
+                     print (HTTP.getResponseBody resp :: [(Text, CreditRecord Signed)])
 runMode (Lend user friend amount) = submitCredit $ CreditRecord user friend amount user
 runMode (Borrow user friend amount) = submitCredit $ CreditRecord friend user amount user
 
@@ -46,20 +45,20 @@ submitCredit unsignedCredit = do
     let req = HTTP.setRequestBodyJSON unsignedCredit $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpJSON req
-    print $ (HTTP.getResponseBody resp :: SubmissionResponse)
+    print (HTTP.getResponseBody resp :: SubmissionResponse)
 
 
-programModes =  (modes [ Transactions &= help "list all transactions processed by FiD UCAC"
-                       , Pending &= help "list all pending transactions"
-                       , Lend "0x198e13017d2333712bd942d8b028610b95c363da"
-                              "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
+programModes = modes [ Transactions &= help "list all transactions processed by FiD UCAC"
+                     , Pending &= help "list all pending transactions"
+                     , Lend "0x198e13017d2333712bd942d8b028610b95c363da"
+                            "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
+                            123
+                     , Borrow "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
+                              "0x198e13017d2333712bd942d8b028610b95c363da"
                               123
-                       , Borrow "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
-                                "0x198e13017d2333712bd942d8b028610b95c363da"
-                                123
-                       ])
+                     ] &= help "Lend and borrow money" &= program "fiddy" &= summary "fiddy v0.1"
 
 
 main :: IO ()
 main = do mode <- cmdArgsRun $ cmdArgsMode programModes
-          runMode $ mode
+          runMode mode

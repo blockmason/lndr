@@ -29,7 +29,7 @@ import qualified Network.Ethereum.Web3.Address as Address
 import           Servant
 import qualified STMContainers.Map as Map
 
-import Web3Interface
+import           Web3Interface
 
 type ServerState = Map.Map Text (CreditRecord Signed)
 
@@ -50,27 +50,36 @@ pendingHandler = do creditMap <- ask
                     return $ list
 
 submitHandler :: (CreditRecord Unsigned) -> ReaderT ServerState IO SubmissionResponse
-submitHandler record = do
+submitHandler record@(CreditRecord creditor _ _ _) = do
     creditMap <- ask
     Right (nonce, hash, signedRecord) <- liftIO $ signCreditRecord record
-    liftIO . atomically $ Map.insert signedRecord hash creditMap
+    -- check if hash is already registered in pending txs
+    val <- liftIO . atomically $ Map.lookup hash creditMap
+
+    case val of
+        -- if matching transaction is found, submit finalized transaction to
+        -- blockchain
+        Just storedRec -> liftIO . void $ case (creditor == signature record) of
+            True -> finalizeTransaction (signature storedRec) (signature record) signedRecord
+            False -> finalizeTransaction (signature record) (signature storedRec) signedRecord
+        -- if no matching transaction is found, create pending transaction
+        Nothing -> liftIO . atomically $ Map.insert signedRecord hash creditMap
+
     return $ SubmissionResponse hash nonce
 
 api :: Proxy API
 api = Proxy
-
-readerToHandler' :: forall a. ServerState -> ReaderT ServerState IO a -> Handler a
-readerToHandler' state r = liftIO (runReaderT r state)
-
-readerToHandler :: ServerState -> ReaderT ServerState IO :~> Handler
-readerToHandler state = NT (readerToHandler' state)
-
 
 server :: ServerT API (ReaderT ServerState IO)
 server = transactionsHandler
     :<|> pendingHandler
     :<|> submitHandler
 
+readerToHandler' :: forall a. ServerState -> ReaderT ServerState IO a -> Handler a
+readerToHandler' state r = liftIO (runReaderT r state)
+
+readerToHandler :: ServerState -> ReaderT ServerState IO :~> Handler
+readerToHandler state = NT (readerToHandler' state)
 
 readerServer :: ServerState -> Server API
 readerServer state = enter (readerToHandler state) server

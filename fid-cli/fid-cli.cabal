@@ -28,7 +28,6 @@ library
                      , listsafe
                      , memory
                      , text
-                     , web3
   default-language:    Haskell2010
 
 executable fiddy

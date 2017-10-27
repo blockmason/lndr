@@ -10,13 +10,10 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           GHC.Generics
-import           Network.Ethereum.Web3
-import qualified Network.Ethereum.Web3.Address as Addr
-import           Network.Ethereum.Web3.Types hiding (Pending)
 import qualified Network.HTTP.Simple as HTTP
 import           System.Console.CmdArgs
 
-import Web3Interface
+import           Web3Interface
 
 data FiDCmd = Transactions
             | Pending
@@ -39,8 +36,8 @@ runMode Transactions = do resp <- HTTP.httpJSON "http://localhost:80/transaction
 runMode Pending = do resp <- HTTP.httpJSON "http://localhost:80/pending"
                           -- TODO prettyprint
                      print $ (HTTP.getResponseBody resp :: [(Text, CreditRecord Signed)])
-runMode (Lend user friend amount) = submitCredit $ CreditRecord user friend amount ""
-runMode (Borrow user friend amount) = submitCredit $ CreditRecord friend user amount ""
+runMode (Lend user friend amount) = submitCredit $ CreditRecord user friend amount user
+runMode (Borrow user friend amount) = submitCredit $ CreditRecord friend user amount user
 
 
 submitCredit :: CreditRecord Unsigned -> IO ()
@@ -52,10 +49,17 @@ submitCredit unsignedCredit = do
     print $ (HTTP.getResponseBody resp :: SubmissionResponse)
 
 
+programModes =  (modes [ Transactions
+                       , Pending
+                       , Lend "0x198e13017d2333712bd942d8b028610b95c363da"
+                              "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
+                              10
+                       , Borrow "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
+                                "0x198e13017d2333712bd942d8b028610b95c363da"
+                                10
+                       ])
+
+
 main :: IO ()
-main = do mode <- cmdArgs (modes [ Transactions
-                                 , Pending
-                                 , Lend "" "" 0
-                                 , Borrow "" "" 0
-                                 ])
-          runMode mode
+main = do mode <- cmdArgsRun $ cmdArgsMode programModes
+          runMode $ mode

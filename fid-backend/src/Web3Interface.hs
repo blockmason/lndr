@@ -62,6 +62,9 @@ $(deriveJSON defaultOptions ''SubmissionResponse)
 ucacId :: Text
 ucacId = "0x7624778dedc75f8b322b9fa1632a610d40b85e106c7d9bf0e743a9ce291b9c6f"
 
+ucacIdB :: BytesN 32
+ucacIdB = BytesN . bytesDecode . T.take 64 . T.drop 2 $ ucacId
+
 cpAddress :: Text
 cpAddress = "0xd5ec73eac35fc9dd6c3f440bce314779fed09f60"
 
@@ -85,7 +88,7 @@ decomposeSig sig = (sigR, sigS, sigV)
 
 signCreditRecord :: CreditRecord Unsigned
                  -> IO (Either Web3Error (Integer, Text, CreditRecord Signed))
-signCreditRecord r@(CreditRecord c d a _) = runWeb3 $ do
+signCreditRecord r@(CreditRecord c d a u) = runWeb3 $ do
             nonce <- getNonce cpAddr debtorAddr creditorAddr
             let message = T.append "0x" . T.concat $
                   stripHexPrefix <$> [ ucacId
@@ -95,10 +98,31 @@ signCreditRecord r@(CreditRecord c d a _) = runWeb3 $ do
                                      , integerToHex nonce
                                      ]
             hash <- web3_sha3 message
-            sig <- eth_sign creditorAddr hash
+            sig <- eth_sign initiatorAddr hash
             return (nonce, hash, r { signature = sig })
     where debtorAddr = textToAddress d
           creditorAddr = textToAddress c
+          initiatorAddr = textToAddress u
+
+
+finalizeTransaction :: Text -> Text -> CreditRecord Signed -> IO (Either Web3Error TxHash)
+finalizeTransaction sig1 sig2 r@(CreditRecord c d a _) = runWeb3 $ do
+      let s1@(sig1r, sig1s, sig1v) = decomposeSig sig1
+      let s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
+      txReceipt <- issueCredit cpAddr
+                               (0 :: Ether)
+                               ucacIdB
+                               (textToAddress c)
+                               (textToAddress d)
+                               a
+                               sig1r
+                               sig1s
+                               sig1v
+                               sig2r
+                               sig2s
+                               sig2v
+      return txReceipt
+
 
 -- runMode :: FiDConfig -> FiDCmd -> IO ()
 -- runMode config (Info _ "fid") = print =<< runWeb3 (fidLogs config)
@@ -138,12 +162,6 @@ signCreditRecord r@(CreditRecord c d a _) = runWeb3 $ do
 --           ucacId :: BytesN 32
 --           ucacId = BytesN . bytesDecode . T.take 64 . T.drop 2 $ fidUcacId config
 
--- fetch all logs
--- terminal equivalent: curl -X POST --data {"jsonrpc":"2.0","method":"eth_getLogs","params":[{"fromBlock": "0x0"}],"id":73} localhost:8545
-allLogs :: Provider a => Web3 a [Change]
-allLogs = eth_getLogs (Filter Nothing Nothing (Just "0x0") Nothing)
-
-
 -- TODO THIS CAN BE DONE IN A CLEANER WAY
 -- fetch cp logs related to FiD UCAC
 -- verify that these are proper logs
@@ -154,21 +172,6 @@ fidLogs = rights . fmap interpretUcacLog <$>
                         (Just "0x0") -- start from block 0
                         Nothing)
     where cpAddr = "0xd5ec73eac35fc9dd6c3f440bce314779fed09f60"
-
--- TODO throw and error if `Addr.fromText` returns `Left`
--- userLogs :: Provider a => FiDConfig -> Web3 a [IssueCreditLog]
--- userLogs config = do asCreditor <- rights . fmap interpretUcacLog <$> eth_getLogs credFilter
---                      asDebtor <- rights . fmap interpretUcacLog <$> eth_getLogs debtFilter
---                      return $ asCreditor ++ asDebtor
---     where filterWithTopics topics =
---                        Filter (rightToMaybe . Addr.fromText $ cpAddress config)
---                               (Just topics)
---                               (Just "0x0")
---                               Nothing
---           credFilter = filterWithTopics [Nothing, Nothing, Just userAddrBytes, Nothing]
---           debtFilter = filterWithTopics [Nothing, Nothing, Nothing, Just userAddrBytes]
---           userAddrBytes = addressToBytes32 $ userAddress config
-
 
 interpretUcacLog :: Change -> Either SomeException IssueCreditLog
 interpretUcacLog change = do creditorAddr <- bytes32ToAddress <=< (!! 2) $ changeTopics change

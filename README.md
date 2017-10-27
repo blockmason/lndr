@@ -19,6 +19,19 @@ Currently, the server has access to the following accounts which are unlocked on
 The CLI application `fiddy` currently does no siging itself though this will
 change in the near future.
 
+## Install
+
+Once you have [stack]() installed, run the following commands:
+
+```
+stack setup
+stack build
+stack install
+```
+
+For `stack install` to register binaries properly, you must have `.local/bin/`
+on your `PATH`.
+
 ## fid-backend
 
 [fid-backend README](fid-backend/README.md)

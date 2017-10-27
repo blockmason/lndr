@@ -15,7 +15,7 @@ import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Data
 import           Data.Either (rights)
-import           Data.Either.Combinators (rightToMaybe, fromRight, mapLeft)
+import           Data.Either.Combinators (fromRight, mapLeft)
 import           Data.List.Safe ((!!))
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -119,19 +119,19 @@ finalizeTransaction sig1 sig2 r@(CreditRecord c d a _) = runWeb3 $ do
 -- verify that these are proper logs
 fidLogs :: Provider a => Web3 a [IssueCreditLog]
 fidLogs = rights . fmap interpretUcacLog <$>
-    eth_getLogs (Filter (rightToMaybe . Addr.fromText $ cpAddr)
+    eth_getLogs (Filter (Just cpAddr)
                         Nothing
                         (Just "0x0") -- start from block 0
                         Nothing)
-    where cpAddr = "0xd5ec73eac35fc9dd6c3f440bce314779fed09f60"
 
 interpretUcacLog :: Change -> Either SomeException IssueCreditLog
-interpretUcacLog change = do creditorAddr <- bytes32ToAddress <=< (!! 2) $ changeTopics change
-                             debtorAddr <- bytes32ToAddress <=< (!! 3) $ changeTopics change
-                             pure $ IssueCreditLog (changeAddress change)
-                                                   creditorAddr
-                                                   debtorAddr
-                                                   (hexToInteger $ changeData change)
+interpretUcacLog change = do
+    creditorAddr <- bytes32ToAddress <=< (!! 2) $ changeTopics change
+    debtorAddr <- bytes32ToAddress <=< (!! 3) $ changeTopics change
+    pure $ IssueCreditLog (changeAddress change)
+                          creditorAddr
+                          debtorAddr
+                          (hexToInteger $ changeData change)
 
 
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the

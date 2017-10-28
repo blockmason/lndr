@@ -63,8 +63,13 @@ sudo apt-get install ethereum
 
 # start a local blockchain in the background
 cd friend-in-debt/ucac
+sudo apt-get install npm
+sudo npm install -g truffle
+npm install
 ./gethtest.sh &
 
 # install ghc and fid-server application
-#...TODO to be continued.....
+cd friend-in-debt
+stack setup
+stack build
 ```

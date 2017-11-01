@@ -19,6 +19,75 @@ Currently, the server has access to the following accounts which are unlocked on
 The CLI application `fiddy` currently does no siging itself though this will
 change in the near future.
 
+## API
+
+There are currently only three endpoints:
+
+```
+type API = "transactions" :> Get '[JSON] [IssueCreditLog]
+      :<|> "pending" :> Get '[JSON] [(Text, CreditRecord Signed)]
+      :<|> "submit" :> ReqBody '[JSON] (CreditRecord Unsigned) :> Post '[JSON] SubmissionResponse
+```
+
+
+```
+GET /transactions
+
+RESPONSE: (array of CreditRecords)
+[ { "ucac": "d5ec73eac35fc9dd6c3f440bce314779fed09f60"
+  , "creditor": "198e13017d2333712bd942d8b028610b95c363da"
+  , "debtor": "8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
+  , "amount": 123
+  }
+, { "ucac": "d5ec73eac35fc9dd6c3f440bce314779fed09f60"
+  , "creditor": "11edd217a875063583dd1b638d16810c5d34d54b"
+  , "debtor": "6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
+  , "amount": 69
+  }
+]
+```
+
+```
+GET /pending
+
+RESPONSE: Array of 2-element arrays containing a hash and a signed CreditRecord
+[
+   [ "0x7e2e9ff3a5fc148cf76261755c4c666630bfc3a28d02733cfbe721fc965aca28"
+   , { "creditor": "0x11edd217a875063583dd1b638d16810c5d34d54b"
+     , "debtor": "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
+     , "amount": 69
+     , "signature": "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
+     }
+   ]
+   ,
+   [ "0xe2ab6fe922237d44fbfd6b2302b06491c98b4f0bb3046ab9263c4cbfc889f07a"
+   , { "creditor": "0x11edd217a875063583dd1b638d16810c5d34d54b"
+     , "debtor": "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
+     , "amount": 69
+     , "signature": "0xaf169e172b3070139ca8ad7e806ccd1d4628af64ecfef41cd9a4ffda7660e3623e400daf5996ec08333042c6298d3ed729aa4217eb32e8a0a62763d214e0dd781b"
+     }
+   ]
+]
+```
+
+```
+POST /submit
+
+**sort of hacky right now, must put signer address in the signature field**
+
+REQUEST BODY:
+{ "creditor": "0x11edd217a875063583dd1b638d16810c5d34d54b"
+, "debtor": "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
+, "amount": 69
+, "signature": "0x11edd217a875063583dd1b638d16810c5d34d54b"
+}
+
+RESPONSE:
+{ hash = "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c"
+, nonce = 1
+}
+```
+
 ## Install
 
 Once you have [stack]() installed, run the following commands:

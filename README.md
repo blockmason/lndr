@@ -32,6 +32,7 @@ type API = "transactions" :> Get '[JSON] [IssueCreditLog]
 ```
 
 
+To get a list of all finalized transactions:
 ```
 GET /transactions
 
@@ -49,6 +50,7 @@ RESPONSE: (array of IssueCreditLogs)
 ]
 ```
 
+To get a list of all pending transactions:
 ```
 GET /pending
 
@@ -72,6 +74,7 @@ RESPONSE: Array of 2-element arrays containing a hash and a signed CreditRecord
 ]
 ```
 
+To submit a unilateral transaction:
 ```
 POST /submit
 

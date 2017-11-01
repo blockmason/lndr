@@ -25,7 +25,8 @@ import           Data.Typeable
 import           GHC.Generics
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
-import           Network.Ethereum.Web3.Api
+import qualified Network.Ethereum.Web3.Eth as Eth
+import qualified Network.Ethereum.Web3.Web3 as Web3
 import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
 import           Numeric (readHex, showHex)
@@ -97,8 +98,8 @@ signCreditRecord r@(CreditRecord c d a u) = runWeb3 $ do
                                      , integerToHex a
                                      , integerToHex nonce
                                      ]
-            hash <- web3_sha3 message
-            sig <- eth_sign initiatorAddr hash
+            hash <- Web3.sha3 message
+            sig <- Eth.sign initiatorAddr hash
             return (nonce, hash, r { signature = sig })
     where debtorAddr = textToAddress d
           creditorAddr = textToAddress c
@@ -119,7 +120,7 @@ finalizeTransaction sig1 sig2 r@(CreditRecord c d a _) = runWeb3 $ do
 -- verify that these are proper logs
 fidLogs :: Provider a => Web3 a [IssueCreditLog]
 fidLogs = rights . fmap interpretUcacLog <$>
-    eth_getLogs (Filter (Just cpAddr)
+    Eth.getLogs (Filter (Just cpAddr)
                         Nothing
                         (Just "0x0") -- start from block 0
                         Nothing)

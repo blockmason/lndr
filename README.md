@@ -21,6 +21,8 @@ change in the near future.
 
 ## API
 
+Server answering requests at `http://34.202.214.156:80`
+
 There are currently only three endpoints:
 
 ```

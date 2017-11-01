@@ -35,7 +35,7 @@ type API = "transactions" :> Get '[JSON] [IssueCreditLog]
 ```
 GET /transactions
 
-RESPONSE: (array of CreditRecords)
+RESPONSE: (array of IssueCreditLogs)
 [ { "ucac": "d5ec73eac35fc9dd6c3f440bce314779fed09f60"
   , "creditor": "198e13017d2333712bd942d8b028610b95c363da"
   , "debtor": "8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"

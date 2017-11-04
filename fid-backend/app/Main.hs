@@ -22,14 +22,12 @@ readerToHandler' state r = liftIO (runReaderT r state)
 readerToHandler :: ServerState -> ReaderT ServerState IO :~> Handler
 readerToHandler state = NT (readerToHandler' state)
 
-readerServer :: ServerState -> Server API
+readerServer :: ServerState -> Server FiddyAPI
 readerServer state = enter (readerToHandler state) server
 
 
 app :: ServerState -> Application
-app state = serve api (readerServer state)
-    where api :: Proxy API
-          api = Proxy
+app state = serve fiddyAPI (readerServer state)
 
 main :: IO ()
 main = do

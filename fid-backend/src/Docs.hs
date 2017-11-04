@@ -17,6 +17,8 @@ import Servant.API
 import Servant.Docs
 import Servant.Server
 
+import Server
+
 -- instance ToCapture (Capture "x" Int) where
 --   toCapture _ =
 --     DocCapture "x"                                -- name
@@ -52,6 +54,6 @@ import Servant.Server
 --
 -- instance ToSample Email Email where
 --   toSample _ = Just (emailForClient ci)
---
+
 -- apiDocs :: API
--- apiDocs = docs exampleAPI
+-- apiDocs = docs fiddyAPI

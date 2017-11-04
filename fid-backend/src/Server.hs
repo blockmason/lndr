@@ -23,11 +23,16 @@ type ServerState = Map.Map Text (CreditRecord Signed)
 freshState :: forall k v. IO (Map.Map k v)
 freshState = atomically Map.new
 
-type API = "transactions" :> Get '[JSON] [IssueCreditLog]
-      :<|> "pending" :> Get '[JSON] [(Text, CreditRecord Signed)]
-      :<|> "submit" :> ReqBody '[JSON] (CreditRecord Unsigned) :> Post '[JSON] SubmissionResponse
+type FiddyAPI =
+        "transactions" :> Get '[JSON] [IssueCreditLog]
+   :<|> "pending" :> Get '[JSON] [(Text, CreditRecord Signed)]
+   :<|> "submit" :> ReqBody '[JSON] (CreditRecord Unsigned) :> Post '[JSON] SubmissionResponse
 
-server :: ServerT API (ReaderT ServerState IO)
+fiddyAPI :: Proxy FiddyAPI
+fiddyAPI = Proxy
+
+
+server :: ServerT FiddyAPI (ReaderT ServerState IO)
 server = transactionsHandler
     :<|> pendingHandler
     :<|> submitHandler

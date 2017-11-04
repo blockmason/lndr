@@ -15,12 +15,15 @@ import qualified Network.Ethereum.Web3.Address as Address
 import           Servant
 
 import           Server
+import           Docs
 
 readerToHandler' :: forall a. ServerState -> ReaderT ServerState IO a -> Handler a
 readerToHandler' state r = liftIO (runReaderT r state)
 
+
 readerToHandler :: ServerState -> ReaderT ServerState IO :~> Handler
 readerToHandler state = NT (readerToHandler' state)
+
 
 readerServer :: ServerState -> Server FiddyAPI
 readerServer state = enter (readerToHandler state) server
@@ -28,6 +31,7 @@ readerServer state = enter (readerToHandler state) server
 
 app :: ServerState -> Application
 app state = serve fiddyAPI (readerServer state)
+
 
 main :: IO ()
 main = do

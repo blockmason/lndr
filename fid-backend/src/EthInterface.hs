@@ -38,6 +38,7 @@ data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , creditor :: Address
                                      , debtor :: Address
                                      , amount :: Integer
+                                     , memo :: Text
                                      } deriving Show
 $(deriveJSON defaultOptions ''IssueCreditLog)
 
@@ -51,6 +52,7 @@ $(deriveJSON defaultOptions ''Unsigned)
 data CreditRecord a = CreditRecord { creditor :: Text
                                    , debtor :: Text
                                    , amount :: Integer
+                                   , memo :: Text
                                    , signature :: Text
                                    } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''CreditRecord)
@@ -89,7 +91,7 @@ decomposeSig sig = (sigR, sigS, sigV)
 
 signCreditRecord :: CreditRecord Unsigned
                  -> IO (Either Web3Error (Integer, Text, CreditRecord Signed))
-signCreditRecord r@(CreditRecord c d a u) = runWeb3 $ do
+signCreditRecord r@(CreditRecord c d a m u) = runWeb3 $ do
             nonce <- getNonce cpAddr debtorAddr creditorAddr
             let message = T.append "0x" . T.concat $
                   stripHexPrefix <$> [ ucacId
@@ -107,14 +109,14 @@ signCreditRecord r@(CreditRecord c d a u) = runWeb3 $ do
 
 
 finalizeTransaction :: Text -> Text -> CreditRecord Signed -> IO (Either Web3Error TxHash)
-finalizeTransaction sig1 sig2 r@(CreditRecord c d a _) = runWeb3 $ do
+finalizeTransaction sig1 sig2 r@(CreditRecord c d a m _) = runWeb3 $ do
       let s1@(sig1r, sig1s, sig1v) = decomposeSig sig1
       let s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
       issueCredit cpAddr (0 :: Ether) ucacIdB
                   (textToAddress c) (textToAddress d) a
                   [ sig1r, sig1s, sig1v ]
                   [ sig2r, sig2s, sig2v ]
-                  sig2r -- TODO make this hold a memo field
+                  (BytesN $ bytesDecode m)
 
 -- TODO THIS CAN BE DONE IN A CLEANER WAY
 -- fetch cp logs related to FiD UCAC
@@ -134,6 +136,7 @@ interpretUcacLog change = do
                           creditorAddr
                           debtorAddr
                           (hexToInteger $ changeData change)
+                          "TODO fix"
 
 
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the

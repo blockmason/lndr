@@ -39,8 +39,8 @@ runMode (Pending url) = do
     initReq <- HTTP.parseRequest $ url ++ "/pending"
     resp <- HTTP.httpJSON initReq
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: [(Text, CreditRecord Signed)])
-runMode (Lend user friend amount url) = submitCredit url $ CreditRecord user friend amount user
-runMode (Borrow user friend amount url) = submitCredit url $ CreditRecord friend user amount user
+runMode (Lend user friend amount url) = submitCredit url $ CreditRecord user friend amount "m" user
+runMode (Borrow user friend amount url) = submitCredit url $ CreditRecord friend user amount "m" user
 
 
 submitCredit :: String -> CreditRecord Unsigned -> IO ()

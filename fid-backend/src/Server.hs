@@ -51,7 +51,7 @@ pendingHandler = do creditMap <- ask
                     liftIO . atomically . toList $ Map.stream creditMap
 
 submitHandler :: CreditRecord Unsigned -> ReaderT ServerState IO SubmissionResponse
-submitHandler record@(CreditRecord creditor _ _ user) = do
+submitHandler record@(CreditRecord creditor _ _ _ user) = do
     creditMap <- ask
     -- TODO handle this appropriately
     Right (nonce, hash, signedRecord) <- liftIO $ signCreditRecord record

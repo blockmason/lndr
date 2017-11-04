@@ -77,12 +77,12 @@ bytesDecode :: Text -> Bytes
 bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
 
 
-decomposeSig :: Text -> (BytesN 32, BytesN 32, Integer)
+decomposeSig :: Text -> (BytesN 32, BytesN 32, BytesN 32)
 decomposeSig sig = (sigR, sigS, sigV)
     where strippedSig = T.drop 2 sig
           sigR = BytesN . bytesDecode $ T.take 64 strippedSig
           sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
-          sigV = hexToInteger . T.take 2 . T.drop 128 $ strippedSig
+          sigV = BytesN . bytesDecode . T.take 2 . T.drop 128 $ strippedSig
 
 -- create functions to call CreditProtocol contract
 [abiFrom|data/CreditProtocol.abi|]
@@ -112,8 +112,9 @@ finalizeTransaction sig1 sig2 r@(CreditRecord c d a _) = runWeb3 $ do
       let s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
       issueCredit cpAddr (0 :: Ether) ucacIdB
                   (textToAddress c) (textToAddress d) a
-                  sig1r sig1s sig1v
-                  sig2r sig2s sig2v
+                  [ sig1r, sig1s, sig1v ]
+                  [ sig2r, sig2s, sig2v ]
+                  sig2r -- TODO make this hold a memo field
 
 -- TODO THIS CAN BE DONE IN A CLEANER WAY
 -- fetch cp logs related to FiD UCAC

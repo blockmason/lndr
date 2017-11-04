@@ -34,27 +34,6 @@
     "type": "function"
   },
   {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "_ucacId",
-        "type": "bytes32"
-      },
-      {
-        "name": "_stakeholder",
-        "type": "address"
-      },
-      {
-        "name": "_numTokens",
-        "type": "uint256"
-      }
-    ],
-    "name": "stakeTokens",
-    "outputs": [],
-    "payable": false,
-    "type": "function"
-  },
-  {
     "constant": true,
     "inputs": [],
     "name": "txPerGigaTokenPerHour",
@@ -76,55 +55,6 @@
       }
     ],
     "name": "setTokensToOwnUcac",
-    "outputs": [],
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "ucac",
-        "type": "bytes32"
-      },
-      {
-        "name": "creditor",
-        "type": "address"
-      },
-      {
-        "name": "debtor",
-        "type": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "name": "sig1r",
-        "type": "bytes32"
-      },
-      {
-        "name": "sig1s",
-        "type": "bytes32"
-      },
-      {
-        "name": "sig1v",
-        "type": "uint8"
-      },
-      {
-        "name": "sig2r",
-        "type": "bytes32"
-      },
-      {
-        "name": "sig2s",
-        "type": "bytes32"
-      },
-      {
-        "name": "sig2v",
-        "type": "uint8"
-      }
-    ],
-    "name": "issueCredit",
     "outputs": [],
     "payable": false,
     "type": "function"
@@ -273,6 +203,43 @@
     "type": "function"
   },
   {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "ucac",
+        "type": "bytes32"
+      },
+      {
+        "name": "creditor",
+        "type": "address"
+      },
+      {
+        "name": "debtor",
+        "type": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "name": "sig1",
+        "type": "bytes32[3]"
+      },
+      {
+        "name": "sig2",
+        "type": "bytes32[3]"
+      },
+      {
+        "name": "memo",
+        "type": "bytes32"
+      }
+    ],
+    "name": "issueCredit",
+    "outputs": [],
+    "payable": false,
+    "type": "function"
+  },
+  {
     "constant": true,
     "inputs": [
       {
@@ -331,6 +298,23 @@
         "type": "uint256"
       }
     ],
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_ucacId",
+        "type": "bytes32"
+      },
+      {
+        "name": "_numTokens",
+        "type": "uint256"
+      }
+    ],
+    "name": "stakeTokens",
+    "outputs": [],
     "payable": false,
     "type": "function"
   },
@@ -413,6 +397,11 @@
         "indexed": false,
         "name": "amount",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "memo",
+        "type": "bytes32"
       }
     ],
     "name": "IssueCredit",

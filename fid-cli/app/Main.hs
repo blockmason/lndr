@@ -19,11 +19,13 @@ data FiDCmd = Transactions { url :: String }
             | Lend { me :: Text
                    , friend :: Text
                    , amount :: Integer
+                   , memo :: Text
                    , url :: String
                    }
             | Borrow { me :: Text
                      , friend :: Text
                      , amount :: Integer
+                     , memo :: Text
                      , url :: String
                      }
             deriving (Show, Data, Typeable)
@@ -39,8 +41,8 @@ runMode (Pending url) = do
     initReq <- HTTP.parseRequest $ url ++ "/pending"
     resp <- HTTP.httpJSON initReq
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: [(Text, CreditRecord Signed)])
-runMode (Lend user friend amount url) = submitCredit url $ CreditRecord user friend amount "m" user
-runMode (Borrow user friend amount url) = submitCredit url $ CreditRecord friend user amount "m" user
+runMode (Lend user friend amount memo url) = submitCredit url $ CreditRecord user friend amount memo user
+runMode (Borrow user friend amount memo url) = submitCredit url $ CreditRecord friend user amount memo user
 
 
 submitCredit :: String -> CreditRecord Unsigned -> IO ()
@@ -58,10 +60,12 @@ programModes = modes [ Transactions defaultServerUrl &= help "list all transacti
                      , Lend "0x198e13017d2333712bd942d8b028610b95c363da"
                             "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
                             123
+                            "default"
                             defaultServerUrl &= help "submit a unilateral transaction as a creditor"
                      , Borrow "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
                               "0x198e13017d2333712bd942d8b028610b95c363da"
                               123
+                              "default"
                               defaultServerUrl &= help "submit a unilateral transaction as a debtor"
                      ] &= help "Lend and borrow money" &= program "fiddy" &= summary "fiddy v0.1"
 

@@ -46,6 +46,7 @@ executable fid-server
                      , fid-backend
                      , aeson
                      , either
+                     , http-types
                      , lens
                      , list-t
                      , mtl

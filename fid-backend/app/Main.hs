@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -9,6 +10,7 @@ module Main where
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Either
+import           Network.HTTP.Types
 import           Network.Wai
 import qualified Network.Wai.Handler.Warp as N
 import qualified Network.Ethereum.Web3.Address as Address
@@ -32,6 +34,14 @@ readerServer state = enter (readerToHandler state) server
 app :: ServerState -> Application
 app state = serve fiddyAPI (readerServer state)
 
+server :: ServerT FiddyAPI (ReaderT ServerState IO)
+server = transactionsHandler
+    :<|> pendingHandler
+    :<|> submitHandler
+    :<|> Tagged serveDocs
+    where serveDocs _ respond =
+            respond $ responseLBS ok200 [plain] docsBS
+          plain = ("Content-Type", "text/plain")
 
 main :: IO ()
 main = do

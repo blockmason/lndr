@@ -63,3 +63,10 @@ apiDocs = docs fiddyAPI
 
 markdownDocs :: String
 markdownDocs = markdown apiDocs
+
+docsBS :: ByteString
+docsBS = encodeUtf8
+       . pack
+       . markdown
+       $ docsWithIntros [intro] fiddyAPI
+  where intro = DocIntro "FiD Server" ["Web service API"]

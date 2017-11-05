@@ -95,7 +95,7 @@ decomposeSig sig = (sigR, sigS, sigV)
 signCreditRecord :: CreditRecord Unsigned
                  -> ExceptT Web3Error IO (Integer, Text, CreditRecord Signed)
 signCreditRecord r@(CreditRecord c d a m u) = do
-            if (c == d)
+            if c == d
                 then throwError $ UserFail "same creditor and debtor"
                 else pure ()
             ExceptT . runWeb3 $ do

@@ -11,11 +11,16 @@ import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Except
 import           Control.Monad.Trans.Either
+import           Data.ByteString.Lazy (ByteString)
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           Data.Text.Lazy.Encoding (encodeUtf8)
+import           Data.Text.Lazy (pack)
 import           ListT
 import           Network.Ethereum.Web3
 import           Servant
+import           Servant.API
+import           Servant.Docs
 import qualified STMContainers.Map as Map
 
 import           EthInterface
@@ -29,15 +34,10 @@ type FiddyAPI =
         "transactions" :> Get '[JSON] [IssueCreditLog]
    :<|> "pending" :> Get '[JSON] [(Text, CreditRecord Signed)]
    :<|> "submit" :> ReqBody '[JSON] (CreditRecord Unsigned) :> Post '[JSON] SubmissionResponse
+   :<|> "docs" :> Raw
 
 fiddyAPI :: Proxy FiddyAPI
 fiddyAPI = Proxy
-
-
-server :: ServerT FiddyAPI (ReaderT ServerState IO)
-server = transactionsHandler
-    :<|> pendingHandler
-    :<|> submitHandler
 
 
 transactionsHandler :: ReaderT ServerState IO [IssueCreditLog]
@@ -47,9 +47,11 @@ transactionsHandler = do
                 Right ls -> ls
                 Left _ -> []
 
+
 pendingHandler :: ReaderT ServerState IO [(Text, CreditRecord Signed)]
 pendingHandler = do creditMap <- ask
                     liftIO . atomically . toList $ Map.stream creditMap
+
 
 submitHandler :: CreditRecord Unsigned -> ReaderT ServerState IO SubmissionResponse
 submitHandler record@(CreditRecord creditor _ _ _ user) = do

@@ -35,8 +35,6 @@ import           Prelude hiding ((!!))
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base16 as BS16
 
-import Debug.Trace
-
 data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , creditor :: Address
                                      , debtor :: Address
@@ -53,7 +51,7 @@ $(deriveJSON defaultOptions ''Unsigned)
 
 -- `a` is a phantom type that indicates whether a record has been signed or not
 data CreditRecord a = CreditRecord { creditor :: Text
-                                   , debtor :: Text
+                                    debtor :: Text
                                    , amount :: Integer
                                    , memo :: Text
                                    , signature :: Text

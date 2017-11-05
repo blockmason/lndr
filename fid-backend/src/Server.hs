@@ -42,6 +42,7 @@ type FiddyAPI =
         "transactions" :> Get '[JSON] [IssueCreditLog]
    :<|> "pending" :> Get '[JSON] [(Text, CreditRecord Signed)]
    :<|> "submit" :> ReqBody '[JSON] (CreditRecord Unsigned) :> Post '[JSON] SubmissionResponse
+   :<|> "submit_signed" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Integer
    :<|> "docs" :> Raw
 
@@ -86,6 +87,36 @@ submitHandler record@(CreditRecord creditor _ _ _ user) = do
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> liftIO . atomically $ Map.insert signedRecord hash creditMap
+
+    return $ SubmissionResponse hash nonce
+
+
+submitSignedHandler :: CreditRecord Signed -> ReaderT ServerState IO SubmissionResponse
+submitSignedHandler record@(CreditRecord creditor _ _ _ sig) = do
+    creditMap <- ask
+    Right (nonce, hash) <- liftIO . runWeb3 $ hashCreditRecord record
+
+    -- TODO TODO verify sig
+
+    -- check if hash is already registered in pending txs
+    val <- liftIO . atomically $ Map.lookup hash creditMap
+
+    -- case val of
+    --     Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do
+    --         -- if the submitted credit record has a matching pending record,
+    --         -- finalize the transaction on the blockchain
+    --         if creditor /= user
+    --             then finalizeTransaction (signature storedRecord)
+    --                                      (signature signedRecord)
+    --                                      storedRecord
+    --             else finalizeTransaction (signature signedRecord)
+    --                                      (signature storedRecord)
+    --                                      storedRecord
+    --         -- delete pending record after transaction finalization
+    --         atomically $ Map.delete hash creditMap
+
+    --     -- if no matching transaction is found, create pending transaction
+    --     Nothing -> liftIO . atomically $ Map.insert signedRecord hash creditMap
 
     return $ SubmissionResponse hash nonce
 

@@ -2,9 +2,11 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 module EthInterface where
@@ -93,13 +95,8 @@ decomposeSig sig = (sigR, sigS, sigV)
 queryNonce :: Provider a => Address -> Address -> Web3 a Integer
 queryNonce = getNonce cpAddr
 
-signCreditRecord :: CreditRecord Unsigned
-                 -> ExceptT Web3Error IO (Integer, Text, CreditRecord Signed)
-signCreditRecord r@(CreditRecord c d a m u) = do
-            if c == d
-                then throwError $ UserFail "same creditor and debtor"
-                else pure ()
-            ExceptT . runWeb3 $ do
+hashCreditRecord :: forall a b. Provider b => CreditRecord a -> Web3 b (Integer, Text)
+hashCreditRecord r@(CreditRecord c d a m u) = do
                 nonce <- queryNonce debtorAddr creditorAddr
                 let message = T.append "0x" . T.concat $
                       stripHexPrefix <$> [ ucacId
@@ -108,7 +105,19 @@ signCreditRecord r@(CreditRecord c d a m u) = do
                                          , integerToHex a
                                          , integerToHex nonce
                                          ]
-                hash <- Web3.sha3 message
+                (nonce,) <$> Web3.sha3 message
+    where debtorAddr = textToAddress d
+          creditorAddr = textToAddress c
+
+
+signCreditRecord :: CreditRecord Unsigned
+                 -> ExceptT Web3Error IO (Integer, Text, CreditRecord Signed)
+signCreditRecord r@(CreditRecord c d a m u) = do
+            if c == d
+                then throwError $ UserFail "same creditor and debtor"
+                else pure ()
+            ExceptT . runWeb3 $ do
+                (nonce, hash) <- hashCreditRecord r
                 sig <- Eth.sign initiatorAddr hash
                 return (nonce, hash, r { signature = sig })
     where debtorAddr = textToAddress d

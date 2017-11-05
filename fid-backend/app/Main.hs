@@ -39,6 +39,7 @@ server :: ServerT FiddyAPI (ReaderT ServerState IO)
 server = transactionsHandler
     :<|> pendingHandler
     :<|> submitHandler
+    :<|> submitSignedHandler
     :<|> nonceHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =

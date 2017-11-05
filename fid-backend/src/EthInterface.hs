@@ -11,6 +11,7 @@ module EthInterface where
 
 import           Control.Exception
 import           Control.Monad
+import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Data
@@ -25,7 +26,8 @@ import           Data.Typeable
 import           GHC.Generics
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
-import           Network.Ethereum.Web3.Api
+import qualified Network.Ethereum.Web3.Eth as Eth
+import qualified Network.Ethereum.Web3.Web3 as Web3
 import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
 import           Numeric (readHex, showHex)
@@ -37,6 +39,7 @@ data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , creditor :: Address
                                      , debtor :: Address
                                      , amount :: Integer
+                                     , memo :: Text
                                      } deriving Show
 $(deriveJSON defaultOptions ''IssueCreditLog)
 
@@ -48,8 +51,9 @@ $(deriveJSON defaultOptions ''Unsigned)
 
 -- `a` is a phantom type that indicates whether a record has been signed or not
 data CreditRecord a = CreditRecord { creditor :: Text
-                                   , debtor :: Text
+                                    debtor :: Text
                                    , amount :: Integer
+                                   , memo :: Text
                                    , signature :: Text
                                    } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''CreditRecord)
@@ -76,50 +80,55 @@ bytesDecode :: Text -> Bytes
 bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
 
 
-decomposeSig :: Text -> (BytesN 32, BytesN 32, Integer)
+decomposeSig :: Text -> (BytesN 32, BytesN 32, BytesN 32)
 decomposeSig sig = (sigR, sigS, sigV)
     where strippedSig = T.drop 2 sig
           sigR = BytesN . bytesDecode $ T.take 64 strippedSig
           sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
-          sigV = hexToInteger . T.take 2 . T.drop 128 $ strippedSig
+          sigV = BytesN . bytesDecode . T.take 2 . T.drop 128 $ strippedSig
 
 -- create functions to call CreditProtocol contract
 [abiFrom|data/CreditProtocol.abi|]
 
 signCreditRecord :: CreditRecord Unsigned
-                 -> IO (Either Web3Error (Integer, Text, CreditRecord Signed))
-signCreditRecord r@(CreditRecord c d a u) = runWeb3 $ do
-            nonce <- getNonce cpAddr debtorAddr creditorAddr
-            let message = T.append "0x" . T.concat $
-                  stripHexPrefix <$> [ ucacId
-                                     , c
-                                     , d
-                                     , integerToHex a
-                                     , integerToHex nonce
-                                     ]
-            hash <- web3_sha3 message
-            sig <- eth_sign initiatorAddr hash
-            return (nonce, hash, r { signature = sig })
+                 -> ExceptT Web3Error IO (Integer, Text, CreditRecord Signed)
+signCreditRecord r@(CreditRecord c d a m u) = do
+            if c == d
+                then throwError $ UserFail "same creditor and debtor"
+                else pure ()
+            ExceptT . runWeb3 $ do
+                nonce <- getNonce cpAddr debtorAddr creditorAddr
+                let message = T.append "0x" . T.concat $
+                      stripHexPrefix <$> [ ucacId
+                                         , c
+                                         , d
+                                         , integerToHex a
+                                         , integerToHex nonce
+                                         ]
+                hash <- Web3.sha3 message
+                sig <- Eth.sign initiatorAddr hash
+                return (nonce, hash, r { signature = sig })
     where debtorAddr = textToAddress d
           creditorAddr = textToAddress c
           initiatorAddr = textToAddress u
 
 
 finalizeTransaction :: Text -> Text -> CreditRecord Signed -> IO (Either Web3Error TxHash)
-finalizeTransaction sig1 sig2 r@(CreditRecord c d a _) = runWeb3 $ do
+finalizeTransaction sig1 sig2 r@(CreditRecord c d a m _) = runWeb3 $ do
       let s1@(sig1r, sig1s, sig1v) = decomposeSig sig1
       let s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
       issueCredit cpAddr (0 :: Ether) ucacIdB
                   (textToAddress c) (textToAddress d) a
-                  sig1r sig1s sig1v
-                  sig2r sig2s sig2v
+                  [ sig1r, sig1s, sig1v ]
+                  [ sig2r, sig2s, sig2v ]
+                  (BytesN $ bytesDecode m)
 
 -- TODO THIS CAN BE DONE IN A CLEANER WAY
 -- fetch cp logs related to FiD UCAC
 -- verify that these are proper logs
 fidLogs :: Provider a => Web3 a [IssueCreditLog]
 fidLogs = rights . fmap interpretUcacLog <$>
-    eth_getLogs (Filter (Just cpAddr)
+    Eth.getLogs (Filter (Just cpAddr)
                         Nothing
                         (Just "0x0") -- start from block 0
                         Nothing)
@@ -132,6 +141,7 @@ interpretUcacLog change = do
                           creditorAddr
                           debtorAddr
                           (hexToInteger $ changeData change)
+                          "TODO fix"
 
 
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the

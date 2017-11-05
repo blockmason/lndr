@@ -19,6 +19,10 @@ Currently, the server has access to the following accounts which are unlocked on
 The CLI application `fiddy` currently does no siging itself though this will
 change in the near future.
 
+## API
+
+Server answering requests at `http://34.202.214.156:80`
+
 ## Install
 
 Once you have [stack]() installed, run the following commands:
@@ -63,8 +67,13 @@ sudo apt-get install ethereum
 
 # start a local blockchain in the background
 cd friend-in-debt/ucac
+sudo apt-get install npm
+sudo npm install -g truffle
+npm install
 ./gethtest.sh &
 
 # install ghc and fid-server application
-#...TODO to be continued.....
+cd friend-in-debt
+stack setup
+stack build
 ```

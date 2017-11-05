@@ -12,6 +12,7 @@ import           Data.Proxy
 import           Data.Text (Text)
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import           Data.Text.Lazy (pack)
+import           Network.Ethereum.Web3.Address
 import           Network.HTTP.Types
 import           Network.Wai
 import           Servant.API
@@ -54,6 +55,17 @@ instance ToSample IssueCreditLog where
                        "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
                        69
                        "simple memo"
+
+instance ToCapture (Capture "p1" Address) where
+  toCapture _ =
+    DocCapture "p1" "the address of the first party in a credit relationship"
+
+instance ToCapture (Capture "p2" Address) where
+  toCapture _ =
+    DocCapture "p2" "the address of the second party in a credit relationship"
+
+instance ToSample Integer where
+    toSamples _ = singleSample 19
 
 instance ToSample SubmissionResponse where
     toSamples _ = singleSample $ SubmissionResponse "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c" 1

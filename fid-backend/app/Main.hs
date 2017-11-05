@@ -34,14 +34,17 @@ readerServer state = enter (readerToHandler state) server
 app :: ServerState -> Application
 app state = serve fiddyAPI (readerServer state)
 
+
 server :: ServerT FiddyAPI (ReaderT ServerState IO)
 server = transactionsHandler
     :<|> pendingHandler
     :<|> submitHandler
+    :<|> nonceHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS
           plain = ("Content-Type", "text/plain")
+
 
 main :: IO ()
 main = do

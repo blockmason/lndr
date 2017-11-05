@@ -51,7 +51,7 @@ $(deriveJSON defaultOptions ''Unsigned)
 
 -- `a` is a phantom type that indicates whether a record has been signed or not
 data CreditRecord a = CreditRecord { creditor :: Text
-                                    debtor :: Text
+                                   , debtor :: Text
                                    , amount :: Integer
                                    , memo :: Text
                                    , signature :: Text
@@ -90,6 +90,9 @@ decomposeSig sig = (sigR, sigS, sigV)
 -- create functions to call CreditProtocol contract
 [abiFrom|data/CreditProtocol.abi|]
 
+queryNonce :: Provider a => Address -> Address -> Web3 a Integer
+queryNonce = getNonce cpAddr
+
 signCreditRecord :: CreditRecord Unsigned
                  -> ExceptT Web3Error IO (Integer, Text, CreditRecord Signed)
 signCreditRecord r@(CreditRecord c d a m u) = do
@@ -97,7 +100,7 @@ signCreditRecord r@(CreditRecord c d a m u) = do
                 then throwError $ UserFail "same creditor and debtor"
                 else pure ()
             ExceptT . runWeb3 $ do
-                nonce <- getNonce cpAddr debtorAddr creditorAddr
+                nonce <- queryNonce debtorAddr creditorAddr
                 let message = T.append "0x" . T.concat $
                       stripHexPrefix <$> [ ucacId
                                          , c

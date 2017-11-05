@@ -9,6 +9,7 @@ module Server where
 
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
+import           Control.Monad.Except
 import           Control.Monad.Trans.Either
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -54,7 +55,7 @@ submitHandler :: CreditRecord Unsigned -> ReaderT ServerState IO SubmissionRespo
 submitHandler record@(CreditRecord creditor _ _ _ user) = do
     creditMap <- ask
     -- TODO handle this appropriately
-    Right (nonce, hash, signedRecord) <- liftIO $ signCreditRecord record
+    Right (nonce, hash, signedRecord) <- liftIO . runExceptT $ signCreditRecord record
 
     -- check if hash is already registered in pending txs
     val <- liftIO . atomically $ Map.lookup hash creditMap
@@ -66,10 +67,10 @@ submitHandler record@(CreditRecord creditor _ _ _ user) = do
             if creditor /= user
                 then finalizeTransaction (signature storedRecord)
                                          (signature signedRecord)
-                                         signedRecord
+                                         storedRecord
                 else finalizeTransaction (signature signedRecord)
                                          (signature storedRecord)
-                                         signedRecord
+                                         storedRecord
             -- delete pending record after transaction finalization
             atomically $ Map.delete hash creditMap
 

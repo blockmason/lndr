@@ -11,6 +11,7 @@ module EthInterface where
 
 import           Control.Exception
 import           Control.Monad
+import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Data
@@ -33,6 +34,8 @@ import           Numeric (readHex, showHex)
 import           Prelude hiding ((!!))
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base16 as BS16
+
+import Debug.Trace
 
 data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , creditor :: Address
@@ -90,19 +93,23 @@ decomposeSig sig = (sigR, sigS, sigV)
 [abiFrom|data/CreditProtocol.abi|]
 
 signCreditRecord :: CreditRecord Unsigned
-                 -> IO (Either Web3Error (Integer, Text, CreditRecord Signed))
-signCreditRecord r@(CreditRecord c d a m u) = runWeb3 $ do
-            nonce <- getNonce cpAddr debtorAddr creditorAddr
-            let message = T.append "0x" . T.concat $
-                  stripHexPrefix <$> [ ucacId
-                                     , c
-                                     , d
-                                     , integerToHex a
-                                     , integerToHex nonce
-                                     ]
-            hash <- Web3.sha3 message
-            sig <- Eth.sign initiatorAddr hash
-            return (nonce, hash, r { signature = sig })
+                 -> ExceptT Web3Error IO (Integer, Text, CreditRecord Signed)
+signCreditRecord r@(CreditRecord c d a m u) = do
+            if (c == d)
+                then throwError $ UserFail "same creditor and debtor"
+                else pure ()
+            ExceptT . runWeb3 $ do
+                nonce <- getNonce cpAddr debtorAddr creditorAddr
+                let message = T.append "0x" . T.concat $
+                      stripHexPrefix <$> [ ucacId
+                                         , c
+                                         , d
+                                         , integerToHex a
+                                         , integerToHex nonce
+                                         ]
+                hash <- Web3.sha3 message
+                sig <- Eth.sign initiatorAddr hash
+                return (nonce, hash, r { signature = sig })
     where debtorAddr = textToAddress d
           creditorAddr = textToAddress c
           initiatorAddr = textToAddress u

@@ -53,8 +53,6 @@ submitCredit url unsignedCredit = do
     resp <- HTTP.httpJSON req
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: SubmissionResponse)
 
-defaultServerUrl = "http://34.202.214.156:80"
-
 programModes = modes [ Transactions defaultServerUrl &= help "list all transactions processed by FiD UCAC"
                      , Pending defaultServerUrl &= help "list all pending transactions"
                      , Lend "0x198e13017d2333712bd942d8b028610b95c363da"
@@ -68,7 +66,7 @@ programModes = modes [ Transactions defaultServerUrl &= help "list all transacti
                               "default"
                               defaultServerUrl &= help "submit a unilateral transaction as a debtor"
                      ] &= help "Lend and borrow money" &= program "fiddy" &= summary "fiddy v0.1"
-
+    where defaultServerUrl = "http://34.202.214.156:80"
 
 main :: IO ()
 main = do mode <- cmdArgsRun $ cmdArgsMode programModes

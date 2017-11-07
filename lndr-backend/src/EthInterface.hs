@@ -2,9 +2,11 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 module EthInterface where
@@ -51,12 +53,18 @@ $(deriveJSON defaultOptions ''Unsigned)
 
 -- `a` is a phantom type that indicates whether a record has been signed or not
 data CreditRecord a = CreditRecord { creditor :: Text
-                                    debtor :: Text
+                                   , debtor :: Text
                                    , amount :: Integer
                                    , memo :: Text
                                    , signature :: Text
                                    } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''CreditRecord)
+
+data PendingRecord = PendingRecord { creditRecord :: CreditRecord Signed
+                                   , submitter :: Address
+                                   }
+$(deriveJSON defaultOptions ''PendingRecord)
+
 
 data SubmissionResponse = SubmissionResponse { hash :: Text
                                      , nonce :: Integer
@@ -90,14 +98,12 @@ decomposeSig sig = (sigR, sigS, sigV)
 -- create functions to call CreditProtocol contract
 [abiFrom|data/CreditProtocol.abi|]
 
-signCreditRecord :: CreditRecord Unsigned
-                 -> ExceptT Web3Error IO (Integer, Text, CreditRecord Signed)
-signCreditRecord r@(CreditRecord c d a m u) = do
-            if c == d
-                then throwError $ UserFail "same creditor and debtor"
-                else pure ()
-            ExceptT . runWeb3 $ do
-                nonce <- getNonce cpAddr debtorAddr creditorAddr
+queryNonce :: Provider a => Address -> Address -> Web3 a Integer
+queryNonce = getNonce cpAddr
+
+hashCreditRecord :: forall a b. Provider b => CreditRecord a -> Web3 b (Integer, Text)
+hashCreditRecord r@(CreditRecord c d a m u) = do
+                nonce <- queryNonce debtorAddr creditorAddr
                 let message = T.append "0x" . T.concat $
                       stripHexPrefix <$> [ ucacId
                                          , c
@@ -105,7 +111,19 @@ signCreditRecord r@(CreditRecord c d a m u) = do
                                          , integerToHex a
                                          , integerToHex nonce
                                          ]
-                hash <- Web3.sha3 message
+                (nonce,) <$> Web3.sha3 message
+    where debtorAddr = textToAddress d
+          creditorAddr = textToAddress c
+
+
+signCreditRecord :: CreditRecord Unsigned
+                 -> ExceptT Web3Error IO (Integer, Text, CreditRecord Signed)
+signCreditRecord r@(CreditRecord c d a m u) = do
+            if c == d
+                then throwError $ UserFail "same creditor and debtor"
+                else pure ()
+            ExceptT . runWeb3 $ do
+                (nonce, hash) <- hashCreditRecord r
                 sig <- Eth.sign initiatorAddr hash
                 return (nonce, hash, r { signature = sig })
     where debtorAddr = textToAddress d
@@ -124,10 +142,10 @@ finalizeTransaction sig1 sig2 r@(CreditRecord c d a m _) = runWeb3 $ do
                   (BytesN $ bytesDecode m)
 
 -- TODO THIS CAN BE DONE IN A CLEANER WAY
--- fetch cp logs related to FiD UCAC
+-- fetch cp logs related to LNDR UCAC
 -- verify that these are proper logs
-fidLogs :: Provider a => Web3 a [IssueCreditLog]
-fidLogs = rights . fmap interpretUcacLog <$>
+lndrLogs :: Provider a => Web3 a [IssueCreditLog]
+lndrLogs = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
                         Nothing
                         (Just "0x0") -- start from block 0

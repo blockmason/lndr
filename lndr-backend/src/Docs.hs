@@ -12,6 +12,7 @@ import           Data.Proxy
 import           Data.Text (Text)
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import           Data.Text.Lazy (pack)
+import           Network.Ethereum.Web3.Address
 import           Network.HTTP.Types
 import           Network.Wai
 import           Servant.API
@@ -47,6 +48,10 @@ instance ToSample (CreditRecord Signed) where
 instance ToSample (CreditRecord Unsigned) where
     toSamples _ = singleSample cr
 
+instance ToSample PendingRecord where
+    toSamples _ = singleSample $
+        PendingRecord crSigned "0x11edd217a875063583dd1b638d16810c5d34d54b"
+
 instance ToSample IssueCreditLog where
     toSamples _ = singleSample $
         IssueCreditLog "d5ec73eac35fc9dd6c3f440bce314779fed09f60"
@@ -55,11 +60,22 @@ instance ToSample IssueCreditLog where
                        69
                        "simple memo"
 
+instance ToCapture (Capture "p1" Address) where
+  toCapture _ =
+    DocCapture "p1" "the address of the first party in a credit relationship"
+
+instance ToCapture (Capture "p2" Address) where
+  toCapture _ =
+    DocCapture "p2" "the address of the second party in a credit relationship"
+
+instance ToSample Integer where
+    toSamples _ = singleSample 19
+
 instance ToSample SubmissionResponse where
     toSamples _ = singleSample $ SubmissionResponse "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c" 1
 
 apiDocs :: API
-apiDocs = docs fiddyAPI
+apiDocs = docs lndrAPI
 
 markdownDocs :: String
 markdownDocs = markdown apiDocs
@@ -68,5 +84,5 @@ docsBS :: ByteString
 docsBS = encodeUtf8
        . pack
        . markdown
-       $ docsWithIntros [intro] fiddyAPI
-  where intro = DocIntro "FiD Server" ["Web service API"]
+       $ docsWithIntros [intro] lndrAPI
+  where intro = DocIntro "LNDR Server" ["Web service API"]

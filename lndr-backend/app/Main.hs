@@ -12,7 +12,8 @@ import           Control.Monad.Reader
 import           Control.Monad.Trans.Either
 import           Network.HTTP.Types
 import           Network.Wai
-import qualified Network.Wai.Handler.Warp as N
+import qualified Network.Wai.Handler.Warp as W
+import           Network.Wai.Logger (withStdoutLogger)
 import qualified Network.Ethereum.Web3.Address as Address
 import           Servant
 
@@ -27,23 +28,30 @@ readerToHandler :: ServerState -> ReaderT ServerState IO :~> Handler
 readerToHandler state = NT (readerToHandler' state)
 
 
-readerServer :: ServerState -> Server FiddyAPI
+readerServer :: ServerState -> Server LndrAPI
 readerServer state = enter (readerToHandler state) server
 
 
 app :: ServerState -> Application
-app state = serve fiddyAPI (readerServer state)
+app state = serve lndrAPI (readerServer state)
 
-server :: ServerT FiddyAPI (ReaderT ServerState IO)
+
+server :: ServerT LndrAPI (ReaderT ServerState IO)
 server = transactionsHandler
     :<|> pendingHandler
-    :<|> submitHandler
-    :<|> Tagged serveDocs
+    :<|> lendHandler
+    :<|> borrowHandler
+    :<|> nonceHandler
+    :<|> Tagged serveDocs -- TODO what does this Tagged mean?
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS
           plain = ("Content-Type", "text/plain")
 
+
 main :: IO ()
 main = do
     pendingMap <- freshState
-    N.run 80 $ app pendingMap
+    -- W.run 80 $ app pendingMap
+    withStdoutLogger $ \aplogger -> do
+        let settings = W.setPort 80 $ W.setLogger aplogger W.defaultSettings
+        W.runSettings settings $ app pendingMap

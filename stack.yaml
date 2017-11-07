@@ -1,8 +1,8 @@
-resolver: lts-9.10
+resolver: lts-9.12
 
 packages:
-- fid-backend/
-- fid-cli/
+- lndr-backend/
+- lndr-cli/
 - location:
     git: git@github.com:airalab/hs-web3.git
     commit: fd22da4a178c9e8f570c3d4b8f0ce589fa40e207

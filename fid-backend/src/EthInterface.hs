@@ -60,6 +60,12 @@ data CreditRecord a = CreditRecord { creditor :: Text
                                    } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''CreditRecord)
 
+data PendingRecord = PendingRecord { creditRecord :: CreditRecord Signed
+                                   , submitter :: Address
+                                   }
+$(deriveJSON defaultOptions ''PendingRecord)
+
+
 data SubmissionResponse = SubmissionResponse { hash :: Text
                                      , nonce :: Integer
                                      } deriving (Show, Generic)

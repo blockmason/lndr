@@ -40,7 +40,7 @@ freshState = atomically Map.new
 
 type LndrAPI =
         "transactions" :> Get '[JSON] [IssueCreditLog]
-   :<|> "pending" :> Get '[JSON] [(Text, CreditRecord Signed)]
+   :<|> "pending" :> Get '[JSON] [PendingRecord]
    :<|> "submit" :> ReqBody '[JSON] (CreditRecord Unsigned) :> Post '[JSON] SubmissionResponse
    :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
    :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
@@ -58,9 +58,10 @@ transactionsHandler = do
                 Left _ -> []
 
 
-pendingHandler :: ReaderT ServerState IO [(Text, CreditRecord Signed)]
+pendingHandler :: ReaderT ServerState IO [PendingRecord]
 pendingHandler = do creditMap <- ask
-                    liftIO . atomically . toList $ Map.stream creditMap
+                    list <- fmap (fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
+                    return $ fmap (\x -> PendingRecord x Addr.zero) list
 
 
 submitHandler :: CreditRecord Unsigned -> ReaderT ServerState IO SubmissionResponse

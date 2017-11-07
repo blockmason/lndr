@@ -48,6 +48,10 @@ instance ToSample (CreditRecord Signed) where
 instance ToSample (CreditRecord Unsigned) where
     toSamples _ = singleSample cr
 
+instance ToSample PendingRecord where
+    toSamples _ = singleSample $
+        PendingRecord crSigned "0x11edd217a875063583dd1b638d16810c5d34d54b"
+
 instance ToSample IssueCreditLog where
     toSamples _ = singleSample $
         IssueCreditLog "d5ec73eac35fc9dd6c3f440bce314779fed09f60"

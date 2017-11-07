@@ -38,16 +38,17 @@ type ServerState = Map.Map Text (CreditRecord Signed)
 freshState :: forall k v. IO (Map.Map k v)
 freshState = atomically Map.new
 
-type FiddyAPI =
+type LndrAPI =
         "transactions" :> Get '[JSON] [IssueCreditLog]
    :<|> "pending" :> Get '[JSON] [(Text, CreditRecord Signed)]
    :<|> "submit" :> ReqBody '[JSON] (CreditRecord Unsigned) :> Post '[JSON] SubmissionResponse
-   :<|> "submit_signed" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
+   :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
+   :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Integer
    :<|> "docs" :> Raw
 
-fiddyAPI :: Proxy FiddyAPI
-fiddyAPI = Proxy
+lndrAPI :: Proxy LndrAPI
+lndrAPI = Proxy
 
 transactionsHandler :: ReaderT ServerState IO [IssueCreditLog]
 transactionsHandler = do
@@ -90,14 +91,21 @@ submitHandler record@(CreditRecord creditor _ _ _ user) = do
 
     return $ SubmissionResponse hash nonce
 
+lendHandler :: CreditRecord Signed -> ReaderT ServerState IO SubmissionResponse
+lendHandler cr@(CreditRecord creditor _ _ _ _) = submitSignedHandler creditor cr
 
-submitSignedHandler :: CreditRecord Signed -> ReaderT ServerState IO SubmissionResponse
-submitSignedHandler signedRecord@(CreditRecord creditor _ _ _ sig) = do
+
+borrowHandler :: CreditRecord Signed -> ReaderT ServerState IO SubmissionResponse
+borrowHandler cr@(CreditRecord _ debtor _ _ _) = submitSignedHandler debtor cr
+
+
+submitSignedHandler :: Text -> CreditRecord Signed
+                    -> ReaderT ServerState IO SubmissionResponse
+submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ sig) = do
     creditMap <- ask
     Right (nonce, hash) <- liftIO . runWeb3 $ hashCreditRecord signedRecord
 
     -- TODO TODO verify sig
-    let submittingAddr = creditor -- addrFromSignature hash sig
 
     -- check if hash is already registered in pending txs
     val <- liftIO . atomically $ Map.lookup hash creditMap
@@ -106,7 +114,7 @@ submitSignedHandler signedRecord@(CreditRecord creditor _ _ _ sig) = do
         Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do
             -- if the submitted credit record has a matching pending record,
             -- finalize the transaction on the blockchain
-            if creditor /= submittingAddr
+            if creditor /= submitterAddress
                 then finalizeTransaction (signature storedRecord)
                                          (signature signedRecord)
                                          storedRecord

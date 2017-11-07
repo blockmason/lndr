@@ -71,7 +71,7 @@ instance ToSample SubmissionResponse where
     toSamples _ = singleSample $ SubmissionResponse "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c" 1
 
 apiDocs :: API
-apiDocs = docs fiddyAPI
+apiDocs = docs lndrAPI
 
 markdownDocs :: String
 markdownDocs = markdown apiDocs
@@ -80,5 +80,5 @@ docsBS :: ByteString
 docsBS = encodeUtf8
        . pack
        . markdown
-       $ docsWithIntros [intro] fiddyAPI
+       $ docsWithIntros [intro] lndrAPI
   where intro = DocIntro "FiD Server" ["Web service API"]

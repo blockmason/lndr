@@ -27,19 +27,20 @@ readerToHandler :: ServerState -> ReaderT ServerState IO :~> Handler
 readerToHandler state = NT (readerToHandler' state)
 
 
-readerServer :: ServerState -> Server FiddyAPI
+readerServer :: ServerState -> Server LndrAPI
 readerServer state = enter (readerToHandler state) server
 
 
 app :: ServerState -> Application
-app state = serve fiddyAPI (readerServer state)
+app state = serve lndrAPI (readerServer state)
 
 
-server :: ServerT FiddyAPI (ReaderT ServerState IO)
+server :: ServerT LndrAPI (ReaderT ServerState IO)
 server = transactionsHandler
     :<|> pendingHandler
     :<|> submitHandler
-    :<|> submitSignedHandler
+    :<|> lendHandler
+    :<|> borrowHandler
     :<|> nonceHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =

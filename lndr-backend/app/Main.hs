@@ -12,7 +12,8 @@ import           Control.Monad.Reader
 import           Control.Monad.Trans.Either
 import           Network.HTTP.Types
 import           Network.Wai
-import qualified Network.Wai.Handler.Warp as N
+import qualified Network.Wai.Handler.Warp as W
+import           Network.Wai.Logger (withStdoutLogger)
 import qualified Network.Ethereum.Web3.Address as Address
 import           Servant
 
@@ -50,4 +51,7 @@ server = transactionsHandler
 main :: IO ()
 main = do
     pendingMap <- freshState
-    N.run 80 $ app pendingMap
+    -- W.run 80 $ app pendingMap
+    withStdoutLogger $ \aplogger -> do
+        let settings = W.setPort 80 $ W.setLogger aplogger W.defaultSettings
+        W.runSettings settings $ app pendingMap

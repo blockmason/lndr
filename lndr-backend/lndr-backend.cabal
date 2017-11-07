@@ -51,6 +51,7 @@ executable lndr-server
                      , text
                      , transformers
                      , wai
+                     , wai-logger
                      , warp
                      , web3
   default-language:    Haskell2010

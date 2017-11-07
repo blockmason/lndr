@@ -1,9 +1,8 @@
-name:                fid-cli
+name:                lndr-cli
 version:             0.1.0.0
-synopsis:            friend-in-debt terminal interface
-description:         friend-in-debt terminal interface that interfaces with
-                     FiD UCAC via an ethereum client
-homepage:            https://github.com/githubuser/fid-cli#readme
+synopsis:            lndr terminal interface
+description:         lndr terminal interface that interfaces with
+                     lndr UCAC via an ethereum client
 license:             BSD3
 license-file:        LICENSE
 author:              Roy Blankman
@@ -14,7 +13,7 @@ build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
 
-executable fiddy
+executable lndr
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -24,7 +23,7 @@ executable fiddy
                      , bytestring
                      , cmdargs
                      , either
-                     , fid-backend
+                     , lndr-backend
                      , http-conduit
                      , listsafe
                      , memory
@@ -32,16 +31,3 @@ executable fiddy
                      , text
 
   default-language:    Haskell2010
-
-test-suite fid-cli-test
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      test
-  main-is:             Spec.hs
-  build-depends:       base
-                     , fid-cli
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  default-language:    Haskell2010
-
-source-repository head
-  type:     git
-  location: https://github.com/githubuser/fid-cli

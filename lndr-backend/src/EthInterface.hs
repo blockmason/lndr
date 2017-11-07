@@ -142,10 +142,10 @@ finalizeTransaction sig1 sig2 r@(CreditRecord c d a m _) = runWeb3 $ do
                   (BytesN $ bytesDecode m)
 
 -- TODO THIS CAN BE DONE IN A CLEANER WAY
--- fetch cp logs related to FiD UCAC
+-- fetch cp logs related to LNDR UCAC
 -- verify that these are proper logs
-fidLogs :: Provider a => Web3 a [IssueCreditLog]
-fidLogs = rights . fmap interpretUcacLog <$>
+lndrLogs :: Provider a => Web3 a [IssueCreditLog]
+lndrLogs = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
                         Nothing
                         (Just "0x0") -- start from block 0

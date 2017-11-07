@@ -38,11 +38,10 @@ app state = serve lndrAPI (readerServer state)
 server :: ServerT LndrAPI (ReaderT ServerState IO)
 server = transactionsHandler
     :<|> pendingHandler
-    :<|> submitHandler
     :<|> lendHandler
     :<|> borrowHandler
     :<|> nonceHandler
-    :<|> Tagged serveDocs
+    :<|> Tagged serveDocs -- TODO what does this Tagged mean?
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS
           plain = ("Content-Type", "text/plain")

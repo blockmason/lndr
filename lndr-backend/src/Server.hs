@@ -40,7 +40,6 @@ freshState = atomically Map.new
 type LndrAPI =
         "transactions" :> Get '[JSON] [IssueCreditLog]
    :<|> "pending" :> Get '[JSON] [PendingRecord]
-   :<|> "submit" :> ReqBody '[JSON] (CreditRecord Unsigned) :> Post '[JSON] SubmissionResponse
    :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
    :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Integer
@@ -51,7 +50,7 @@ lndrAPI = Proxy
 
 transactionsHandler :: ReaderT ServerState IO [IssueCreditLog]
 transactionsHandler = do
-    a <- runWeb3 fidLogs
+    a <- runWeb3 lndrLogs
     return $ case a of
                 Right ls -> ls
                 Left _ -> []
@@ -62,37 +61,6 @@ pendingHandler = do
     creditMap <- ask
     fmap (fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
 
-
-submitHandler :: CreditRecord Unsigned -> ReaderT ServerState IO SubmissionResponse
-submitHandler record@(CreditRecord creditor _ _ _ user) = do
-    creditMap <- ask
-    -- TODO handle this appropriately
-    Right (nonce, hash, signedRecord) <- liftIO . runExceptT $ signCreditRecord record
-
-    -- check if hash is already registered in pending txs
-    pendingRecord <- liftIO . atomically $ Map.lookup hash creditMap
-    let cr = creditRecord <$> pendingRecord
-
-    case cr of
-        Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do
-            -- if the submitted credit record has a matching pending record,
-            -- finalize the transaction on the blockchain
-            if creditor /= user
-                then finalizeTransaction (signature storedRecord)
-                                         (signature signedRecord)
-                                         storedRecord
-                else finalizeTransaction (signature signedRecord)
-                                         (signature storedRecord)
-                                         storedRecord
-            -- delete pending record after transaction finalization
-            atomically $ Map.delete hash creditMap
-
-        -- if no matching transaction is found, create pending transaction
-        Nothing -> liftIO . atomically $ Map.insert (PendingRecord signedRecord userAddr)
-                                                    hash creditMap
-
-    return $ SubmissionResponse hash nonce
-    where userAddr = textToAddress user
 
 lendHandler :: CreditRecord Signed -> ReaderT ServerState IO SubmissionResponse
 lendHandler cr@(CreditRecord creditor _ _ _ _) = submitSignedHandler creditor cr

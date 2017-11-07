@@ -85,4 +85,4 @@ docsBS = encodeUtf8
        . pack
        . markdown
        $ docsWithIntros [intro] lndrAPI
-  where intro = DocIntro "FiD Server" ["Web service API"]
+  where intro = DocIntro "LNDR Server" ["Web service API"]

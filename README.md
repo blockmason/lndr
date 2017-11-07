@@ -16,7 +16,7 @@ Currently, the server has access to the following accounts which are unlocked on
 0x2a91f48f0e84317d8dfaf939fea487031acbc46b
 ```
 
-The CLI application `fiddy` currently does no siging itself though this will
+The CLI application `lndr` currently does no siging itself though this will
 change in the near future.
 
 ## API
@@ -36,13 +36,13 @@ stack install
 For `stack install` to register binaries properly, you must have `.local/bin/`
 on your `PATH`.
 
-## fid-backend
+## lndr-backend
 
-[fid-backend README](fid-backend/README.md)
+[lndr-backend README](lndr-backend/README.md)
 
-## fid-cli
+## lndr-cli
 
-[fid-cli README](fid-cli/README.md)
+[lndr-cli README](lndr-cli/README.md)
 
 ## UCAC contract
 
@@ -57,7 +57,7 @@ On AWS ubuntu server. Deploy will be automated soon.
 curl -sSL https://get.haskellstack.org/ | sh
 
 # clone friend in debt repo
-git clone http://github.com/blockmason/friend-in-debt.git
+git clone http://github.com/blockmason/lndr.git
 
 # install geth
 sudo apt-get install software-properties-common
@@ -72,8 +72,14 @@ sudo npm install -g truffle
 npm install
 ./gethtest.sh &
 
-# install ghc and fid-server application
+# install ghc and lndr-server application
 cd friend-in-debt
 stack setup
 stack build
+```
+
+one a server using EBS, keep in mind that `stack`'s root can be set via an
+environment variable:
+```
+export STACK_ROOT=/data/.stack
 ```

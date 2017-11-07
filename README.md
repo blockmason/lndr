@@ -1,4 +1,4 @@
-# friend-in-debt
+# LNDR
 
 Server, CLI, and UCAC Solidity contracts.
 

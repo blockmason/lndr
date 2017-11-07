@@ -33,7 +33,7 @@ instance ToHttpApiData Addr.Address where
 instance FromHttpApiData Addr.Address where
   parseUrlPiece = mapLeft T.pack . Addr.fromText
 
-type ServerState = Map.Map Text (CreditRecord Signed)
+type ServerState = Map.Map Text PendingRecord
 
 freshState :: forall k v. IO (Map.Map k v)
 freshState = atomically Map.new
@@ -59,9 +59,9 @@ transactionsHandler = do
 
 
 pendingHandler :: ReaderT ServerState IO [PendingRecord]
-pendingHandler = do creditMap <- ask
-                    list <- fmap (fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
-                    return $ fmap (\x -> PendingRecord x Addr.zero) list
+pendingHandler = do
+    creditMap <- ask
+    fmap (fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
 
 
 submitHandler :: CreditRecord Unsigned -> ReaderT ServerState IO SubmissionResponse
@@ -71,9 +71,10 @@ submitHandler record@(CreditRecord creditor _ _ _ user) = do
     Right (nonce, hash, signedRecord) <- liftIO . runExceptT $ signCreditRecord record
 
     -- check if hash is already registered in pending txs
-    val <- liftIO . atomically $ Map.lookup hash creditMap
+    pendingRecord <- liftIO . atomically $ Map.lookup hash creditMap
+    let cr = creditRecord <$> pendingRecord
 
-    case val of
+    case cr of
         Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do
             -- if the submitted credit record has a matching pending record,
             -- finalize the transaction on the blockchain
@@ -88,9 +89,11 @@ submitHandler record@(CreditRecord creditor _ _ _ user) = do
             atomically $ Map.delete hash creditMap
 
         -- if no matching transaction is found, create pending transaction
-        Nothing -> liftIO . atomically $ Map.insert signedRecord hash creditMap
+        Nothing -> liftIO . atomically $ Map.insert (PendingRecord signedRecord userAddr)
+                                                    hash creditMap
 
     return $ SubmissionResponse hash nonce
+    where userAddr = textToAddress user
 
 lendHandler :: CreditRecord Signed -> ReaderT ServerState IO SubmissionResponse
 lendHandler cr@(CreditRecord creditor _ _ _ _) = submitSignedHandler creditor cr
@@ -109,9 +112,10 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ s
     -- TODO TODO verify sig
 
     -- check if hash is already registered in pending txs
-    val <- liftIO . atomically $ Map.lookup hash creditMap
+    pendingRecord <- liftIO . atomically $ Map.lookup hash creditMap
+    let cr = creditRecord <$> pendingRecord
 
-    case val of
+    case cr of
         Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do
             -- if the submitted credit record has a matching pending record,
             -- finalize the transaction on the blockchain
@@ -126,9 +130,12 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ s
             atomically $ Map.delete hash creditMap
 
         -- if no matching transaction is found, create pending transaction
-        Nothing -> liftIO . atomically $ Map.insert signedRecord hash creditMap
+        Nothing -> liftIO . atomically $ Map.insert (PendingRecord signedRecord submitterAddr)
+                                                    hash creditMap
+
 
     return $ SubmissionResponse hash nonce
+    where submitterAddr = textToAddress submitterAddress
 
 nonceHandler :: Address -> Address -> ReaderT ServerState IO Integer
 nonceHandler p1 p2 = do

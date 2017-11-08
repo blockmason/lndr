@@ -38,40 +38,40 @@ freshState :: forall k v. IO (Map.Map k v)
 freshState = atomically Map.new
 
 type LndrAPI =
-        "transactions" :> Get '[JSON] [IssueCreditLog]
-   :<|> "pending" :> Get '[JSON] [PendingRecord]
+        "transactions" :> Get '[JSON] (LndrResponse [IssueCreditLog])
+   :<|> "pending" :> Get '[JSON] (LndrResponse [PendingRecord])
    :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] (LndrResponse ())
    :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] (LndrResponse ())
-   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] Integer
-   :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Integer
-   :<|> "nick" :> Capture "address" Address :> Capture "nick" Text :> Post '[JSON] Integer
+   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] (LndrResponse Integer)
+   :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] (LndrResponse Integer)
+   :<|> "nick" :> Capture "address" Address :> Capture "nick" Text :> Post '[JSON] (LndrResponse ())
    :<|> "docs" :> Raw
 
 lndrAPI :: Proxy LndrAPI
 lndrAPI = Proxy
 
-nickHandler :: Address -> Text -> ReaderT ServerState IO Integer
+nickHandler :: Address -> Text -> ReaderT ServerState IO (LndrResponse ())
 nickHandler _ _ = undefined
 
 
 -- submit a signed message consisting of "REJECT + CreditRecord HASH"
 -- each credit record will be referenced by its hash
-rejectHandler :: RejectRecord -> ReaderT ServerState IO Integer
+rejectHandler :: RejectRecord -> ReaderT ServerState IO (LndrResponse Integer)
 rejectHandler = undefined
 
 
-transactionsHandler :: ReaderT ServerState IO [IssueCreditLog]
+transactionsHandler :: ReaderT ServerState IO (LndrResponse [IssueCreditLog])
 transactionsHandler = do
     a <- runWeb3 lndrLogs
-    return $ case a of
+    return . LndrResponse 200 . Just $ case a of
                 Right ls -> ls
                 Left _ -> []
 
 
-pendingHandler :: ReaderT ServerState IO [PendingRecord]
+pendingHandler :: ReaderT ServerState IO (LndrResponse [PendingRecord])
 pendingHandler = do
     creditMap <- ask
-    fmap (fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
+    fmap (LndrResponse 200 . Just . fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
 
 
 lendHandler :: CreditRecord Signed -> ReaderT ServerState IO (LndrResponse ())
@@ -117,9 +117,9 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ s
     return $ LndrResponse 200 Nothing
     where submitterAddr = textToAddress submitterAddress
 
-nonceHandler :: Address -> Address -> ReaderT ServerState IO Integer
+nonceHandler :: Address -> Address -> ReaderT ServerState IO (LndrResponse Integer)
 nonceHandler p1 p2 = do
     a <- runWeb3 $ queryNonce p1 p2
     return $ case a of
-                Right ls -> ls
-                Left _ -> 0 -- TODO fix this, get proper exception handling in place
+                Right ls -> LndrResponse 200 $ Just ls
+                Left _ -> LndrResponse 500 $ Just 0 -- TODO fix this, get proper exception handling in place

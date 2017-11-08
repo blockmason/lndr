@@ -65,9 +65,10 @@ instance ToSample IssueCreditLog where
                        69
                        "simple memo"
 
-instance ToSample (LndrResponse ()) where
-    toSamples _ = singleSample $
-                    LndrResponse 200 Nothing
+instance ToSample a => ToSample (LndrResponse a)
+
+instance ToSample () where
+    toSamples _ = singleSample ()
 
 instance ToSample Integer where
     toSamples _ = singleSample 19

@@ -7,9 +7,13 @@
 
 module Main where
 
+import           Control.Monad.Except
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
+import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Either
+import qualified Data.Text.Lazy as T
+import qualified Data.Text.Lazy.Encoding as T
 import           Network.HTTP.Types
 import           Network.Wai
 import qualified Network.Wai.Handler.Warp as W
@@ -17,14 +21,18 @@ import           Network.Wai.Logger (withStdoutLogger)
 import qualified Network.Ethereum.Web3.Address as Address
 import           Servant
 
+import           EthInterface
 import           Server
 import           Docs
 
-readerToHandler' :: forall a. ServerState -> ReaderT ServerState IO a -> Handler a
-readerToHandler' state r = liftIO (runReaderT r state)
+readerToHandler' :: forall a. ServerState -> LndrHandler a -> Handler a
+readerToHandler' state r = do
+    res <- liftIO . runExceptT $ runReaderT (runLndr r) state
+    Handler . ExceptT . return $ case res of
+      Left (LndrError text) -> Left err500 { errBody = T.encodeUtf8 $ T.pack text }
+      Right a  -> Right a
 
-
-readerToHandler :: ServerState -> ReaderT ServerState IO :~> Handler
+readerToHandler :: ServerState -> LndrHandler :~> Handler
 readerToHandler state = NT (readerToHandler' state)
 
 
@@ -36,7 +44,7 @@ app :: ServerState -> Application
 app state = serve lndrAPI (readerServer state)
 
 
-server :: ServerT LndrAPI (ReaderT ServerState IO)
+server :: ServerT LndrAPI LndrHandler
 server = transactionsHandler
     :<|> pendingHandler
     :<|> lendHandler

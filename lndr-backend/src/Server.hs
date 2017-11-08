@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -26,6 +27,9 @@ import           Servant.API
 import           Servant.Docs
 import qualified STMContainers.Map as Map
 
+newtype LndrHandler a = LndrHandler {
+  runLndr :: ReaderT ServerState (ExceptT LndrError IO) a
+} deriving (Functor, Applicative, Monad, MonadReader ServerState, MonadError LndrError, MonadIO)
 instance ToHttpApiData Addr.Address where
   toUrlPiece = Addr.toText
 
@@ -44,23 +48,25 @@ type LndrAPI =
    :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] (LndrResponse ())
    :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] (LndrResponse ())
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] (LndrResponse Nonce)
+   -- TODO change this to accept JSON object w/ signature
    :<|> "nick" :> Capture "address" Address :> Capture "nick" Text :> Post '[JSON] (LndrResponse ())
    :<|> "docs" :> Raw
 
 lndrAPI :: Proxy LndrAPI
 lndrAPI = Proxy
 
-nickHandler :: Address -> Text -> ReaderT ServerState IO (LndrResponse ())
+
+nickHandler :: Address -> Text -> LndrHandler (LndrResponse ())
 nickHandler _ _ = undefined
 
 
 -- submit a signed message consisting of "REJECT + CreditRecord HASH"
 -- each credit record will be referenced by its hash
-rejectHandler :: RejectRecord -> ReaderT ServerState IO (LndrResponse ())
+rejectHandler :: RejectRecord -> LndrHandler (LndrResponse ())
 rejectHandler = undefined
 
 
-transactionsHandler :: ReaderT ServerState IO (LndrResponse [IssueCreditLog])
+transactionsHandler :: LndrHandler (LndrResponse [IssueCreditLog])
 transactionsHandler = do
     a <- runWeb3 lndrLogs
     return . LndrResponse 200 . Just $ case a of
@@ -68,22 +74,22 @@ transactionsHandler = do
                 Left _ -> []
 
 
-pendingHandler :: ReaderT ServerState IO (LndrResponse [PendingRecord])
+pendingHandler :: LndrHandler (LndrResponse [PendingRecord])
 pendingHandler = do
     creditMap <- ask
     fmap (LndrResponse 200 . Just . fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
 
 
-lendHandler :: CreditRecord Signed -> ReaderT ServerState IO (LndrResponse ())
+lendHandler :: CreditRecord Signed -> LndrHandler (LndrResponse ())
 lendHandler cr@(CreditRecord creditor _ _ _ _) = submitSignedHandler creditor cr
 
 
-borrowHandler :: CreditRecord Signed -> ReaderT ServerState IO (LndrResponse ())
+borrowHandler :: CreditRecord Signed -> LndrHandler (LndrResponse ())
 borrowHandler cr@(CreditRecord _ debtor _ _ _) = submitSignedHandler debtor cr
 
 
 submitSignedHandler :: Text -> CreditRecord Signed
-                    -> ReaderT ServerState IO (LndrResponse ())
+                    -> LndrHandler (LndrResponse ())
 submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ sig) = do
     creditMap <- ask
     Right (nonce, hash) <- liftIO . runWeb3 $ hashCreditRecord signedRecord
@@ -117,7 +123,8 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ s
     return $ LndrResponse 200 Nothing
     where submitterAddr = textToAddress submitterAddress
 
-nonceHandler :: Address -> Address -> ReaderT ServerState IO (LndrResponse Nonce)
+
+nonceHandler :: Address -> Address -> LndrHandler (LndrResponse Nonce)
 nonceHandler p1 p2 = do
     a <- runWeb3 $ queryNonce p1 p2
     return . LndrResponse 200 . Just . Nonce $ case a of

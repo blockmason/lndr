@@ -43,6 +43,7 @@ server = transactionsHandler
     :<|> borrowHandler
     :<|> rejectHandler
     :<|> nonceHandler
+    :<|> nickHandler
     :<|> Tagged serveDocs -- TODO what does this `Tagged` mean?
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS
@@ -52,7 +53,6 @@ server = transactionsHandler
 main :: IO ()
 main = do
     pendingMap <- freshState
-    -- W.run 80 $ app pendingMap
     withStdoutLogger $ \aplogger -> do
         let settings = W.setPort 80 $ W.setLogger aplogger W.defaultSettings
         W.runSettings settings $ app pendingMap

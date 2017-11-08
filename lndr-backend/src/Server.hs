@@ -42,17 +42,21 @@ type LndrAPI =
    :<|> "pending" :> Get '[JSON] [PendingRecord]
    :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
    :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
-   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] SubmissionResponse
+   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] Integer
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Integer
+   :<|> "nick" :> Capture "address" Address :> Capture "nick" Text :> Post '[JSON] Integer
    :<|> "docs" :> Raw
 
 lndrAPI :: Proxy LndrAPI
 lndrAPI = Proxy
 
+nickHandler :: Address -> Text -> ReaderT ServerState IO Integer
+nickHandler _ _ = undefined
+
 
 -- submit a signed message consisting of "REJECT + CreditRecord HASH"
 -- each credit record will be referenced by its hash
-rejectHandler :: RejectRecord -> ReaderT ServerState IO SubmissionResponse
+rejectHandler :: RejectRecord -> ReaderT ServerState IO Integer
 rejectHandler = undefined
 
 

@@ -73,6 +73,14 @@ instance ToCapture (Capture "p2" Address) where
   toCapture _ =
     DocCapture "p2" "the address of the second party in a credit relationship"
 
+instance ToCapture (Capture "address" Address) where
+  toCapture _ =
+    DocCapture "address" "the address to which a nickname should be assigned"
+
+instance ToCapture (Capture "nick" Text) where
+  toCapture _ =
+    DocCapture "nick" "the nickname to be associated with a particular address"
+
 instance ToSample Integer where
     toSamples _ = singleSample 19
 

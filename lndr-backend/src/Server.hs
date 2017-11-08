@@ -40,8 +40,8 @@ freshState = atomically Map.new
 type LndrAPI =
         "transactions" :> Get '[JSON] [IssueCreditLog]
    :<|> "pending" :> Get '[JSON] [PendingRecord]
-   :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
-   :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
+   :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] (LndrResponse ())
+   :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] (LndrResponse ())
    :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] Integer
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Integer
    :<|> "nick" :> Capture "address" Address :> Capture "nick" Text :> Post '[JSON] Integer
@@ -74,16 +74,16 @@ pendingHandler = do
     fmap (fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
 
 
-lendHandler :: CreditRecord Signed -> ReaderT ServerState IO SubmissionResponse
+lendHandler :: CreditRecord Signed -> ReaderT ServerState IO (LndrResponse ())
 lendHandler cr@(CreditRecord creditor _ _ _ _) = submitSignedHandler creditor cr
 
 
-borrowHandler :: CreditRecord Signed -> ReaderT ServerState IO SubmissionResponse
+borrowHandler :: CreditRecord Signed -> ReaderT ServerState IO (LndrResponse ())
 borrowHandler cr@(CreditRecord _ debtor _ _ _) = submitSignedHandler debtor cr
 
 
 submitSignedHandler :: Text -> CreditRecord Signed
-                    -> ReaderT ServerState IO SubmissionResponse
+                    -> ReaderT ServerState IO (LndrResponse ())
 submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ sig) = do
     creditMap <- ask
     Right (nonce, hash) <- liftIO . runWeb3 $ hashCreditRecord signedRecord
@@ -114,7 +114,7 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ s
                                    hash creditMap
 
 
-    return $ SubmissionResponse hash nonce
+    return $ LndrResponse 200 Nothing
     where submitterAddr = textToAddress submitterAddress
 
 nonceHandler :: Address -> Address -> ReaderT ServerState IO Integer

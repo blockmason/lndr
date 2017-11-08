@@ -65,6 +65,13 @@ instance ToSample IssueCreditLog where
                        69
                        "simple memo"
 
+instance ToSample (LndrResponse ()) where
+    toSamples _ = singleSample $
+                    LndrResponse 200 Nothing
+
+instance ToSample Integer where
+    toSamples _ = singleSample 19
+
 instance ToCapture (Capture "p1" Address) where
   toCapture _ =
     DocCapture "p1" "the address of the first party in a credit relationship"
@@ -80,12 +87,6 @@ instance ToCapture (Capture "address" Address) where
 instance ToCapture (Capture "nick" Text) where
   toCapture _ =
     DocCapture "nick" "the nickname to be associated with a particular address"
-
-instance ToSample Integer where
-    toSamples _ = singleSample 19
-
-instance ToSample SubmissionResponse where
-    toSamples _ = singleSample $ SubmissionResponse "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c" 1
 
 apiDocs :: API
 apiDocs = docs lndrAPI

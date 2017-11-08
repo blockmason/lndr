@@ -44,11 +44,11 @@ freshState = atomically Map.new
 type LndrAPI =
         "transactions" :> Get '[JSON] [IssueCreditLog]
    :<|> "pending" :> Get '[JSON] [PendingRecord]
-   :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] ()
-   :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] ()
-   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] ()
+   :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> PostNoContent '[JSON] NoContent
+   :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> PostNoContent '[JSON] NoContent
+   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] NoContent
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
-   :<|> "nick" :> ReqBody '[JSON] NickRequest :> Post '[JSON] ()
+   :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
    :<|> "docs" :> Raw
 
 lndrAPI :: Proxy LndrAPI
@@ -63,13 +63,13 @@ lndrWeb3 :: Web3 DefaultProvider b -> LndrHandler b
 lndrWeb3 = web3ToLndr . runWeb3
 
 
-nickHandler :: NickRequest -> LndrHandler ()
+nickHandler :: NickRequest -> LndrHandler NoContent
 nickHandler _ = undefined
 
 
 -- submit a signed message consisting of "REJECT + CreditRecord HASH"
 -- each credit record will be referenced by its hash
-rejectHandler :: RejectRecord -> LndrHandler ()
+rejectHandler :: RejectRecord -> LndrHandler NoContent
 rejectHandler = undefined
 
 
@@ -83,16 +83,16 @@ pendingHandler = do
     fmap (fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
 
 
-lendHandler :: CreditRecord Signed -> LndrHandler ()
+lendHandler :: CreditRecord Signed -> LndrHandler NoContent
 lendHandler cr@(CreditRecord creditor _ _ _ _) = submitSignedHandler creditor cr
 
 
-borrowHandler :: CreditRecord Signed -> LndrHandler ()
+borrowHandler :: CreditRecord Signed -> LndrHandler NoContent
 borrowHandler cr@(CreditRecord _ debtor _ _ _) = submitSignedHandler debtor cr
 
 
 submitSignedHandler :: Text -> CreditRecord Signed
-                    -> LndrHandler ()
+                    -> LndrHandler NoContent
 submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ sig) = do
     creditMap <- ask
     (nonce, hash) <- lndrWeb3 $ hashCreditRecord signedRecord
@@ -122,7 +122,7 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ s
                         Map.insert (PendingRecord signedRecord submitterAddr hash)
                                    hash creditMap
 
-    return ()
+    return NoContent
     where submitterAddr = textToAddress submitterAddress
 
 

@@ -42,54 +42,54 @@ freshState :: forall k v. IO (Map.Map k v)
 freshState = atomically Map.new
 
 type LndrAPI =
-        "transactions" :> Get '[JSON] (LndrResponse [IssueCreditLog])
-   :<|> "pending" :> Get '[JSON] (LndrResponse [PendingRecord])
-   :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] (LndrResponse ())
-   :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] (LndrResponse ())
-   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] (LndrResponse ())
-   :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] (LndrResponse Nonce)
+        "transactions" :> Get '[JSON] [IssueCreditLog]
+   :<|> "pending" :> Get '[JSON] [PendingRecord]
+   :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] ()
+   :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] ()
+   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] ()
+   :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    -- TODO change this to accept JSON object w/ signature
-   :<|> "nick" :> Capture "address" Address :> Capture "nick" Text :> Post '[JSON] (LndrResponse ())
+   :<|> "nick" :> Capture "address" Address :> Capture "nick" Text :> Post '[JSON] ()
    :<|> "docs" :> Raw
 
 lndrAPI :: Proxy LndrAPI
 lndrAPI = Proxy
 
 
-nickHandler :: Address -> Text -> LndrHandler (LndrResponse ())
+nickHandler :: Address -> Text -> LndrHandler ()
 nickHandler _ _ = undefined
 
 
 -- submit a signed message consisting of "REJECT + CreditRecord HASH"
 -- each credit record will be referenced by its hash
-rejectHandler :: RejectRecord -> LndrHandler (LndrResponse ())
+rejectHandler :: RejectRecord -> LndrHandler ()
 rejectHandler = undefined
 
 
-transactionsHandler :: LndrHandler (LndrResponse [IssueCreditLog])
+transactionsHandler :: LndrHandler [IssueCreditLog]
 transactionsHandler = do
     a <- runWeb3 lndrLogs
-    return . LndrResponse 200 . Just $ case a of
+    return $ case a of
                 Right ls -> ls
                 Left _ -> []
 
 
-pendingHandler :: LndrHandler (LndrResponse [PendingRecord])
+pendingHandler :: LndrHandler [PendingRecord]
 pendingHandler = do
     creditMap <- ask
-    fmap (LndrResponse 200 . Just . fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
+    fmap (fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
 
 
-lendHandler :: CreditRecord Signed -> LndrHandler (LndrResponse ())
+lendHandler :: CreditRecord Signed -> LndrHandler ()
 lendHandler cr@(CreditRecord creditor _ _ _ _) = submitSignedHandler creditor cr
 
 
-borrowHandler :: CreditRecord Signed -> LndrHandler (LndrResponse ())
+borrowHandler :: CreditRecord Signed -> LndrHandler ()
 borrowHandler cr@(CreditRecord _ debtor _ _ _) = submitSignedHandler debtor cr
 
 
 submitSignedHandler :: Text -> CreditRecord Signed
-                    -> LndrHandler (LndrResponse ())
+                    -> LndrHandler ()
 submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ sig) = do
     creditMap <- ask
     Right (nonce, hash) <- liftIO . runWeb3 $ hashCreditRecord signedRecord
@@ -119,14 +119,13 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ s
                         Map.insert (PendingRecord signedRecord submitterAddr hash)
                                    hash creditMap
 
-
-    return $ LndrResponse 200 Nothing
+    return ()
     where submitterAddr = textToAddress submitterAddress
 
 
-nonceHandler :: Address -> Address -> LndrHandler (LndrResponse Nonce)
+nonceHandler :: Address -> Address -> LndrHandler Nonce
 nonceHandler p1 p2 = do
     a <- runWeb3 $ queryNonce p1 p2
-    return . LndrResponse 200 . Just . Nonce $ case a of
+    return . Nonce $ case a of
                 Right ls -> ls
                 Left _ -> 0 -- TODO fix this, get proper exception handling in place

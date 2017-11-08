@@ -78,11 +78,6 @@ $(deriveJSON defaultOptions ''RejectRecord)
 newtype LndrError = LndrError { unLndrError :: String } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''LndrError)
 
-data LndrResponse a = LndrResponse { code :: Integer
-                                   , result :: Maybe a
-                                   } deriving (Show, Generic)
-$(deriveJSON (defaultOptions { omitNothingFields = True }) ''LndrResponse)
-
 ucacId :: Text
 ucacId = "0x7624778dedc75f8b322b9fa1632a610d40b85e106c7d9bf0e743a9ce291b9c6f"
 

@@ -42,8 +42,8 @@ type LndrAPI =
    :<|> "pending" :> Get '[JSON] (LndrResponse [PendingRecord])
    :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] (LndrResponse ())
    :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] (LndrResponse ())
-   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] (LndrResponse Integer)
-   :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] (LndrResponse Integer)
+   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] (LndrResponse ())
+   :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] (LndrResponse Nonce)
    :<|> "nick" :> Capture "address" Address :> Capture "nick" Text :> Post '[JSON] (LndrResponse ())
    :<|> "docs" :> Raw
 
@@ -56,7 +56,7 @@ nickHandler _ _ = undefined
 
 -- submit a signed message consisting of "REJECT + CreditRecord HASH"
 -- each credit record will be referenced by its hash
-rejectHandler :: RejectRecord -> ReaderT ServerState IO (LndrResponse Integer)
+rejectHandler :: RejectRecord -> ReaderT ServerState IO (LndrResponse ())
 rejectHandler = undefined
 
 
@@ -117,9 +117,9 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ s
     return $ LndrResponse 200 Nothing
     where submitterAddr = textToAddress submitterAddress
 
-nonceHandler :: Address -> Address -> ReaderT ServerState IO (LndrResponse Integer)
+nonceHandler :: Address -> Address -> ReaderT ServerState IO (LndrResponse Nonce)
 nonceHandler p1 p2 = do
     a <- runWeb3 $ queryNonce p1 p2
-    return $ case a of
-                Right ls -> LndrResponse 200 $ Just ls
-                Left _ -> LndrResponse 500 $ Just 0 -- TODO fix this, get proper exception handling in place
+    return . LndrResponse 200 . Just . Nonce $ case a of
+                Right ls -> ls
+                Left _ -> 0 -- TODO fix this, get proper exception handling in place

@@ -39,8 +39,7 @@ cr = CreditRecord "0x11edd217a875063583dd1b638d16810c5d34d54b"
                   "test memo"
                   "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
 
-instance ToSample Text where
-    toSamples _ = singleSample creditHash
+instance ToSample a => ToSample (LndrResponse a)
 
 instance ToSample (CreditRecord Signed) where
     toSamples _ = singleSample crSigned
@@ -65,10 +64,11 @@ instance ToSample IssueCreditLog where
                        69
                        "simple memo"
 
-instance ToSample a => ToSample (LndrResponse a)
-
 instance ToSample () where
     toSamples _ = singleSample ()
+
+instance ToSample Nonce where
+    toSamples _ = singleSample $ Nonce 1
 
 instance ToSample Integer where
     toSamples _ = singleSample 19

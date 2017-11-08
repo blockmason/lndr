@@ -37,6 +37,9 @@ import           Prelude hiding ((!!))
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base16 as BS16
 
+newtype Nonce = Nonce { mkNonce :: Integer } deriving (Show, Generic)
+$(deriveJSON defaultOptions ''Nonce)
+
 data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , creditor :: Address
                                      , debtor :: Address

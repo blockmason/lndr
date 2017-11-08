@@ -52,7 +52,7 @@ server = transactionsHandler
     :<|> rejectHandler
     :<|> nonceHandler
     :<|> nickHandler
-    :<|> Tagged serveDocs -- TODO what does this `Tagged` mean?
+    :<|> Tagged serveDocs
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS
           plain = ("Content-Type", "text/plain")

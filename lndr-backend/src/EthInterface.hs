@@ -75,6 +75,11 @@ data RejectRecord = RejectRecord { rejectSig :: Text
                                  }
 $(deriveJSON defaultOptions ''RejectRecord)
 
+data NickRequest = NickRequest { nick :: Text
+                               , sig :: Text
+                               }
+$(deriveJSON defaultOptions ''NickRequest)
+
 newtype LndrError = LndrError { unLndrError :: String } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''LndrError)
 

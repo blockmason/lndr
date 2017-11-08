@@ -51,7 +51,7 @@ submitCredit url unsignedCredit = do
     let req = HTTP.setRequestBodyJSON unsignedCredit $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpJSON req
-    Pr.pPrintNoColor (HTTP.getResponseBody resp :: LndrResponse ())
+    Pr.pPrintNoColor (HTTP.getResponseBody resp :: ())
 
 programModes = modes [ Transactions defaultServerUrl &= help "list all transactions processed by FiD UCAC"
                      , Pending defaultServerUrl &= help "list all pending transactions"

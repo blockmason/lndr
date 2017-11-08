@@ -48,16 +48,15 @@ type LndrAPI =
    :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] ()
    :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] ()
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
-   -- TODO change this to accept JSON object w/ signature
-   :<|> "nick" :> Capture "address" Address :> Capture "nick" Text :> Post '[JSON] ()
+   :<|> "nick" :> ReqBody '[JSON] NickRequest :> Post '[JSON] ()
    :<|> "docs" :> Raw
 
 lndrAPI :: Proxy LndrAPI
 lndrAPI = Proxy
 
 
-nickHandler :: Address -> Text -> LndrHandler ()
-nickHandler _ _ = undefined
+nickHandler :: NickRequest -> LndrHandler ()
+nickHandler _ = undefined
 
 
 -- submit a signed message consisting of "REJECT + CreditRecord HASH"

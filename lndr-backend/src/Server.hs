@@ -16,6 +16,8 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import           Data.Text.Lazy (pack)
+import           Data.Time.Clock.POSIX (getPOSIXTime)
+import           EthInterface
 import           ListT
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
@@ -23,8 +25,6 @@ import           Servant
 import           Servant.API
 import           Servant.Docs
 import qualified STMContainers.Map as Map
-
-import           EthInterface
 
 instance ToHttpApiData Addr.Address where
   toUrlPiece = Addr.toText
@@ -42,11 +42,19 @@ type LndrAPI =
    :<|> "pending" :> Get '[JSON] [PendingRecord]
    :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
    :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> Post '[JSON] SubmissionResponse
+   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] SubmissionResponse
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Integer
    :<|> "docs" :> Raw
 
 lndrAPI :: Proxy LndrAPI
 lndrAPI = Proxy
+
+
+-- submit a signed message consisting of "REJECT + CreditRecord HASH"
+-- each credit record will be referenced by its hash
+rejectHandler :: RejectRecord -> ReaderT ServerState IO SubmissionResponse
+rejectHandler = undefined
+
 
 transactionsHandler :: ReaderT ServerState IO [IssueCreditLog]
 transactionsHandler = do
@@ -97,8 +105,9 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ s
             atomically $ Map.delete hash creditMap
 
         -- if no matching transaction is found, create pending transaction
-        Nothing -> liftIO . atomically $ Map.insert (PendingRecord signedRecord submitterAddr)
-                                                    hash creditMap
+        Nothing -> liftIO . atomically $
+                        Map.insert (PendingRecord signedRecord submitterAddr hash)
+                                   hash creditMap
 
 
     return $ SubmissionResponse hash nonce

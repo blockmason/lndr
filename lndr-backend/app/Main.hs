@@ -41,8 +41,9 @@ server = transactionsHandler
     :<|> pendingHandler
     :<|> lendHandler
     :<|> borrowHandler
+    :<|> rejectHandler
     :<|> nonceHandler
-    :<|> Tagged serveDocs -- TODO what does this Tagged mean?
+    :<|> Tagged serveDocs -- TODO what does this `Tagged` mean?
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS
           plain = ("Content-Type", "text/plain")

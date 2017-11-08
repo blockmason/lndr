@@ -62,13 +62,20 @@ $(deriveJSON defaultOptions ''CreditRecord)
 
 data PendingRecord = PendingRecord { creditRecord :: CreditRecord Signed
                                    , submitter :: Address
+                                   , hash :: Text
                                    }
 $(deriveJSON defaultOptions ''PendingRecord)
 
 
+data RejectRecord = RejectRecord { rejectSig :: Text
+                                 , hash :: Text
+                                 }
+$(deriveJSON defaultOptions ''RejectRecord)
+
+
 data SubmissionResponse = SubmissionResponse { hash :: Text
-                                     , nonce :: Integer
-                                     } deriving (Show, Generic)
+                                             , nonce :: Integer
+                                             } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''SubmissionResponse)
 
 ucacId :: Text

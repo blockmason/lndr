@@ -55,6 +55,14 @@ lndrAPI :: Proxy LndrAPI
 lndrAPI = Proxy
 
 
+web3ToLndr :: Show a => IO (Either a b) -> LndrHandler b
+web3ToLndr = LndrHandler . lift . ExceptT . fmap (mapLeft (LndrError . show))
+
+
+lndrWeb3 :: Web3 DefaultProvider b -> LndrHandler b
+lndrWeb3 = web3ToLndr . runWeb3
+
+
 nickHandler :: NickRequest -> LndrHandler ()
 nickHandler _ = undefined
 
@@ -66,11 +74,7 @@ rejectHandler = undefined
 
 
 transactionsHandler :: LndrHandler [IssueCreditLog]
-transactionsHandler = do
-    a <- runWeb3 lndrLogs
-    return $ case a of
-                Right ls -> ls
-                Left _ -> []
+transactionsHandler = lndrWeb3 lndrLogs
 
 
 pendingHandler :: LndrHandler [PendingRecord]
@@ -91,7 +95,7 @@ submitSignedHandler :: Text -> CreditRecord Signed
                     -> LndrHandler ()
 submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ sig) = do
     creditMap <- ask
-    Right (nonce, hash) <- liftIO . runWeb3 $ hashCreditRecord signedRecord
+    (nonce, hash) <- lndrWeb3 $ hashCreditRecord signedRecord
 
     -- TODO TODO verify sig
 
@@ -123,8 +127,4 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ s
 
 
 nonceHandler :: Address -> Address -> LndrHandler Nonce
-nonceHandler p1 p2 = do
-    a <- runWeb3 $ queryNonce p1 p2
-    return . Nonce $ case a of
-                Right ls -> ls
-                Left _ -> 0 -- TODO fix this, get proper exception handling in place
+nonceHandler p1 p2 = fmap Nonce . web3ToLndr . runWeb3 $ queryNonce p1 p2

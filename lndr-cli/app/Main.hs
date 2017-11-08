@@ -47,7 +47,7 @@ runMode (Borrow user friend amount memo url) = submitCredit url $ CreditRecord f
 
 submitCredit :: String -> CreditRecord Unsigned -> IO ()
 submitCredit url unsignedCredit = do
-    initReq <- HTTP.parseRequest $ url ++ "/submit"
+    initReq <- HTTP.parseRequest $ url ++ "/lend"
     let req = HTTP.setRequestBodyJSON unsignedCredit $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpJSON req

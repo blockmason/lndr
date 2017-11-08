@@ -173,7 +173,6 @@ interpretUcacLog change = do
                           (hexToInteger $ changeData change)
                           "TODO fix"
 
-
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the
 -- 40-char hex representation of an address
 bytes32ToAddress :: Text -> Either SomeException Address

@@ -20,6 +20,7 @@ import           Data.Text.Lazy (pack)
 import           Data.Time.Clock.POSIX (getPOSIXTime)
 import           EthInterface
 import           ListT
+import qualified Network.Ethereum.Util as EU
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Servant
@@ -98,6 +99,12 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ s
     (nonce, hash) <- lndrWeb3 $ hashCreditRecord signedRecord
 
     -- TODO TODO verify sig
+    --
+    -- submitter is one of creditor or debtor
+    signer <- LndrHandler . return $ EU.ecrecover sig $ EU.hashPersonalMessage hash
+
+    -- submitter signed the tx
+    -- submitter == creditor || submitter == debtor
 
     -- check if hash is already registered in pending txs
     pendingRecord <- liftIO . atomically $ Map.lookup hash creditMap

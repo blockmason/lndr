@@ -20,6 +20,7 @@ library
                      , base16-bytestring
                      , bytestring
                      , either
+                     , ethereumhs-util
                      , http-types
                      , listsafe
                      , list-t

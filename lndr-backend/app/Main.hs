@@ -61,7 +61,7 @@ server = transactionsHandler
 
 main :: IO ()
 main = do
-    pendingMap <- freshState
+    emptyState <- freshState
     withStdoutLogger $ \aplogger -> do
         let settings = W.setPort 80 $ W.setLogger aplogger W.defaultSettings
-        W.runSettings settings $ app pendingMap
+        W.runSettings settings $ app emptyState

@@ -37,10 +37,15 @@ instance ToHttpApiData Addr.Address where
 instance FromHttpApiData Addr.Address where
   parseUrlPiece = mapLeft T.pack . Addr.fromText
 
-type ServerState = Map.Map Text PendingRecord
+data ServerState = ServerState { pendingMap :: Map.Map Text PendingRecord
+                               , nickMap :: Map.Map Address Text
+                               , friendlistMap :: Map.Map Address [Address]
+                               }
 
-freshState :: forall k v. IO (Map.Map k v)
-freshState = atomically Map.new
+freshState :: IO ServerState
+freshState = ServerState <$> atomically Map.new
+                         <*> atomically Map.new
+                         <*> atomically Map.new
 
 type LndrAPI =
         "transactions" :> Get '[JSON] [IssueCreditLog]
@@ -84,7 +89,7 @@ transactionsHandler = lndrWeb3 lndrLogs
 
 pendingHandler :: LndrHandler [PendingRecord]
 pendingHandler = do
-    creditMap <- ask
+    creditMap <- pendingMap <$> ask
     fmap (fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
 
 
@@ -99,7 +104,7 @@ borrowHandler cr@(CreditRecord _ debtor _ _ _) = submitSignedHandler debtor cr
 submitSignedHandler :: Text -> CreditRecord Signed
                     -> LndrHandler NoContent
 submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ sig) = do
-    creditMap <- ask
+    creditMap <- pendingMap <$> ask
     (nonce, hash) <- lndrWeb3 $ hashCreditRecord signedRecord
 
     -- TODO TODO verify sig

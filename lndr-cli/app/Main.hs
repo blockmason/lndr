@@ -13,6 +13,7 @@ import qualified Network.HTTP.Simple as HTTP
 import           System.Console.CmdArgs
 import qualified Text.Pretty.Simple as Pr
 import           EthInterface
+import           Types
 
 data FiDCmd = Transactions { url :: String }
             | Pending { url :: String }

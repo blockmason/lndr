@@ -1,51 +1,34 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Server where
+module Server ( ServerState
+              , LndrAPI(..)
+              , lndrAPI
+              , LndrError(..)
+              , LndrHandler(..)
+              , freshState
+              , app
+              ) where
 
-import           Control.Concurrent.STM
-import           Control.Monad.Reader
 import           Control.Monad.Except
-import           Control.Monad.Trans.Except
+import           Control.Monad.IO.Class
+import           Control.Monad.Reader
 import           Data.ByteString.Lazy (ByteString)
-import           Data.Either.Combinators (mapLeft)
-import           Data.Text (Text)
-import qualified Data.Text as T
-import           Data.Text.Lazy.Encoding (encodeUtf8)
 import           Data.Text.Lazy (pack)
-import           Data.Time.Clock.POSIX (getPOSIXTime)
-import           EthInterface
-import           ListT
-import qualified Network.Ethereum.Util as EU
-import           Network.Ethereum.Web3
-import qualified Network.Ethereum.Web3.Address as Addr
+import           Data.Text.Lazy.Encoding (encodeUtf8)
+import qualified Data.Text.Lazy as T
+import qualified Data.Text.Lazy.Encoding as T
+import           Docs
+import           EthInterface (freshState)
+import           Handler
+import           Network.Ethereum.Web3.Address
+import           Network.HTTP.Types
+import           Network.Wai
 import           Servant
-import           Servant.API
 import           Servant.Docs
-import qualified STMContainers.Map as Map
-
-newtype LndrHandler a = LndrHandler {
-  runLndr :: ReaderT ServerState (ExceptT LndrError IO) a
-} deriving (Functor, Applicative, Monad, MonadReader ServerState, MonadError LndrError, MonadIO)
-instance ToHttpApiData Addr.Address where
-  toUrlPiece = Addr.toText
-
-instance FromHttpApiData Addr.Address where
-  parseUrlPiece = mapLeft T.pack . Addr.fromText
-
-data ServerState = ServerState { pendingMap :: Map.Map Text PendingRecord
-                               , nickMap :: Map.Map Address Text
-                               , friendlistMap :: Map.Map Address [Address]
-                               }
-
-freshState :: IO ServerState
-freshState = ServerState <$> atomically Map.new
-                         <*> atomically Map.new
-                         <*> atomically Map.new
+import           Types
 
 type LndrAPI =
         "transactions" :> Get '[JSON] [IssueCreditLog]
@@ -61,98 +44,49 @@ type LndrAPI =
                          :> PostNoContent '[JSON] NoContent
    :<|> "docs" :> Raw
 
+
 lndrAPI :: Proxy LndrAPI
 lndrAPI = Proxy
 
+apiDocs :: API
+apiDocs = docs lndrAPI
 
-web3ToLndr :: Show a => IO (Either a b) -> LndrHandler b
-web3ToLndr = LndrHandler . lift . ExceptT . fmap (mapLeft (LndrError . show))
+docsBS :: ByteString
+docsBS = encodeUtf8
+       . pack
+       . markdown
+       $ docsWithIntros [intro] lndrAPI
+  where intro = DocIntro "LNDR Server" ["Web service API"]
 
+server :: ServerT LndrAPI LndrHandler
+server = transactionsHandler
+    :<|> pendingHandler
+    :<|> lendHandler
+    :<|> borrowHandler
+    :<|> rejectHandler
+    :<|> nonceHandler
+    :<|> nickHandler
+    :<|> friendHandler
+    :<|> updateFriendsHandler
+    :<|> Tagged serveDocs
+    where serveDocs _ respond =
+            respond $ responseLBS ok200 [plain] docsBS
+          plain = ("Content-Type", "text/plain")
 
-lndrWeb3 :: Web3 DefaultProvider b -> LndrHandler b
-lndrWeb3 = web3ToLndr . runWeb3
+readerToHandler' :: forall a. ServerState -> LndrHandler a -> Handler a
+readerToHandler' state r = do
+    res <- liftIO . runExceptT $ runReaderT (runLndr r) state
+    Handler . ExceptT . return $ case res of
+      Left (LndrError text) -> Left err500 { errBody = T.encodeUtf8 $ T.pack text }
+      Right a  -> Right a
 
-
-nickHandler :: NickRequest -> LndrHandler NoContent
-nickHandler _ = undefined
-
-
-friendHandler :: Address -> LndrHandler [Address]
-friendHandler _ = undefined
-
-
-updateFriendsHandler :: Address -> UpdateFriendsRequest -> LndrHandler NoContent
-updateFriendsHandler _ _ = undefined
-
-
--- submit a signed message consisting of "REJECT + CreditRecord HASH"
--- each credit record will be referenced by its hash
-rejectHandler :: RejectRecord -> LndrHandler NoContent
-rejectHandler = undefined
-
-
-transactionsHandler :: LndrHandler [IssueCreditLog]
-transactionsHandler = lndrWeb3 lndrLogs
-
-
-pendingHandler :: LndrHandler [PendingRecord]
-pendingHandler = do
-    creditMap <- pendingMap <$> ask
-    fmap (fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
-
-
-lendHandler :: CreditRecord Signed -> LndrHandler NoContent
-lendHandler cr@(CreditRecord creditor _ _ _ _) = submitSignedHandler creditor cr
+readerToHandler :: ServerState -> LndrHandler :~> Handler
+readerToHandler state = NT (readerToHandler' state)
 
 
-borrowHandler :: CreditRecord Signed -> LndrHandler NoContent
-borrowHandler cr@(CreditRecord _ debtor _ _ _) = submitSignedHandler debtor cr
+readerServer :: ServerState -> Server LndrAPI
+readerServer state = enter (readerToHandler state) server
 
 
-submitSignedHandler :: Text -> CreditRecord Signed
-                    -> LndrHandler NoContent
-submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ sig) = do
-    creditMap <- pendingMap <$> ask
-    (nonce, hash) <- lndrWeb3 $ hashCreditRecord signedRecord
-
-    -- submitter is one of creditor or debtor
-    if submitterAddress == creditor || submitterAddress == debtor
-        then return ()
-        else throwError (LndrError "Submitter is not creditor nor debtor")
-
-    signer <- web3ToLndr . return $ EU.ecrecover sig $ EU.hashPersonalMessage hash
-
-    -- submitter signed the tx
-    if signer == submitterAddress
-        then return ()
-        else throwError (LndrError "Bad submitter sig")
-
-    -- check if hash is already registered in pending txs
-    pendingRecord <- liftIO . atomically $ Map.lookup hash creditMap
-    let cr = creditRecord <$> pendingRecord
-
-    case cr of
-        Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do
-            -- if the submitted credit record has a matching pending record,
-            -- finalize the transaction on the blockchain
-            if creditor /= submitterAddress
-                then finalizeTransaction (signature storedRecord)
-                                         (signature signedRecord)
-                                         storedRecord
-                else finalizeTransaction (signature signedRecord)
-                                         (signature storedRecord)
-                                         storedRecord
-            -- delete pending record after transaction finalization
-            atomically $ Map.delete hash creditMap
-
-        -- if no matching transaction is found, create pending transaction
-        Nothing -> liftIO . atomically $
-                        Map.insert (PendingRecord signedRecord submitterAddr hash)
-                                   hash creditMap
-
-    return NoContent
-    where submitterAddr = textToAddress submitterAddress
-
-
-nonceHandler :: Address -> Address -> LndrHandler Nonce
-nonceHandler p1 p2 = fmap Nonce . web3ToLndr . runWeb3 $ queryNonce p1 p2
+app :: ServerState -> Application
+app state = serve lndrAPI (readerServer state)

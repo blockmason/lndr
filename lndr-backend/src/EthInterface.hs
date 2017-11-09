@@ -14,8 +14,11 @@ module EthInterface where
 import           Control.Exception
 import           Control.Monad
 import           Control.Monad.Except
+import           Control.Concurrent.STM
 import           Data.Aeson
 import           Data.Aeson.TH
+import qualified Data.ByteArray as BA
+import qualified Data.ByteString.Base16 as BS16
 import           Data.Data
 import           Data.Either (rights)
 import           Data.Either.Combinators (fromRight, mapLeft)
@@ -34,60 +37,14 @@ import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
 import           Numeric (readHex, showHex)
 import           Prelude hiding ((!!))
-import qualified Data.ByteArray as BA
-import qualified Data.ByteString.Base16 as BS16
+import qualified STMContainers.Map as Map
 
-newtype Nonce = Nonce { mkNonce :: Integer } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''Nonce)
+import           Types
 
-data IssueCreditLog = IssueCreditLog { ucac :: Address
-                                     , creditor :: Address
-                                     , debtor :: Address
-                                     , amount :: Integer
-                                     , memo :: Text
-                                     } deriving Show
-$(deriveJSON defaultOptions ''IssueCreditLog)
-
--- Types that populate `CreditRecord`'s phantom type field
-data Signed = Signed
-$(deriveJSON defaultOptions ''Signed)
-data Unsigned = Unsigned
-$(deriveJSON defaultOptions ''Unsigned)
-
--- `a` is a phantom type that indicates whether a record has been signed or not
-data CreditRecord a = CreditRecord { creditor :: Text
-                                   , debtor :: Text
-                                   , amount :: Integer
-                                   , memo :: Text
-                                   , signature :: Text
-                                   } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''CreditRecord)
-
-data PendingRecord = PendingRecord { creditRecord :: CreditRecord Signed
-                                   , submitter :: Address
-                                   , hash :: Text
-                                   }
-$(deriveJSON defaultOptions ''PendingRecord)
-
-
-data RejectRecord = RejectRecord { rejectSig :: Text
-                                 , hash :: Text
-                                 }
-$(deriveJSON defaultOptions ''RejectRecord)
-
-data NickRequest = NickRequest { nick :: Text
-                               , sig :: Text
-                               }
-$(deriveJSON defaultOptions ''NickRequest)
-
-data UpdateFriendsRequest = UpdateFriendsRequest { friendsToAdd :: [Address]
-                                                 , friendsToRemove :: [Address]
-                                                 }
-
-$(deriveJSON defaultOptions ''UpdateFriendsRequest)
-
-newtype LndrError = LndrError { unLndrError :: String } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''LndrError)
+freshState :: IO ServerState
+freshState = ServerState <$> atomically Map.new
+                         <*> atomically Map.new
+                         <*> atomically Map.new
 
 ucacId :: Text
 ucacId = "0x7624778dedc75f8b322b9fa1632a610d40b85e106c7d9bf0e743a9ce291b9c6f"

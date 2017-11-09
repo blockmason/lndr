@@ -7,11 +7,8 @@
 
 module Docs where
 
-import           Data.ByteString.Lazy (ByteString)
 import           Data.Proxy
 import           Data.Text (Text)
-import           Data.Text.Lazy.Encoding (encodeUtf8)
-import           Data.Text.Lazy (pack)
 import           Network.Ethereum.Web3.Address
 import           Network.HTTP.Types
 import           Network.Wai
@@ -19,7 +16,7 @@ import           Servant.API
 import           Servant.Docs
 import           Servant.Server
 
-import           Server
+import           Types
 import           EthInterface
 
 creditHash :: Text
@@ -101,16 +98,3 @@ instance ToCapture (Capture "user" Address) where
 instance ToCapture (Capture "nick" Text) where
   toCapture _ =
     DocCapture "nick" "the nickname to be associated with a particular address"
-
-apiDocs :: API
-apiDocs = docs lndrAPI
-
-markdownDocs :: String
-markdownDocs = markdown apiDocs
-
-docsBS :: ByteString
-docsBS = encodeUtf8
-       . pack
-       . markdown
-       $ docsWithIntros [intro] lndrAPI
-  where intro = DocIntro "LNDR Server" ["Web service API"]

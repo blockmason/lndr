@@ -53,6 +53,7 @@ server = transactionsHandler
     :<|> nonceHandler
     :<|> nickHandler
     :<|> friendHandler
+    :<|> updateFriendsHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS

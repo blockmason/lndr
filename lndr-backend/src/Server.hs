@@ -56,6 +56,9 @@ type LndrAPI =
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
    :<|> "friends" :> Capture "user" Address :> Get '[JSON] [Address]
+   :<|> "update_friends" :> Capture "user" Address
+                         :> ReqBody '[JSON] UpdateFriendsRequest
+                         :> PostNoContent '[JSON] NoContent
    :<|> "docs" :> Raw
 
 lndrAPI :: Proxy LndrAPI
@@ -73,8 +76,13 @@ lndrWeb3 = web3ToLndr . runWeb3
 nickHandler :: NickRequest -> LndrHandler NoContent
 nickHandler _ = undefined
 
+
 friendHandler :: Address -> LndrHandler [Address]
 friendHandler _ = undefined
+
+
+updateFriendsHandler :: Address -> UpdateFriendsRequest -> LndrHandler NoContent
+updateFriendsHandler _ _ = undefined
 
 
 -- submit a signed message consisting of "REJECT + CreditRecord HASH"

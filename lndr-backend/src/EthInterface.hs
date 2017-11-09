@@ -80,6 +80,12 @@ data NickRequest = NickRequest { nick :: Text
                                }
 $(deriveJSON defaultOptions ''NickRequest)
 
+data UpdateFriendsRequest = UpdateFriendsRequest { friendsToAdd :: [Address]
+                                                 , friendsToRemove :: [Address]
+                                                 }
+
+$(deriveJSON defaultOptions ''UpdateFriendsRequest)
+
 newtype LndrError = LndrError { unLndrError :: String } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''LndrError)
 

@@ -15,25 +15,25 @@ import qualified Text.Pretty.Simple as Pr
 import           EthInterface
 import           Types
 
-data FiDCmd = Transactions { url :: String }
-            | Pending { url :: String }
-            | Lend { me :: Text
-                   , friend :: Text
-                   , amount :: Integer
-                   , memo :: Text
-                   , url :: String
-                   }
-            | Borrow { me :: Text
-                     , friend :: Text
-                     , amount :: Integer
-                     , memo :: Text
-                     , url :: String
-                     }
-            deriving (Show, Data, Typeable)
+data LndrCmd = Transactions { url :: String }
+             | Pending { url :: String }
+             | Lend { me :: Text
+                    , friend :: Text
+                    , amount :: Integer
+                    , memo :: Text
+                    , url :: String
+                    }
+             | Borrow { me :: Text
+                      , friend :: Text
+                      , amount :: Integer
+                      , memo :: Text
+                      , url :: String
+                      }
+             deriving (Show, Data, Typeable)
 
 -- TODO put this in ReaderT to handle config vars loaded at runtime
 -- (config var to implement: web address, userid)
-runMode :: FiDCmd -> IO ()
+runMode :: LndrCmd -> IO ()
 runMode (Transactions url) = do
     initReq <- HTTP.parseRequest $ url ++ "/transactions"
     resp <- HTTP.httpJSON initReq

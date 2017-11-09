@@ -78,8 +78,9 @@ stack setup
 stack build
 ```
 
-one a server using EBS, keep in mind that `stack`'s root can be set via an
+on a server using EBS, keep in mind that `stack`'s root can be set via an
 environment variable:
+
 ```
 export STACK_ROOT=/data/.stack
 ```

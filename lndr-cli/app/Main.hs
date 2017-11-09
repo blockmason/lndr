@@ -13,26 +13,27 @@ import qualified Network.HTTP.Simple as HTTP
 import           System.Console.CmdArgs
 import qualified Text.Pretty.Simple as Pr
 import           EthInterface
+import           Types
 
-data FiDCmd = Transactions { url :: String }
-            | Pending { url :: String }
-            | Lend { me :: Text
-                   , friend :: Text
-                   , amount :: Integer
-                   , memo :: Text
-                   , url :: String
-                   }
-            | Borrow { me :: Text
-                     , friend :: Text
-                     , amount :: Integer
-                     , memo :: Text
-                     , url :: String
-                     }
-            deriving (Show, Data, Typeable)
+data LndrCmd = Transactions { url :: String }
+             | Pending { url :: String }
+             | Lend { me :: Text
+                    , friend :: Text
+                    , amount :: Integer
+                    , memo :: Text
+                    , url :: String
+                    }
+             | Borrow { me :: Text
+                      , friend :: Text
+                      , amount :: Integer
+                      , memo :: Text
+                      , url :: String
+                      }
+             deriving (Show, Data, Typeable)
 
 -- TODO put this in ReaderT to handle config vars loaded at runtime
 -- (config var to implement: web address, userid)
-runMode :: FiDCmd -> IO ()
+runMode :: LndrCmd -> IO ()
 runMode (Transactions url) = do
     initReq <- HTTP.parseRequest $ url ++ "/transactions"
     resp <- HTTP.httpJSON initReq
@@ -47,11 +48,11 @@ runMode (Borrow user friend amount memo url) = submitCredit url $ CreditRecord f
 
 submitCredit :: String -> CreditRecord Unsigned -> IO ()
 submitCredit url unsignedCredit = do
-    initReq <- HTTP.parseRequest $ url ++ "/submit"
+    initReq <- HTTP.parseRequest $ url ++ "/lend"
     let req = HTTP.setRequestBodyJSON unsignedCredit $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpJSON req
-    Pr.pPrintNoColor (HTTP.getResponseBody resp :: SubmissionResponse)
+    Pr.pPrintNoColor (HTTP.getResponseBody resp :: ())
 
 programModes = modes [ Transactions defaultServerUrl &= help "list all transactions processed by FiD UCAC"
                      , Pending defaultServerUrl &= help "list all pending transactions"

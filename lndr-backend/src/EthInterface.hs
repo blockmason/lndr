@@ -14,8 +14,11 @@ module EthInterface where
 import           Control.Exception
 import           Control.Monad
 import           Control.Monad.Except
+import           Control.Concurrent.STM
 import           Data.Aeson
 import           Data.Aeson.TH
+import qualified Data.ByteArray as BA
+import qualified Data.ByteString.Base16 as BS16
 import           Data.Data
 import           Data.Either (rights)
 import           Data.Either.Combinators (fromRight, mapLeft)
@@ -34,42 +37,14 @@ import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
 import           Numeric (readHex, showHex)
 import           Prelude hiding ((!!))
-import qualified Data.ByteArray as BA
-import qualified Data.ByteString.Base16 as BS16
+import qualified STMContainers.Map as Map
 
-data IssueCreditLog = IssueCreditLog { ucac :: Address
-                                     , creditor :: Address
-                                     , debtor :: Address
-                                     , amount :: Integer
-                                     , memo :: Text
-                                     } deriving Show
-$(deriveJSON defaultOptions ''IssueCreditLog)
+import           Types
 
--- Types that populate `CreditRecord`'s phantom type field
-data Signed = Signed
-$(deriveJSON defaultOptions ''Signed)
-data Unsigned = Unsigned
-$(deriveJSON defaultOptions ''Unsigned)
-
--- `a` is a phantom type that indicates whether a record has been signed or not
-data CreditRecord a = CreditRecord { creditor :: Text
-                                   , debtor :: Text
-                                   , amount :: Integer
-                                   , memo :: Text
-                                   , signature :: Text
-                                   } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''CreditRecord)
-
-data PendingRecord = PendingRecord { creditRecord :: CreditRecord Signed
-                                   , submitter :: Address
-                                   }
-$(deriveJSON defaultOptions ''PendingRecord)
-
-
-data SubmissionResponse = SubmissionResponse { hash :: Text
-                                     , nonce :: Integer
-                                     } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''SubmissionResponse)
+freshState :: IO ServerState
+freshState = ServerState <$> atomically Map.new
+                         <*> atomically Map.new
+                         <*> atomically Map.new
 
 ucacId :: Text
 ucacId = "0x7624778dedc75f8b322b9fa1632a610d40b85e106c7d9bf0e743a9ce291b9c6f"
@@ -160,7 +135,6 @@ interpretUcacLog change = do
                           debtorAddr
                           (hexToInteger $ changeData change)
                           "TODO fix"
-
 
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the
 -- 40-char hex representation of an address

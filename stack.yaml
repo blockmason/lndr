@@ -6,3 +6,11 @@ packages:
 - location:
     git: git@github.com:airalab/hs-web3.git
     commit: fd22da4a178c9e8f570c3d4b8f0ce589fa40e207
+  extra-dep: true
+- location:
+    git: git@github.com:aupiff/ethereumhs-util.git
+    commit: bec31dae699760b4476a33a880a700911beb17f9
+  extra-dep: true
+
+extra-deps:
+- secp256k1-0.5.2

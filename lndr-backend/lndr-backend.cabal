@@ -26,6 +26,7 @@ library
                      , bytestring
                      , either
                      , ethereumhs-util
+                     , hashable
                      , http-types
                      , listsafe
                      , list-t

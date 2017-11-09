@@ -1,8 +1,8 @@
 module Handler.Credit where
 
 import           Control.Concurrent.STM
-import           Control.Monad.Except
 import           Control.Monad.Reader
+import           Control.Monad.Except
 import           Data.Text (Text)
 import           Handler.Types
 import           ListT

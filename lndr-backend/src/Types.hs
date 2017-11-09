@@ -8,6 +8,7 @@ module Types where
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Either.Combinators (mapLeft)
+import           Data.Hashable
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           GHC.Generics
@@ -16,10 +17,14 @@ import qualified Network.Ethereum.Web3.Address as Addr
 import           Servant.API
 import qualified STMContainers.Map as Map
 
-instance ToHttpApiData Addr.Address where
+-- TODO remove this once Address derives Generic in hs-web3
+instance Hashable Address where
+    hashWithSalt x = hashWithSalt x . Addr.toText
+
+instance ToHttpApiData Address where
   toUrlPiece = Addr.toText
 
-instance FromHttpApiData Addr.Address where
+instance FromHttpApiData Address where
   parseUrlPiece = mapLeft T.pack . Addr.fromText
 
 newtype Nonce = Nonce { mkNonce :: Integer } deriving (Show, Generic)
@@ -60,7 +65,8 @@ data RejectRecord = RejectRecord { rejectSig :: Text
                                  }
 $(deriveJSON defaultOptions ''RejectRecord)
 
-data NickRequest = NickRequest { nick :: Text
+data NickRequest = NickRequest { addr :: Address
+                               , nick :: Text
                                , sig :: Text
                                }
 $(deriveJSON defaultOptions ''NickRequest)

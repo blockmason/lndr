@@ -2,6 +2,7 @@ module Handler.Friend where
 
 import           Control.Monad.Reader
 import           Control.Concurrent.STM
+import           Data.Maybe (fromMaybe)
 import           Handler.Types
 import           Network.Ethereum.Web3
 import           Servant.API
@@ -17,7 +18,9 @@ nickHandler (NickRequest addr nick sig) = do
 
 
 friendHandler :: Address -> LndrHandler [Address]
-friendHandler _ = undefined
+friendHandler addr = do
+    friendListMapping <- friendlistMap <$> ask
+    fmap (fromMaybe []) . liftIO . atomically $ Map.lookup addr friendListMapping
 
 
 updateFriendsHandler :: Address -> UpdateFriendsRequest -> LndrHandler NoContent

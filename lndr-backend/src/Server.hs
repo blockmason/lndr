@@ -10,7 +10,7 @@ module Server where
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Except
-import           Control.Monad.Trans.Either
+import           Control.Monad.Trans.Except
 import           Data.ByteString.Lazy (ByteString)
 import           Data.Either.Combinators (mapLeft)
 import           Data.Text (Text)
@@ -103,17 +103,21 @@ borrowHandler cr@(CreditRecord _ debtor _ _ _) = submitSignedHandler debtor cr
 
 submitSignedHandler :: Text -> CreditRecord Signed
                     -> LndrHandler NoContent
-submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor _ _ _ sig) = do
+submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ sig) = do
     creditMap <- pendingMap <$> ask
     (nonce, hash) <- lndrWeb3 $ hashCreditRecord signedRecord
 
-    -- TODO TODO verify sig
-    --
     -- submitter is one of creditor or debtor
-    signer <- LndrHandler . return $ EU.ecrecover sig $ EU.hashPersonalMessage hash
+    if submitterAddress == creditor || submitterAddress == debtor
+        then return ()
+        else throwError (LndrError "Submitter is not creditor nor debtor")
+
+    signer <- web3ToLndr . return $ EU.ecrecover sig $ EU.hashPersonalMessage hash
 
     -- submitter signed the tx
-    -- submitter == creditor || submitter == debtor
+    if signer == submitterAddress
+        then return ()
+        else throwError (LndrError "Bad submitter sig")
 
     -- check if hash is already registered in pending txs
     pendingRecord <- liftIO . atomically $ Map.lookup hash creditMap

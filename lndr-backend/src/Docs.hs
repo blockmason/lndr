@@ -67,6 +67,9 @@ instance ToSample IssueCreditLog where
                        69
                        "simple memo"
 
+instance ToSample Address where
+    toSamples _ = singleSample "0x11edd217a875063583dd1b638d16810c5d34d54b"
+
 instance ToSample () where
     toSamples _ = singleSample ()
 
@@ -87,6 +90,10 @@ instance ToCapture (Capture "p2" Address) where
 instance ToCapture (Capture "address" Address) where
   toCapture _ =
     DocCapture "address" "the address to which a nickname should be assigned"
+
+instance ToCapture (Capture "user" Address) where
+  toCapture _ =
+    DocCapture "user" "the address of the user whose friends will be returned"
 
 instance ToCapture (Capture "nick" Text) where
   toCapture _ =

@@ -24,4 +24,9 @@ friendHandler addr = do
 
 
 updateFriendsHandler :: Address -> UpdateFriendsRequest -> LndrHandler NoContent
-updateFriendsHandler _ _ = undefined
+updateFriendsHandler addr (UpdateFriendsRequest adds removes) = do
+    -- TODO verify signature
+    friendListMapping <- friendlistMap <$> ask
+    -- TODO use same function as friendHandler, then modify list, then update
+    -- the mapping
+    return NoContent

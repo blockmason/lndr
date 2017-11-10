@@ -1,10 +1,10 @@
-module Handler ( -- * Handler type
+module Handler (
+    -- * Handler type
       LndrHandler(..)
     , web3ToLndr
     , lndrWeb3
 
       -- * Transaction Handlers
-
     , rejectHandler
     , transactionsHandler
     , pendingHandler
@@ -14,7 +14,6 @@ module Handler ( -- * Handler type
     , nonceHandler
 
       -- * Friend Handlers
-
     , nickHandler
     , friendHandler
     , updateFriendsHandler

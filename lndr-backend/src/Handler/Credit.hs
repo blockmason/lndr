@@ -17,7 +17,11 @@ import           EthInterface
 -- submit a signed message consisting of "REJECT + CreditRecord HASH"
 -- each credit record will be referenced by its hash
 rejectHandler :: RejectRecord -> LndrHandler NoContent
-rejectHandler = undefined
+rejectHandler(RejectRecord sig hash) = do
+    -- TODO verify sig!
+    pendingMapping <- pendingMap <$> ask
+    liftIO . atomically $ Map.delete hash pendingMapping
+    return NoContent
 
 
 transactionsHandler :: LndrHandler [IssueCreditLog]

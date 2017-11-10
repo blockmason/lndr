@@ -68,6 +68,9 @@ instance ToSample Address where
 instance ToSample () where
     toSamples _ = singleSample ()
 
+instance ToSample Text where
+    toSamples _ = singleSample "aupiff"
+
 instance ToSample Nonce where
     toSamples _ = singleSample $ Nonce 1
 

@@ -17,6 +17,7 @@ import           Control.Monad.Except
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import           Data.ByteString.Lazy (ByteString)
+import           Data.Text (Text)
 import           Data.Text.Lazy (pack)
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import qualified Data.Text.Lazy as T
@@ -39,6 +40,7 @@ type LndrAPI =
    :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] NoContent
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
+   :<|> "nick" :> Capture "user" Address :> Get '[JSON] Text
    :<|> "friends" :> Capture "user" Address :> Get '[JSON] [Address]
    :<|> "add_friends" :> Capture "user" Address
                       :> ReqBody '[JSON] [Address]
@@ -70,6 +72,7 @@ server = transactionsHandler
     :<|> rejectHandler
     :<|> nonceHandler
     :<|> nickHandler
+    :<|> nickLookupHandler
     :<|> friendHandler
     :<|> addFriendsHandler
     :<|> removeFriendsHandler

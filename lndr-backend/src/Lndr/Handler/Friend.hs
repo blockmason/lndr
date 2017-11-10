@@ -4,6 +4,7 @@ import           Control.Monad.Reader
 import           Control.Concurrent.STM
 import           Data.List ((\\), nub)
 import           Data.Maybe (fromMaybe)
+import           Data.Text (Text)
 import           Lndr.Handler.Types
 import           Lndr.Types
 import           Network.Ethereum.Web3
@@ -18,8 +19,10 @@ nickHandler (NickRequest addr nick sig) = do
     return NoContent
 
 
-lookupFriends :: Address -> Map.Map Address [Address] -> LndrHandler [Address]
-lookupFriends x y = fmap (fromMaybe []) . liftIO . atomically $ Map.lookup x y
+nickLookupHandler :: Address -> LndrHandler Text
+nickLookupHandler addr = do
+    nickMapping <- nickMap <$> ask
+    ioMaybeToLndr "addr not found in nick db" . atomically $ Map.lookup addr nickMapping
 
 
 friendHandler :: Address -> LndrHandler [Address]
@@ -36,6 +39,7 @@ addFriendsHandler addr adds = do
     liftIO . atomically $ Map.insert (nub $ friendList ++ adds) addr friendListMapping
     return NoContent
 
+
 removeFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
 removeFriendsHandler addr removes = do
     -- TODO verify signature
@@ -43,3 +47,7 @@ removeFriendsHandler addr removes = do
     friendList <- lookupFriends addr friendListMapping
     liftIO . atomically $ Map.insert (friendList \\ removes) addr friendListMapping
     return NoContent
+
+
+lookupFriends :: Address -> Map.Map Address [Address] -> LndrHandler [Address]
+lookupFriends x y = fmap (fromMaybe []) . liftIO . atomically $ Map.lookup x y

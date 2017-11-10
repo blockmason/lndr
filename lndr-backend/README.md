@@ -17,6 +17,78 @@
 
 Web service API
 
+## POST /add_friends/:user
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Captures:
+
+- *user*: the address of the user whose friends will be returned
+
+#### Request:
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+- Example (): `application/json;charset=utf-8`
+
+```javascript
+[]
+```
+
+- Example (): `application/json`
+
+```javascript
+[]
+```
+
+- Example (): `application/json;charset=utf-8`
+
+```javascript
+["0x11edd217a875063583dd1b638d16810c5d34d54b"]
+```
+
+- Example (): `application/json`
+
+```javascript
+["0x11edd217a875063583dd1b638d16810c5d34d54b"]
+```
+
+- Example (): `application/json;charset=utf-8`
+
+```javascript
+["0x11edd217a875063583dd1b638d16810c5d34d54b","0x11edd217a875063583dd1b638d16810c5d34d54b"]
+```
+
+#### Response:
+
+- Status code 204
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+
+```
+
+-
+
+```javascript
+
+```
+
 ## POST /borrow
 
 #### Authentication
@@ -236,6 +308,41 @@ Clients must supply the following data
 
 ```
 
+## GET /nick/:user
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Captures:
+
+- *user*: the address of the user whose friends will be returned
+
+#### Response:
+
+- Status code 200
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+"aupiff"
+```
+
+-
+
+```javascript
+"aupiff"
+```
+
 ## GET /nonce/:p1/:p2
 
 #### Authentication
@@ -371,6 +478,78 @@ Clients must supply the following data
 
 ```
 
+## POST /remove_friends/:user
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Captures:
+
+- *user*: the address of the user whose friends will be returned
+
+#### Request:
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+- Example (): `application/json;charset=utf-8`
+
+```javascript
+[]
+```
+
+- Example (): `application/json`
+
+```javascript
+[]
+```
+
+- Example (): `application/json;charset=utf-8`
+
+```javascript
+["0x11edd217a875063583dd1b638d16810c5d34d54b"]
+```
+
+- Example (): `application/json`
+
+```javascript
+["0x11edd217a875063583dd1b638d16810c5d34d54b"]
+```
+
+- Example (): `application/json;charset=utf-8`
+
+```javascript
+["0x11edd217a875063583dd1b638d16810c5d34d54b","0x11edd217a875063583dd1b638d16810c5d34d54b"]
+```
+
+#### Response:
+
+- Status code 204
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+
+```
+
+-
+
+```javascript
+
+```
+
 ## GET /transactions
 
 #### Authentication
@@ -418,58 +597,4 @@ Clients must supply the following data
 
 ```javascript
 [{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"memo":"simple memo"},{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"memo":"simple memo"}]
-```
-
-## POST /update_friends/:user
-
-#### Authentication
-
-
-
-Clients must supply the following data
-
-
-#### Captures:
-
-- *user*: the address of the user whose friends will be returned
-
-#### Request:
-
-- Supported content types are:
-
-    - `application/json;charset=utf-8`
-    - `application/json`
-
-- Example (): `application/json;charset=utf-8`
-
-```javascript
-{"friendsToAdd":["0x11edd217a875063583dd1b638d16810c5d34d54b"],"friendsToRemove":[]}
-```
-
-- Example (): `application/json`
-
-```javascript
-{"friendsToAdd":["0x11edd217a875063583dd1b638d16810c5d34d54b"],"friendsToRemove":[]}
-```
-
-#### Response:
-
-- Status code 204
-- Headers: []
-
-- Supported content types are:
-
-    - `application/json;charset=utf-8`
-    - `application/json`
-
--
-
-```javascript
-
-```
-
--
-
-```javascript
-
 ```

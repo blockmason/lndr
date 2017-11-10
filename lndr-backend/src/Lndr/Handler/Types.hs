@@ -1,13 +1,13 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Handler.Types where
+module Lndr.Handler.Types where
 
 import           Control.Monad.Reader
 import           Control.Monad.Except
 import           Control.Monad.Trans.Except
 import           Data.Either.Combinators (mapLeft)
+import           Lndr.Types
 import           Network.Ethereum.Web3
-import           Types
 
 newtype LndrHandler a = LndrHandler {
   runLndr :: ReaderT ServerState (ExceptT LndrError IO) a

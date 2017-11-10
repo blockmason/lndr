@@ -14,3 +14,4 @@ packages:
 
 extra-deps:
 - secp256k1-0.5.2
+- dhall-1.8.0

@@ -12,14 +12,14 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Docs
-                     , EthInterface
-                     , Handler
-                     , Handler.Credit
-                     , Handler.Friend
-                     , Handler.Types
-                     , Server
-                     , Types
+  exposed-modules:     Lndr.Docs
+                     , Lndr.EthInterface
+                     , Lndr.Handler
+                     , Lndr.Handler.Credit
+                     , Lndr.Handler.Friend
+                     , Lndr.Handler.Types
+                     , Lndr.Server
+                     , Lndr.Types
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , base16-bytestring

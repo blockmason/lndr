@@ -1,4 +1,4 @@
-module Handler (
+module Lndr.Handler (
     -- * Handler type
       LndrHandler(..)
     , web3ToLndr
@@ -16,10 +16,11 @@ module Handler (
       -- * Friend Handlers
     , nickHandler
     , friendHandler
-    , updateFriendsHandler
+    , addFriendsHandler
+    , removeFriendsHandler
     ) where
 
 
-import           Handler.Friend
-import           Handler.Credit
-import           Handler.Types
+import           Lndr.Handler.Friend
+import           Lndr.Handler.Credit
+import           Lndr.Handler.Types

@@ -3,7 +3,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Types where
+module Lndr.Types where
 
 import           Data.Aeson
 import           Data.Aeson.TH
@@ -70,11 +70,6 @@ data NickRequest = NickRequest { addr :: Address
                                , sig :: Text
                                }
 $(deriveJSON defaultOptions ''NickRequest)
-
-data UpdateFriendsRequest = UpdateFriendsRequest { friendsToAdd :: [Address]
-                                                 , friendsToRemove :: [Address]
-                                                 }
-$(deriveJSON defaultOptions ''UpdateFriendsRequest)
 
 newtype LndrError = LndrError { unLndrError :: String } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''LndrError)

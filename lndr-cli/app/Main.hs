@@ -9,11 +9,12 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           GHC.Generics
+import           Lndr.CLI.Config
+import           Lndr.EthInterface
+import           Lndr.Types
 import qualified Network.HTTP.Simple as HTTP
 import           System.Console.CmdArgs
 import qualified Text.Pretty.Simple as Pr
-import           EthInterface
-import           Types
 
 data LndrCmd = Transactions { url :: String }
              | Pending { url :: String }
@@ -30,6 +31,7 @@ data LndrCmd = Transactions { url :: String }
                       , url :: String
                       }
              deriving (Show, Data, Typeable)
+
 
 -- TODO put this in ReaderT to handle config vars loaded at runtime
 -- (config var to implement: web address, userid)
@@ -71,4 +73,9 @@ programModes = modes [ Transactions defaultServerUrl &= help "list all transacti
 
 main :: IO ()
 main = do mode <- cmdArgsRun $ cmdArgsMode programModes
+          -- check for presence of a config file
+
+          -- if no config file is found, ask if user would like to create
+          -- a defualt config file
+
           runMode mode

@@ -8,44 +8,45 @@ import           Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
+import qualified Dhall
 import           GHC.Generics
 import           Lndr.CLI.Config
 import           Lndr.EthInterface
 import           Lndr.Types
+import           Network.Ethereum.Web3
 import qualified Network.HTTP.Simple as HTTP
-import           System.Console.CmdArgs
+import           System.Console.CmdArgs hiding (auto)
 import qualified Text.Pretty.Simple as Pr
 
-data LndrCmd = Transactions { url :: String }
-             | Pending { url :: String }
-             | Lend { me :: Text
-                    , friend :: Text
+data LndrCmd = Transactions
+             | Pending
+             | Lend { friend :: Text
                     , amount :: Integer
                     , memo :: Text
-                    , url :: String
                     }
-             | Borrow { me :: Text
-                      , friend :: Text
+             | Borrow { friend :: Text
                       , amount :: Integer
                       , memo :: Text
-                      , url :: String
                       }
              deriving (Show, Data, Typeable)
 
 
 -- TODO put this in ReaderT to handle config vars loaded at runtime
 -- (config var to implement: web address, userid)
-runMode :: LndrCmd -> IO ()
-runMode (Transactions url) = do
-    initReq <- HTTP.parseRequest $ url ++ "/transactions"
+runMode :: Config -> LndrCmd -> IO ()
+runMode (Config url _ _ _) Transactions = do
+    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/transactions"
     resp <- HTTP.httpJSON initReq
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: [IssueCreditLog])
-runMode (Pending url) = do
-    initReq <- HTTP.parseRequest $ url ++ "/pending"
+runMode (Config url _ _ _) Pending = do
+    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/pending"
     resp <- HTTP.httpJSON initReq
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: [(Text, CreditRecord Signed)])
-runMode (Lend user friend amount memo url) = submitCredit url $ CreditRecord user friend amount memo user
-runMode (Borrow user friend amount memo url) = submitCredit url $ CreditRecord friend user amount memo user
+runMode (Config url user _ _) (Lend friend amount memo) =
+    submitCredit (LT.unpack url) $ CreditRecord (LT.toStrict user) friend amount memo ""
+runMode (Config url user _ _) (Borrow friend amount memo) =
+    submitCredit (LT.unpack url) $ CreditRecord friend (LT.toStrict user) amount memo ""
 
 
 submitCredit :: String -> CreditRecord Unsigned -> IO ()
@@ -56,26 +57,23 @@ submitCredit url unsignedCredit = do
     resp <- HTTP.httpJSON req
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: ())
 
-programModes = modes [ Transactions defaultServerUrl &= help "list all transactions processed by FiD UCAC"
-                     , Pending defaultServerUrl &= help "list all pending transactions"
-                     , Lend "0x198e13017d2333712bd942d8b028610b95c363da"
-                            "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
+programModes = modes [ Transactions &= help "list all transactions processed by FiD UCAC"
+                     , Pending &= help "list all pending transactions"
+                     , Lend "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
                             123
                             "default"
-                            defaultServerUrl &= help "submit a unilateral transaction as a creditor"
-                     , Borrow "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
-                              "0x198e13017d2333712bd942d8b028610b95c363da"
+                            &= help "submit a unilateral transaction as a creditor"
+                     , Borrow "0x198e13017d2333712bd942d8b028610b95c363da"
                               123
                               "default"
-                              defaultServerUrl &= help "submit a unilateral transaction as a debtor"
+                              &= help "submit a unilateral transaction as a debtor"
                      ] &= help "Lend and borrow money" &= program "fiddy" &= summary "fiddy v0.1"
-    where defaultServerUrl = "http://34.202.214.156:80"
 
 main :: IO ()
 main = do mode <- cmdArgsRun $ cmdArgsMode programModes
           -- check for presence of a config file
-
+          config <- Dhall.input Dhall.auto "~/.lndr.conf"
           -- if no config file is found, ask if user would like to create
           -- a defualt config file
 
-          runMode mode
+          runMode config mode

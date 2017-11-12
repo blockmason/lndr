@@ -370,13 +370,13 @@ Clients must supply the following data
 -
 
 ```javascript
-{"mkNonce":1}
+1
 ```
 
 -
 
 ```javascript
-{"mkNonce":1}
+1
 ```
 
 ## GET /pending

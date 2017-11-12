@@ -33,8 +33,8 @@ import           Servant
 import           Servant.Docs
 
 type LndrAPI =
-        "transactions" :> Get '[JSON] [IssueCreditLog]
-   :<|> "pending" :> Get '[JSON] [PendingRecord]
+        "transactions" :> QueryParam "user" Address :> Get '[JSON] [IssueCreditLog]
+   :<|> "pending" :> QueryParam "user" Address :> Get '[JSON] [PendingRecord]
    :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> PostNoContent '[JSON] NoContent
    :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> PostNoContent '[JSON] NoContent
    :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] NoContent

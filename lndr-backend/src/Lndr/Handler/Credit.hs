@@ -24,12 +24,12 @@ rejectHandler(RejectRecord sig hash) = do
     return NoContent
 
 
-transactionsHandler :: LndrHandler [IssueCreditLog]
-transactionsHandler = lndrWeb3 lndrLogs
+transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
+transactionsHandler _ = lndrWeb3 lndrLogs
 
 
-pendingHandler :: LndrHandler [PendingRecord]
-pendingHandler = do
+pendingHandler :: Maybe Address -> LndrHandler [PendingRecord]
+pendingHandler _ = do
     creditMap <- pendingMap <$> ask
     fmap (fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
 

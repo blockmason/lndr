@@ -3,7 +3,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Types where
+module Lndr.Types where
 
 import           Data.Aeson
 import           Data.Aeson.TH
@@ -28,7 +28,8 @@ instance FromHttpApiData Address where
   parseUrlPiece = mapLeft T.pack . Addr.fromText
 
 newtype Nonce = Nonce { mkNonce :: Integer } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''Nonce)
+instance ToJSON Nonce where
+    toJSON (Nonce x) = toJSON x
 
 data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , creditor :: Address
@@ -56,7 +57,7 @@ $(deriveJSON defaultOptions ''CreditRecord)
 data PendingRecord = PendingRecord { creditRecord :: CreditRecord Signed
                                    , submitter :: Address
                                    , hash :: Text
-                                   }
+                                   } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''PendingRecord)
 
 
@@ -70,11 +71,6 @@ data NickRequest = NickRequest { addr :: Address
                                , sig :: Text
                                }
 $(deriveJSON defaultOptions ''NickRequest)
-
-data UpdateFriendsRequest = UpdateFriendsRequest { friendsToAdd :: [Address]
-                                                 , friendsToRemove :: [Address]
-                                                 }
-$(deriveJSON defaultOptions ''UpdateFriendsRequest)
 
 newtype LndrError = LndrError { unLndrError :: String } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''LndrError)

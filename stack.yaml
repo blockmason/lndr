@@ -9,8 +9,9 @@ packages:
   extra-dep: true
 - location:
     git: git@github.com:aupiff/ethereumhs-util.git
-    commit: bec31dae699760b4476a33a880a700911beb17f9
+    commit: a6a563846a0896a92953df64b9128586e769a2cd
   extra-dep: true
 
 extra-deps:
 - secp256k1-0.5.2
+- dhall-1.8.0

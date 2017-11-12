@@ -3,32 +3,34 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Server ( ServerState
-              , LndrAPI(..)
-              , lndrAPI
-              , LndrError(..)
-              , LndrHandler(..)
-              , freshState
-              , app
-              ) where
+module Lndr.Server
+    ( ServerState
+    , LndrAPI(..)
+    , lndrAPI
+    , LndrError(..)
+    , LndrHandler(..)
+    , freshState
+    , app
+    ) where
 
 import           Control.Monad.Except
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import           Data.ByteString.Lazy (ByteString)
+import           Data.Text (Text)
 import           Data.Text.Lazy (pack)
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as T
-import           Docs
-import           EthInterface (freshState)
-import           Handler
+import           Lndr.Docs
+import           Lndr.EthInterface (freshState)
+import           Lndr.Handler
+import           Lndr.Types
 import           Network.Ethereum.Web3.Address
 import           Network.HTTP.Types
 import           Network.Wai
 import           Servant
 import           Servant.Docs
-import           Types
 
 type LndrAPI =
         "transactions" :> Get '[JSON] [IssueCreditLog]
@@ -38,9 +40,13 @@ type LndrAPI =
    :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] NoContent
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
+   :<|> "nick" :> Capture "user" Address :> Get '[JSON] Text
    :<|> "friends" :> Capture "user" Address :> Get '[JSON] [Address]
-   :<|> "update_friends" :> Capture "user" Address
-                         :> ReqBody '[JSON] UpdateFriendsRequest
+   :<|> "add_friends" :> Capture "user" Address
+                      :> ReqBody '[JSON] [Address]
+                      :> PostNoContent '[JSON] NoContent
+   :<|> "remove_friends" :> Capture "user" Address
+                         :> ReqBody '[JSON] [Address]
                          :> PostNoContent '[JSON] NoContent
    :<|> "docs" :> Raw
 
@@ -66,8 +72,10 @@ server = transactionsHandler
     :<|> rejectHandler
     :<|> nonceHandler
     :<|> nickHandler
+    :<|> nickLookupHandler
     :<|> friendHandler
-    :<|> updateFriendsHandler
+    :<|> addFriendsHandler
+    :<|> removeFriendsHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS

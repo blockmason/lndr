@@ -5,19 +5,18 @@
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Docs where
+module Lndr.Docs where
 
 import           Data.Proxy
 import           Data.Text (Text)
+import           Lndr.Types
+import           Lndr.EthInterface
 import           Network.Ethereum.Web3.Address
 import           Network.HTTP.Types
 import           Network.Wai
 import           Servant.API
 import           Servant.Docs
 import           Servant.Server
-
-import           Types
-import           EthInterface
 
 creditHash :: Text
 creditHash = "0x7e2e9ff3a5fc148cf76261755c4c666630bfc3a28d02733cfbe721fc965aca28"
@@ -55,10 +54,6 @@ instance ToSample NickRequest where
     toSamples _ = singleSample $
         NickRequest "0x11edd217a875063583dd1b638d16810c5d34d54b" "aupiff" "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
 
-instance ToSample UpdateFriendsRequest where
-    toSamples _ = singleSample $
-        UpdateFriendsRequest  ["0x11edd217a875063583dd1b638d16810c5d34d54b"] []
-
 instance ToSample IssueCreditLog where
     toSamples _ = singleSample $
         IssueCreditLog "d5ec73eac35fc9dd6c3f440bce314779fed09f60"
@@ -72,6 +67,9 @@ instance ToSample Address where
 
 instance ToSample () where
     toSamples _ = singleSample ()
+
+instance ToSample Text where
+    toSamples _ = singleSample "aupiff"
 
 instance ToSample Nonce where
     toSamples _ = singleSample $ Nonce 1

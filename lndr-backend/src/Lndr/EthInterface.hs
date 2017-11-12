@@ -9,7 +9,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
-module EthInterface where
+module Lndr.EthInterface where
 
 import           Control.Exception
 import           Control.Monad
@@ -39,7 +39,7 @@ import           Numeric (readHex, showHex)
 import           Prelude hiding ((!!))
 import qualified STMContainers.Map as Map
 
-import           Types
+import           Lndr.Types
 
 freshState :: IO ServerState
 freshState = ServerState <$> atomically Map.new

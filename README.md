@@ -64,6 +64,8 @@ sudo apt-get install software-properties-common
 sudo add-apt-repository -y ppa:ethereum/ethereum
 sudo apt-get update
 sudo apt-get install ethereum
+sudo apt-get install autoconf
+sudo apt-get install libtool
 
 # start a local blockchain in the background
 cd friend-in-debt/ucac

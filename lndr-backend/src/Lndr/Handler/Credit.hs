@@ -1,23 +1,27 @@
-module Handler.Credit where
+module Lndr.Handler.Credit where
 
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Except
 import           Data.Text (Text)
-import           Handler.Types
 import           ListT
+import           Lndr.EthInterface
+import           Lndr.Handler.Types
+import           Lndr.Types
 import qualified Network.Ethereum.Util as EU
 import           Network.Ethereum.Web3
 import           Servant.API
 import qualified STMContainers.Map as Map
-import           Types
-import           EthInterface
 
 
 -- submit a signed message consisting of "REJECT + CreditRecord HASH"
 -- each credit record will be referenced by its hash
 rejectHandler :: RejectRecord -> LndrHandler NoContent
-rejectHandler = undefined
+rejectHandler(RejectRecord sig hash) = do
+    -- TODO verify sig!
+    pendingMapping <- pendingMap <$> ask
+    liftIO . atomically $ Map.delete hash pendingMapping
+    return NoContent
 
 
 transactionsHandler :: LndrHandler [IssueCreditLog]

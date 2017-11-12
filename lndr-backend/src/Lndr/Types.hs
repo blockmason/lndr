@@ -28,7 +28,8 @@ instance FromHttpApiData Address where
   parseUrlPiece = mapLeft T.pack . Addr.fromText
 
 newtype Nonce = Nonce { mkNonce :: Integer } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''Nonce)
+instance ToJSON Nonce where
+    toJSON (Nonce x) = toJSON x
 
 data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , creditor :: Address
@@ -56,7 +57,7 @@ $(deriveJSON defaultOptions ''CreditRecord)
 data PendingRecord = PendingRecord { creditRecord :: CreditRecord Signed
                                    , submitter :: Address
                                    , hash :: Text
-                                   }
+                                   } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''PendingRecord)
 
 

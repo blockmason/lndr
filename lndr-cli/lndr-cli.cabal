@@ -36,6 +36,7 @@ executable lndr
                      , dhall
                      , directory
                      , either
+                     , ethereumhs-util
                      , lndr-backend
                      , http-conduit
                      , listsafe

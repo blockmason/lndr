@@ -13,8 +13,9 @@ import qualified Data.Text.Lazy as LT
 import qualified Dhall
 import           GHC.Generics
 import           Lndr.CLI.Config (Config(..))
-import           Lndr.EthInterface
+import           Lndr.EthInterface hiding (getNonce)
 import           Lndr.Types
+import           Network.Ethereum.Util (hashPersonalMessage, ecsign)
 import           Network.Ethereum.Web3
 import qualified Network.HTTP.Simple as HTTP
 import           System.Console.CmdArgs hiding (def)
@@ -32,7 +33,23 @@ data LndrCmd = Transactions
                       , amount :: Integer
                       , memo :: Text
                       }
+             | Nick { nick :: Text }
+             | GetNonce { friend :: Text }
              deriving (Show, Data, Typeable)
+
+
+programModes = modes [ Transactions &= help "list all transactions processed by Lndr UCAC"
+                     , Pending &= help "list all pending transactions"
+                     , Lend "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
+                            123
+                            "default"
+                            &= help "submit a unilateral transaction as a creditor"
+                     , Borrow "0x198e13017d2333712bd942d8b028610b95c363da"
+                              123
+                              "default"
+                              &= help "submit a unilateral transaction as a debtor"
+                     , GetNonce "0x198e13017d2333712bd942d8b028610b95c363da"
+                     ] &= help "Lend and borrow money" &= program "lndr" &= summary "lndr v0.1"
 
 
 -- TODO put this in ReaderT to handle config vars loaded at runtime
@@ -45,31 +62,46 @@ runMode (Config url _ _ _) Transactions = do
 runMode (Config url _ _ _) Pending = do
     initReq <- HTTP.parseRequest $ LT.unpack url ++ "/pending"
     resp <- HTTP.httpJSON initReq
-    Pr.pPrintNoColor (HTTP.getResponseBody resp :: [(Text, CreditRecord Signed)])
-runMode (Config url user _ _) (Lend friend amount memo) =
-    submitCredit (LT.unpack url) $ CreditRecord (LT.toStrict user) friend amount memo ""
-runMode (Config url user _ _) (Borrow friend amount memo) =
-    submitCredit (LT.unpack url) $ CreditRecord friend (LT.toStrict user) amount memo ""
+    Pr.pPrintNoColor (HTTP.getResponseBody resp :: [PendingRecord])
+runMode (Config url user sk _) (Lend friend amount memo) =
+    submitCredit (LT.unpack url) (LT.toStrict sk) $ CreditRecord (LT.toStrict user) friend amount memo ""
+runMode (Config url user sk _) (Borrow friend amount memo) =
+    submitCredit (LT.unpack url) (LT.toStrict sk) $ CreditRecord friend (LT.toStrict user) amount memo ""
+-- Friend-related Modes
+runMode (Config url user sk _) (Nick nick) =
+    undefined
+runMode (Config url user _ _) (GetNonce friend) =
+    print =<< getNonce (LT.unpack url) (LT.toStrict user) friend
 
-submitCredit :: String -> CreditRecord Unsigned -> IO ()
-submitCredit url unsignedCredit = do
+
+getNonce :: String -> Text -> Text -> IO Integer
+getNonce url addr1 addr2 = do
+    req <- HTTP.parseRequest $ url ++ "/nonce/" ++ T.unpack addr1 ++ "/" ++ T.unpack addr2
+    HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
+signCredit :: Text -> Integer -> CreditRecord Unsigned -> CreditRecord Signed
+signCredit secretKey nonce r@(CreditRecord c d a m u) = r { signature = sig }
+    where message = T.append "0x" . T.concat $
+                        stripHexPrefix <$> [ ucacId
+                                           , c
+                                           , d
+                                           , integerToHex a
+                                           , integerToHex nonce
+                                           ]
+          hashedMessage = hashPersonalMessage message
+          (Right sig) = ecsign hashedMessage secretKey
+
+
+submitCredit :: String -> Text -> CreditRecord Unsigned -> IO ()
+submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _) = do
+    nonce <- getNonce url debtor creditor
     initReq <- HTTP.parseRequest $ url ++ "/lend"
-    let req = HTTP.setRequestBodyJSON unsignedCredit $
+    let signedCredit = signCredit secretKey nonce unsignedCredit
+    let req = HTTP.setRequestBodyJSON signedCredit $
                 HTTP.setRequestMethod "POST" initReq
-    resp <- HTTP.httpJSON req
-    Pr.pPrintNoColor (HTTP.getResponseBody resp :: ())
-
-programModes = modes [ Transactions &= help "list all transactions processed by Lndr UCAC"
-                     , Pending &= help "list all pending transactions"
-                     , Lend "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
-                            123
-                            "default"
-                            &= help "submit a unilateral transaction as a creditor"
-                     , Borrow "0x198e13017d2333712bd942d8b028610b95c363da"
-                              123
-                              "default"
-                              &= help "submit a unilateral transaction as a debtor"
-                     ] &= help "Lend and borrow money" &= program "lndr" &= summary "lndr v0.1"
+    resp <- HTTP.httpNoBody req
+    Pr.pPrintNoColor (HTTP.getResponseStatusCode resp)
 
 
 configPath = "~/.lndr.conf"

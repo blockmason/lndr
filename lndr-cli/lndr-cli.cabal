@@ -32,7 +32,9 @@ executable lndr
                      , base16-bytestring
                      , bytestring
                      , cmdargs
+                     , data-default
                      , dhall
+                     , directory
                      , either
                      , lndr-backend
                      , http-conduit

@@ -1,7 +1,9 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Lndr.CLI.Config where
+module Lndr.CLI.Config (
+    Config(..)
+    ) where
 
 import           Data.Default
 import           Dhall

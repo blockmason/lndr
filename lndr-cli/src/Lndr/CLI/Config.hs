@@ -2,7 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Lndr.CLI.Config (
-    Config(..)
+      Config(..)
+    , configPath
     ) where
 
 import           Data.Default
@@ -22,3 +23,6 @@ instance Default Config where
                  "6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
                  "024f55d169862624eec05be973a38f52ad252b3bcc0f0ed1927defa4ab4ea101"
                  []
+
+configPath :: FilePath
+configPath = "~/.lndr.conf"

@@ -15,10 +15,18 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lndr.CLI.Config
+  exposed-modules:     Lndr.CLI.Args
+                     , Lndr.CLI.Config
+
   build-depends:       base >= 4.7 && < 5
+                     , cmdargs
                      , data-default
                      , dhall
+                     , ethereumhs-util
+                     , http-conduit
+                     , lndr-backend
+                     , pretty-simple
+                     , text
                      , web3
   default-language:    Haskell2010
 
@@ -36,12 +44,7 @@ executable lndr
                      , dhall
                      , directory
                      , either
-                     , ethereumhs-util
-                     , lndr-backend
-                     , http-conduit
                      , listsafe
                      , memory
-                     , pretty-simple
-                     , text
                      , web3
   default-language:    Haskell2010

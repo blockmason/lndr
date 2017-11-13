@@ -3,7 +3,18 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Lndr.Types where
+module Lndr.Types
+    ( ServerState(..)
+    , LndrError(..)
+    , NickRequest(..)
+    , CreditRecord(..)
+    , Unsigned
+    , Signed
+    , IssueCreditLog(IssueCreditLog)
+    , RejectRecord(..)
+    , PendingRecord(..)
+    , Nonce(..)
+    ) where
 
 import           Data.Aeson
 import           Data.Aeson.TH

@@ -15,9 +15,11 @@ import           Control.Exception
 import           Control.Monad
 import           Control.Monad.Except
 import           Control.Concurrent.STM
+import qualified Crypto.Hash as C (Digest, Keccak_256, hash)
 import           Data.Aeson
 import           Data.Aeson.TH
 import qualified Data.ByteArray as BA
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Base16 as BS16
 import           Data.Data
 import           Data.Either (rights)
@@ -161,3 +163,12 @@ integerToHex :: Integer -> Text
 integerToHex x = T.pack strRep'
     where strRep = showHex x ""
           strRep' = "0x" ++ replicate (64 - length strRep) '0' ++ strRep
+
+
+hashPrefixedMessage :: String -> Text -> Text
+hashPrefixedMessage pre message = T.pack . show $ keccakDigest
+    where messageBytes = fst . BS16.decode . T.encodeUtf8 $ message
+          prefix = T.encodeUtf8 . T.pack $
+            pre ++ show (B.length messageBytes)
+          keccakDigest :: C.Digest C.Keccak_256
+          keccakDigest = C.hash (prefix `B.append` messageBytes)

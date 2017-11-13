@@ -41,7 +41,9 @@ rejectHandler(RejectRecord sig hash) = do
 
 
 transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
-transactionsHandler _ = lndrWeb3 lndrLogs
+transactionsHandler Nothing = lndrWeb3 lndrLogs
+transactionsHandler (Just addr) = (++) <$> lndrWeb3 (lndrCreditLogs addr)
+                                       <*> lndrWeb3 (lndrDebitLogs addr)
 
 
 pendingHandler :: Maybe Address -> LndrHandler [PendingRecord]

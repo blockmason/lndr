@@ -128,6 +128,22 @@ lndrLogs = rights . fmap interpretUcacLog <$>
                         (Just "0x0") -- start from block 0
                         Nothing)
 
+lndrDebitLogs :: Provider a => Address -> Web3 a [IssueCreditLog]
+lndrDebitLogs addr = rights . fmap interpretUcacLog <$>
+    Eth.getLogs (Filter (Just cpAddr)
+                        (Just [Nothing, Nothing, Just (addressToBytes32 addr)])
+                        (Just "0x0") -- start from block 0
+                        Nothing)
+
+
+lndrCreditLogs :: Provider a => Address -> Web3 a [IssueCreditLog]
+lndrCreditLogs addr = rights . fmap interpretUcacLog <$>
+    Eth.getLogs (Filter (Just cpAddr)
+                        (Just [Nothing, Just (addressToBytes32 addr)])
+                        (Just "0x0") -- start from block 0
+                        Nothing)
+
+
 interpretUcacLog :: Change -> Either SomeException IssueCreditLog
 interpretUcacLog change = do
     creditorAddr <- bytes32ToAddress <=< (!! 2) $ changeTopics change
@@ -143,8 +159,8 @@ interpretUcacLog change = do
 bytes32ToAddress :: Text -> Either SomeException Address
 bytes32ToAddress = mapLeft (toException . TypeError) . Addr.fromText . T.drop 26
 
-addressToBytes32 :: Text -> Text
-addressToBytes32 = T.append "0x000000000000000000000000" . T.drop 2
+addressToBytes32 :: Address -> Text
+addressToBytes32 = T.append "0x000000000000000000000000" . Addr.toText
 
 -- TODO keep this in either
 textToAddress :: Text -> Address

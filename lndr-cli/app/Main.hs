@@ -4,6 +4,7 @@
 
 module Main where
 
+import           Control.Monad
 import           Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Default
@@ -35,6 +36,7 @@ data LndrCmd = Transactions
                       }
              | Nick { nick :: Text }
              | GetNonce { friend :: Text }
+             | Info
              deriving (Show, Data, Typeable)
 
 
@@ -48,7 +50,9 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
                               123
                               "default"
                               &= help "submit a unilateral transaction as a debtor"
+                     , Nick "..." &= help "set a nickname for default user"
                      , GetNonce "0x198e13017d2333712bd942d8b028610b95c363da"
+                     , Info &= help "prints config, nick, and friends"
                      ] &= help "Lend and borrow money" &= program "lndr" &= summary "lndr v0.1"
 
 
@@ -69,9 +73,18 @@ runMode (Config url user sk _) (Borrow friend amount memo) =
     submitCredit (LT.unpack url) (LT.toStrict sk) $ CreditRecord friend (LT.toStrict user) amount memo ""
 -- Friend-related Modes
 runMode (Config url user sk _) (Nick nick) =
-    undefined
+    let userAddr = textToAddress $ LT.toStrict user
+    in print =<< setNick (LT.unpack url) (NickRequest userAddr nick "")
 runMode (Config url user _ _) (GetNonce friend) =
     print =<< getNonce (LT.unpack url) (LT.toStrict user) friend
+
+
+setNick :: String -> NickRequest -> IO Int
+setNick url nickRequest = do
+    initReq <- HTTP.parseRequest $ url ++ "/nick"
+    let req = HTTP.setRequestBodyJSON nickRequest $
+                HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 
 
 getNonce :: String -> Text -> Text -> IO Integer

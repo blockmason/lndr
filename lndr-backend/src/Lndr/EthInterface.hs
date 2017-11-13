@@ -128,6 +128,7 @@ lndrLogs = rights . fmap interpretUcacLog <$>
                         (Just "0x0") -- start from block 0
                         Nothing)
 
+
 lndrDebitLogs :: Provider a => Address -> Web3 a [IssueCreditLog]
 lndrDebitLogs addr = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)

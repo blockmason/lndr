@@ -6,6 +6,7 @@ import           Control.Monad
 import           Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Default
+import qualified Data.Text.Lazy as LT
 import qualified Dhall
 import           Lndr.CLI.Config
 import           Lndr.CLI.Args
@@ -15,11 +16,12 @@ import           System.Directory (doesFileExist)
 
 main :: IO ()
 main = do mode <- cmdArgsRun $ cmdArgsMode programModes
-
+          confPath <- configPath
           -- check for presence of a config file
-          configExists <- doesFileExist configPath
+          configExists <- doesFileExist confPath
           config <- if configExists
-            then Dhall.input Dhall.auto "~/.lndr.conf"
-            else putStrLn "using default config..." >> return def
+            then Dhall.input Dhall.auto (LT.pack confPath)
+            else do putStrLn "using default config..."
+                    return def
 
           runMode config mode

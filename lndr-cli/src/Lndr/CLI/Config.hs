@@ -9,6 +9,7 @@ module Lndr.CLI.Config (
 import           Data.Default
 import           Dhall
 import           Network.Ethereum.Web3
+import           System.Directory (getCurrentDirectory)
 
 data Config = Config { url :: Text
                      , address :: Text
@@ -24,5 +25,5 @@ instance Default Config where
                  "024f55d169862624eec05be973a38f52ad252b3bcc0f0ed1927defa4ab4ea101"
                  []
 
-configPath :: FilePath
-configPath = "~/.lndr.conf"
+configPath :: IO FilePath
+configPath = (++) <$> getCurrentDirectory <*> pure "/lndr.conf"

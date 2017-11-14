@@ -16,6 +16,7 @@ import           Lndr.EthInterface hiding (getNonce)
 import           Lndr.CLI.Config
 import           Lndr.Types
 import           Network.Ethereum.Util (hashPersonalMessage, ecsign)
+import           Network.Ethereum.Web3
 import qualified Network.HTTP.Simple as HTTP
 import           System.Console.CmdArgs hiding (def)
 import           System.Console.CmdArgs.Explicit(helpText, HelpFormat(..), modeEmpty)
@@ -74,6 +75,8 @@ runMode (Config url user sk _) (Nick nick) =
     in print =<< setNick (LT.unpack url) (NickRequest userAddr nick "")
 runMode (Config url user _ _) (GetNonce friend) =
     print =<< getNonce (LT.unpack url) (LT.toStrict user) friend
+runMode (Config url user _ _) Info =
+    print =<< getInfo (LT.unpack url) (LT.toStrict user)
 
 
 setNick :: String -> NickRequest -> IO Int
@@ -82,6 +85,18 @@ setNick url nickRequest = do
     let req = HTTP.setRequestBodyJSON nickRequest $
                 HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+
+getNick :: String -> Address -> IO Text
+getNick url userAddr = do
+    req <- HTTP.parseRequest $ url ++ "/nick/" ++ show userAddr
+    HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
+getInfo :: String -> Text -> IO (Address, Text, [Text])
+getInfo url userAddr = do
+    nick <- getNick url address
+    return (address, nick, [])
+    where address = textToAddress userAddr
 
 
 getNonce :: String -> Text -> Text -> IO Integer

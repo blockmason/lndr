@@ -31,6 +31,7 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import           Data.Typeable
 import           GHC.Generics
+import qualified Network.Ethereum.Util as EU
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
 import qualified Network.Ethereum.Web3.Eth as Eth
@@ -67,7 +68,7 @@ bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
 
 decomposeSig :: Text -> (BytesN 32, BytesN 32, BytesN 32)
 decomposeSig sig = (sigR, sigS, sigV)
-    where strippedSig = T.drop 2 sig
+    where strippedSig = stripHexPrefix sig
           sigR = BytesN . bytesDecode $ T.take 64 strippedSig
           sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
           sigV = BytesN . bytesDecode . T.take 2 . T.drop 128 $ strippedSig
@@ -81,14 +82,14 @@ queryNonce = getNonce cpAddr
 hashCreditRecord :: forall a b. Provider b => CreditRecord a -> Web3 b (Integer, Text)
 hashCreditRecord r@(CreditRecord c d a m u) = do
                 nonce <- queryNonce debtorAddr creditorAddr
-                let message = T.append "0x" . T.concat $
+                let message = T.concat $
                       stripHexPrefix <$> [ ucacId
                                          , c
                                          , d
                                          , integerToHex a
                                          , integerToHex nonce
                                          ]
-                (nonce,) <$> Web3.sha3 message
+                return (nonce, EU.hashText message)
     where debtorAddr = textToAddress d
           creditorAddr = textToAddress c
 

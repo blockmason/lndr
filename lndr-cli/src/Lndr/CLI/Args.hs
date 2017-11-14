@@ -16,7 +16,7 @@ import qualified Data.Text.Lazy as LT
 import           Lndr.EthInterface hiding (getNonce)
 import           Lndr.CLI.Config
 import           Lndr.Types
-import           Network.Ethereum.Util (hashPersonalMessage, ecsign, privateToAddress)
+import           Network.Ethereum.Util (hashPersonalMessage, ecsign, privateToAddress, hashText)
 import           Network.Ethereum.Web3
 import qualified Network.HTTP.Simple as HTTP
 import           System.Console.CmdArgs hiding (def)
@@ -137,7 +137,7 @@ getNonce url addr1 addr2 = do
 
 signCredit :: Text -> Integer -> CreditRecord Unsigned -> CreditRecord Signed
 signCredit secretKey nonce r@(CreditRecord c d a m u) = r { signature = sig }
-    where message = T.append "0x" . T.concat $
+    where message = hashText . T.concat $
                         stripHexPrefix <$> [ ucacId
                                            , c
                                            , d

@@ -27,11 +27,11 @@ nickLookupHandler addr = do
     ioMaybeToLndr "addr not found in nick db" . atomically $ Map.lookup addr nickMapping
 
 
-nickSearchHandler :: Text -> LndrHandler Address
+nickSearchHandler :: Text -> LndrHandler [NickInfo]
 nickSearchHandler nick = do
     nickMapping <- nickMap <$> ask
     assocs <- liftIO . atomically . toList $ Map.stream nickMapping
-    return . fst . head . dropWhile ((/= nick) . snd) $ assocs
+    return . (: []) . uncurry NickInfo . head . dropWhile ((/= nick) . snd) $ assocs
 
 
 friendHandler :: Address -> LndrHandler [Address]

@@ -583,13 +583,31 @@ Clients must supply the following data
 -
 
 ```javascript
-"0x11edd217a875063583dd1b638d16810c5d34d54b"
+[]
 ```
 
 -
 
 ```javascript
-"0x11edd217a875063583dd1b638d16810c5d34d54b"
+[]
+```
+
+-
+
+```javascript
+[{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}]
+```
+
+-
+
+```javascript
+[{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}]
+```
+
+-
+
+```javascript
+[{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"},{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}]
 ```
 
 ## GET /transactions
@@ -647,4 +665,3 @@ Clients must supply the following data
 ```javascript
 [{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"memo":"simple memo"},{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"memo":"simple memo"}]
 ```
-

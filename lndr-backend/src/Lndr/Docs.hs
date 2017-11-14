@@ -54,6 +54,10 @@ instance ToSample NickRequest where
     toSamples _ = singleSample $
         NickRequest "0x11edd217a875063583dd1b638d16810c5d34d54b" "aupiff" "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
 
+instance ToSample NickInfo where
+    toSamples _ = singleSample $
+        NickInfo "0x11edd217a875063583dd1b638d16810c5d34d54b" "aupiff"
+
 instance ToSample IssueCreditLog where
     toSamples _ = singleSample $
         IssueCreditLog "d5ec73eac35fc9dd6c3f440bce314779fed09f60"

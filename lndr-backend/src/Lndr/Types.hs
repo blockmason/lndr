@@ -6,6 +6,7 @@
 module Lndr.Types
     ( ServerState(..)
     , NickRequest(..)
+    , NickInfo(..)
     , CreditRecord(..)
     , Unsigned
     , Signed
@@ -81,6 +82,11 @@ data NickRequest = NickRequest { addr :: Address
                                , sig :: Text
                                }
 $(deriveJSON defaultOptions ''NickRequest)
+
+data NickInfo = NickInfo { addr :: Address
+                         , nick :: Text
+                         }
+$(deriveJSON defaultOptions ''NickInfo)
 
 data ServerState = ServerState { pendingMap :: Map.Map Text PendingRecord
                                , nickMap :: Map.Map Address Text

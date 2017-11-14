@@ -98,8 +98,10 @@ setNick url nickRequest = do
 getNick :: String -> Address -> IO Text
 getNick url userAddr = do
     req <- HTTP.parseRequest $ url ++ "/nick/" ++ show userAddr
-    HTTP.getResponseBody <$> HTTP.httpJSON req
-
+    resp <- HTTP.getResponseBody <$> HTTP.httpJSONEither req
+    return $ case resp of
+        Left a -> "nick not found"
+        Right b -> b
 
 addFriend :: String -> Address -> Address -> IO Int
 addFriend url userAddr addr = do
@@ -118,7 +120,7 @@ getFriends url userAddr = do
 getInfo :: String -> Text -> IO (Address, Text, [Text])
 getInfo url userAddr = do
     nick <- getNick url address
-    friends <- getFriends url address
+    friends <- traceShow nick $ getFriends url address
     return (address, nick, friends)
     where address = textToAddress userAddr
 

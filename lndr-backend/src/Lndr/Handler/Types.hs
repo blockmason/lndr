@@ -23,4 +23,4 @@ lndrWeb3 :: Web3 DefaultProvider b -> LndrHandler b
 lndrWeb3 = web3ToLndr . runWeb3
 
 ioMaybeToLndr :: String -> IO (Maybe a) -> LndrHandler a
-ioMaybeToLndr error = LndrHandler . lift . ExceptT . fmap (maybe (Left (err500 { errBody = B.fromStrict . B.pack $ error })) Right)
+ioMaybeToLndr error = LndrHandler . lift . ExceptT . fmap (maybe (Left (err404 { errBody = B.fromStrict . B.pack $ error })) Right)

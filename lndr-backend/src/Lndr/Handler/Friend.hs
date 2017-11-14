@@ -5,6 +5,7 @@ import           Control.Concurrent.STM
 import           Data.List ((\\), nub)
 import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
+import           ListT (toList)
 import           Lndr.Handler.Types
 import           Lndr.Types
 import           Network.Ethereum.Web3
@@ -24,6 +25,13 @@ nickLookupHandler :: Address -> LndrHandler Text
 nickLookupHandler addr = do
     nickMapping <- nickMap <$> ask
     ioMaybeToLndr "addr not found in nick db" . atomically $ Map.lookup addr nickMapping
+
+
+nickSearchHandler :: Text -> LndrHandler Address
+nickSearchHandler nick = do
+    nickMapping <- nickMap <$> ask
+    assocs <- liftIO . atomically . toList $ Map.stream nickMapping
+    return . fst . head . dropWhile ((/= nick) . snd) $ assocs
 
 
 friendHandler :: Address -> LndrHandler [Address]

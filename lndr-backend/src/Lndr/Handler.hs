@@ -16,6 +16,7 @@ module Lndr.Handler (
       -- * Friend Handlers
     , nickHandler
     , nickLookupHandler
+    , nickSearchHandler
     , friendHandler
     , addFriendsHandler
     , removeFriendsHandler

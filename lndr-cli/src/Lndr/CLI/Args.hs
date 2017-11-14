@@ -34,6 +34,7 @@ data LndrCmd = Transactions
                       }
              | Nick { nick :: Text }
              | GetNonce { friend :: Text }
+             | AddFriend { friend :: Text }
              | Info
              deriving (Show, Data, Typeable)
 
@@ -50,6 +51,7 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
                               &= help "submit a unilateral transaction as a debtor"
                      , Nick "aupiff" &= help "set a nickname for default user"
                      , GetNonce "0x198e13017d2333712bd942d8b028610b95c363da"
+                     , AddFriend "0x198e13017d2333712bd942d8b028610b95c363da"
                      , Info &= help "prints config, nick, and friends"
                      ] &= help "Lend and borrow money" &= program "lndr" &= summary "lndr v0.1"
 
@@ -69,12 +71,19 @@ runMode (Config url user sk _) (Lend friend amount memo) =
 runMode (Config url user sk _) (Borrow friend amount memo) =
     submitCredit (LT.unpack url) (LT.toStrict sk) $
         CreditRecord friend (LT.toStrict user) amount memo ""
+
 -- Friend-related Modes
 runMode (Config url user sk _) (Nick nick) =
     let userAddr = textToAddress $ LT.toStrict user
     in print =<< setNick (LT.unpack url) (NickRequest userAddr nick "")
+
+runMode (Config url user _ _) (AddFriend friend) =
+    print =<< addFriend (LT.unpack url) (textToAddress $ LT.toStrict user)
+                                        (textToAddress friend)
+
 runMode (Config url user _ _) (GetNonce friend) =
     print =<< getNonce (LT.unpack url) (LT.toStrict user) friend
+
 runMode (Config url user _ _) Info =
     print =<< getInfo (LT.unpack url) (LT.toStrict user)
 
@@ -90,6 +99,14 @@ getNick :: String -> Address -> IO Text
 getNick url userAddr = do
     req <- HTTP.parseRequest $ url ++ "/nick/" ++ show userAddr
     HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
+addFriend :: String -> Address -> Address -> IO Int
+addFriend url userAddr addr = do
+    initReq <- HTTP.parseRequest $ url ++ "/add_friends/" ++ show userAddr
+    let req = HTTP.setRequestBodyJSON [addr] $
+                HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 
 
 getFriends :: String -> Address -> IO [Text]

@@ -92,10 +92,17 @@ getNick url userAddr = do
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
+getFriends :: String -> Address -> IO [Text]
+getFriends url userAddr = do
+    req <- HTTP.parseRequest $ url ++ "/friends/" ++ show userAddr
+    HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
 getInfo :: String -> Text -> IO (Address, Text, [Text])
 getInfo url userAddr = do
     nick <- getNick url address
-    return (address, nick, [])
+    friends <- getFriends url address
+    return (address, nick, friends)
     where address = textToAddress userAddr
 
 

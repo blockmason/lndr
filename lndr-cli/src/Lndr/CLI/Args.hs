@@ -88,6 +88,7 @@ runMode (Config url sk _) (GetNonce friend) =
 runMode (Config url sk _) Info =
     print =<< getInfo (LT.unpack url) (userFromSK sk)
 
+
 userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
 
 
@@ -150,7 +151,9 @@ signCredit secretKey nonce r@(CreditRecord c d a m u) = r { signature = sig }
 submitCredit :: String -> Text -> CreditRecord Unsigned -> IO ()
 submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _) = do
     nonce <- getNonce url debtor creditor
-    initReq <- HTTP.parseRequest $ url ++ "/lend"
+    initReq <- if userFromSK (LT.fromStrict secretKey) == creditor
+                   then HTTP.parseRequest $ url ++ "/lend"
+                   else HTTP.parseRequest $ url ++ "/borrow"
     let signedCredit = signCredit secretKey nonce unsignedCredit
     let req = HTTP.setRequestBodyJSON signedCredit $
                 HTTP.setRequestMethod "POST" initReq

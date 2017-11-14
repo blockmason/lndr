@@ -5,7 +5,6 @@
 
 module Lndr.Types
     ( ServerState(..)
-    , LndrError(..)
     , NickRequest(..)
     , CreditRecord(..)
     , Unsigned
@@ -82,9 +81,6 @@ data NickRequest = NickRequest { addr :: Address
                                , sig :: Text
                                }
 $(deriveJSON defaultOptions ''NickRequest)
-
-newtype LndrError = LndrError { unLndrError :: String } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''LndrError)
 
 data ServerState = ServerState { pendingMap :: Map.Map Text PendingRecord
                                , nickMap :: Map.Map Address Text

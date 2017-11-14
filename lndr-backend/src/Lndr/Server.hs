@@ -7,7 +7,6 @@ module Lndr.Server
     ( ServerState
     , LndrAPI(..)
     , lndrAPI
-    , LndrError(..)
     , LndrHandler(..)
     , freshState
     , app
@@ -84,9 +83,9 @@ server = transactionsHandler
 readerToHandler' :: forall a. ServerState -> LndrHandler a -> Handler a
 readerToHandler' state r = do
     res <- liftIO . runExceptT $ runReaderT (runLndr r) state
-    Handler . ExceptT . return $ case res of
-      Left (LndrError text) -> Left err500 { errBody = T.encodeUtf8 $ T.pack text }
-      Right a  -> Right a
+    case res of
+      Left err -> throwError err
+      Right a  -> return a
 
 readerToHandler :: ServerState -> LndrHandler :~> Handler
 readerToHandler state = NT (readerToHandler' state)

@@ -31,6 +31,8 @@ import           Network.Wai
 import           Servant
 import           Servant.Docs
 
+import Debug.Trace
+
 type LndrAPI =
         "transactions" :> QueryParam "user" Address :> Get '[JSON] [IssueCreditLog]
    :<|> "pending" :> QueryParam "user" Address :> Get '[JSON] [PendingRecord]
@@ -84,7 +86,7 @@ readerToHandler' :: forall a. ServerState -> LndrHandler a -> Handler a
 readerToHandler' state r = do
     res <- liftIO . runExceptT $ runReaderT (runLndr r) state
     case res of
-      Left err -> throwError err
+      Left err -> traceShow err $ throwError err
       Right a  -> return a
 
 readerToHandler :: ServerState -> LndrHandler :~> Handler

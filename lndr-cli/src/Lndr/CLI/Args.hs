@@ -9,13 +9,14 @@ module Lndr.CLI.Args (
     ) where
 
 import           Data.Data
+import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Lndr.EthInterface hiding (getNonce)
 import           Lndr.CLI.Config
 import           Lndr.Types
-import           Network.Ethereum.Util (hashPersonalMessage, ecsign)
+import           Network.Ethereum.Util (hashPersonalMessage, ecsign, privateToAddress)
 import           Network.Ethereum.Web3
 import qualified Network.HTTP.Simple as HTTP
 import           System.Console.CmdArgs hiding (def)
@@ -57,35 +58,37 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
 
 
 runMode :: Config -> LndrCmd -> IO ()
-runMode (Config url _ _ _) Transactions = do
+runMode (Config url sk _) Transactions = do
     initReq <- HTTP.parseRequest $ LT.unpack url ++ "/transactions"
     resp <- HTTP.httpJSON initReq
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: [IssueCreditLog])
-runMode (Config url _ _ _) Pending = do
+runMode (Config url sk _) Pending = do
     initReq <- HTTP.parseRequest $ LT.unpack url ++ "/pending"
     resp <- HTTP.httpJSON initReq
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: [PendingRecord])
-runMode (Config url user sk _) (Lend friend amount memo) =
+runMode (Config url sk _) (Lend friend amount memo) =
     submitCredit (LT.unpack url) (LT.toStrict sk) $
-        CreditRecord (LT.toStrict user) friend amount memo ""
-runMode (Config url user sk _) (Borrow friend amount memo) =
+        CreditRecord (userFromSK sk) friend amount memo ""
+runMode (Config url sk _) (Borrow friend amount memo) =
     submitCredit (LT.unpack url) (LT.toStrict sk) $
-        CreditRecord friend (LT.toStrict user) amount memo ""
+        CreditRecord friend (userFromSK sk) amount memo ""
 
 -- Friend-related Modes
-runMode (Config url user sk _) (Nick nick) =
-    let userAddr = textToAddress $ LT.toStrict user
+runMode (Config url sk _) (Nick nick) =
+    let userAddr = textToAddress $ userFromSK sk
     in print =<< setNick (LT.unpack url) (NickRequest userAddr nick "")
 
-runMode (Config url user _ _) (AddFriend friend) =
-    print =<< addFriend (LT.unpack url) (textToAddress $ LT.toStrict user)
+runMode (Config url sk _) (AddFriend friend) =
+    print =<< addFriend (LT.unpack url) (textToAddress $ userFromSK sk)
                                         (textToAddress friend)
 
-runMode (Config url user _ _) (GetNonce friend) =
-    print =<< getNonce (LT.unpack url) (LT.toStrict user) friend
+runMode (Config url sk _) (GetNonce friend) =
+    print =<< getNonce (LT.unpack url) (userFromSK sk) friend
 
-runMode (Config url user _ _) Info =
-    print =<< getInfo (LT.unpack url) (LT.toStrict user)
+runMode (Config url sk _) Info =
+    print =<< getInfo (LT.unpack url) (userFromSK sk)
+
+userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
 
 
 setNick :: String -> NickRequest -> IO Int
@@ -120,7 +123,7 @@ getFriends url userAddr = do
 getInfo :: String -> Text -> IO (Address, Text, [Text])
 getInfo url userAddr = do
     nick <- getNick url address
-    friends <- traceShow nick $ getFriends url address
+    friends <- getFriends url address
     return (address, nick, friends)
     where address = textToAddress userAddr
 

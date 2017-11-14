@@ -75,7 +75,9 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor debtor 
 
     -- submitter is one of creditor or debtor
     if submitterAddress == creditor || submitterAddress == debtor
-        then return ()
+        then (if creditor /= debtor
+                    then return ()
+                    else throwError (err400 {errBody = "creditor and debtor cannot be equal"}))
         else throwError (err400 {errBody = "Submitter is not creditor nor debtor"})
 
     signer <- web3ToLndr . return $ EU.ecrecover sig $ EU.hashPersonalMessage hash

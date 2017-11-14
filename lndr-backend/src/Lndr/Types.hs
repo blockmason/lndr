@@ -85,7 +85,7 @@ $(deriveJSON defaultOptions ''NickRequest)
 
 data NickInfo = NickInfo { addr :: Address
                          , nick :: Text
-                         }
+                         } deriving Show
 $(deriveJSON defaultOptions ''NickInfo)
 
 data ServerState = ServerState { pendingMap :: Map.Map Text PendingRecord

@@ -115,13 +115,13 @@ addFriend url userAddr addr = do
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 
 
-getFriends :: String -> Address -> IO [Text]
+getFriends :: String -> Address -> IO [NickInfo]
 getFriends url userAddr = do
     req <- HTTP.parseRequest $ url ++ "/friends/" ++ show userAddr
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
-getInfo :: String -> Text -> IO (Address, Text, [Text])
+getInfo :: String -> Text -> IO (Address, Text, [NickInfo])
 getInfo url userAddr = do
     nick <- getNick url address
     friends <- getFriends url address

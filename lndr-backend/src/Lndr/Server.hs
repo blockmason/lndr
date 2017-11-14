@@ -43,7 +43,7 @@ type LndrAPI =
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
    :<|> "nick" :> Capture "user" Address :> Get '[JSON] Text
    :<|> "search_nick" :> Capture "nick" Text :> Get '[JSON] [NickInfo]
-   :<|> "friends" :> Capture "user" Address :> Get '[JSON] [Address]
+   :<|> "friends" :> Capture "user" Address :> Get '[JSON] [NickInfo]
    :<|> "add_friends" :> Capture "user" Address
                       :> ReqBody '[JSON] [Address]
                       :> PostNoContent '[JSON] NoContent

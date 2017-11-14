@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Lndr.Handler.Friend where
 
 import           Control.Monad.Reader
@@ -34,29 +36,29 @@ nickSearchHandler nick = do
     return . (: []) . uncurry NickInfo . head . dropWhile ((/= nick) . snd) $ assocs
 
 
-friendHandler :: Address -> LndrHandler [Address]
+friendHandler :: Address -> LndrHandler [NickInfo]
 friendHandler addr = do
     friendListMapping <- friendlistMap <$> ask
     lookupFriends addr friendListMapping
 
 
 addFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
-addFriendsHandler addr adds = do
+addFriendsHandler address adds = do
     -- TODO verify signature
     friendListMapping <- friendlistMap <$> ask
-    friendList <- lookupFriends addr friendListMapping
-    liftIO . atomically $ Map.insert (nub $ friendList ++ adds) addr friendListMapping
+    friendList <-  fmap (\(NickInfo addr _) -> addr) <$> lookupFriends address friendListMapping
+    liftIO . atomically $ Map.insert (nub $ friendList ++ adds) address friendListMapping
     return NoContent
 
 
 removeFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
-removeFriendsHandler addr removes = do
+removeFriendsHandler address removes = do
     -- TODO verify signature
     friendListMapping <- friendlistMap <$> ask
-    friendList <- lookupFriends addr friendListMapping
-    liftIO . atomically $ Map.insert (friendList \\ removes) addr friendListMapping
+    friendList <- fmap (\(NickInfo addr _) -> addr) <$> lookupFriends address friendListMapping
+    liftIO . atomically $ Map.insert (friendList \\ removes) address friendListMapping
     return NoContent
 
 
-lookupFriends :: Address -> Map.Map Address [Address] -> LndrHandler [Address]
-lookupFriends x y = fmap (fromMaybe []) . liftIO . atomically $ Map.lookup x y
+lookupFriends :: Address -> Map.Map Address [Address] -> LndrHandler [NickInfo]
+lookupFriends x y = fmap (fmap (`NickInfo` "N/A") . fromMaybe []) . liftIO . atomically $ Map.lookup x y

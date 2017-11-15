@@ -10,7 +10,6 @@ module Lndr.Handler (
     , pendingHandler
     , lendHandler
     , borrowHandler
-    , submitSignedHandler
     , nonceHandler
 
       -- * Friend Handlers

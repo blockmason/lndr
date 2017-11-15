@@ -60,16 +60,16 @@ pendingHandler addrM = do
           processRecords = filter (involves addrM) . fmap snd
 
 lendHandler :: CreditRecord Signed -> LndrHandler NoContent
-lendHandler cr@(CreditRecord creditor _ _ _ _) = submitSignedHandler creditor cr
+lendHandler cr@(CreditRecord creditor _ _ _ _) = submitHandler creditor cr
 
 
 borrowHandler :: CreditRecord Signed -> LndrHandler NoContent
-borrowHandler cr@(CreditRecord _ debtor _ _ _) = submitSignedHandler debtor cr
+borrowHandler cr@(CreditRecord _ debtor _ _ _) = submitHandler debtor cr
 
 
-submitSignedHandler :: Text -> CreditRecord Signed
+submitHandler :: Text -> CreditRecord Signed
                     -> LndrHandler NoContent
-submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ sig) = do
+submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ sig) = do
     creditMap <- pendingMap <$> ask
     (nonce, hash) <- lndrWeb3 $ hashCreditRecord signedRecord
 

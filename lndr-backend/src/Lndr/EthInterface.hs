@@ -71,6 +71,7 @@ decomposeSig sig = (sigR, sigS, sigV)
     where strippedSig = stripHexPrefix sig
           sigR = BytesN . bytesDecode $ T.take 64 strippedSig
           sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
+          -- TODO use align function
           sigV = BytesN . bytesDecode . T.append "00000000000000000000000000000000000000000000000000000000000000" . T.take 2 . T.drop 128 $ strippedSig
 
 -- create functions to call CreditProtocol contract
@@ -162,6 +163,7 @@ bytes32ToAddress :: Text -> Either SomeException Address
 bytes32ToAddress = mapLeft (toException . TypeError) . Addr.fromText . T.drop 26
 
 addressToBytes32 :: Address -> Text
+-- TODO use align function
 addressToBytes32 = T.append "0x000000000000000000000000" . Addr.toText
 
 -- TODO keep this in either

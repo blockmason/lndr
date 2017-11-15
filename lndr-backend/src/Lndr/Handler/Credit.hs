@@ -31,7 +31,7 @@ rejectHandler(RejectRecord sig hash) = do
             let counterparty = if textToAddress c == s then d else c
             -- recover address from sig
             let message = hashPrefixedMessage "REJECT" hash
-            let signer = EU.ecrecover sig $ EU.hashPersonalMessage hash
+            let signer = EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
             case signer of
                 Left err -> throwError $ err404 {errBody = "unable to recover addr from sig"}
                 Right addr -> if textToAddress addr == textToAddress counterparty
@@ -80,7 +80,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ si
                     else throwError (err400 {errBody = "creditor and debtor cannot be equal"}))
         else throwError (err400 {errBody = "Submitter is not creditor nor debtor"})
 
-    signer <- web3ToLndr . return $ EU.ecrecover sig $ EU.hashPersonalMessage hash
+    signer <- web3ToLndr . return $ EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
 
     -- submitter signed the tx
     if signer == submitterAddress

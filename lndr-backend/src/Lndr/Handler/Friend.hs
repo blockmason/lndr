@@ -46,6 +46,7 @@ addFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
 addFriendsHandler address adds = do
     -- TODO verify signature
     friendListMapping <- friendlistMap <$> ask
+    -- TODO fix this once long-term data structures are in place
     friendList <-  fmap (\(NickInfo addr _) -> addr) <$> lookupFriends address friendListMapping
     liftIO . atomically $ Map.insert (nub $ friendList ++ adds) address friendListMapping
     return NoContent

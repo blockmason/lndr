@@ -4,8 +4,8 @@ packages:
 - lndr-backend/
 - lndr-cli/
 - location:
-    git: git@github.com:airalab/hs-web3.git
-    commit: fd22da4a178c9e8f570c3d4b8f0ce589fa40e207
+    git: git@github.com:aupiff/hs-web3.git
+    commit: eee0109ca0f6a10d5e91d5ea44e21248ba573dbf
   extra-dep: true
 - location:
     git: git@github.com:aupiff/ethereumhs-util.git

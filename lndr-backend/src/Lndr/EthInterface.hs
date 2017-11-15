@@ -31,6 +31,7 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import           Data.Typeable
 import           GHC.Generics
+import           Lndr.Types
 import qualified Network.Ethereum.Util as EU
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
@@ -42,7 +43,6 @@ import           Numeric (readHex, showHex)
 import           Prelude hiding ((!!))
 import qualified STMContainers.Map as Map
 
-import           Lndr.Types
 
 freshState :: IO ServerState
 freshState = ServerState <$> atomically Map.new
@@ -71,7 +71,7 @@ decomposeSig sig = (sigR, sigS, sigV)
     where strippedSig = stripHexPrefix sig
           sigR = BytesN . bytesDecode $ T.take 64 strippedSig
           sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
-          sigV = BytesN . bytesDecode . T.take 2 . T.drop 128 $ strippedSig
+          sigV = BytesN . bytesDecode . T.append "00000000000000000000000000000000000000000000000000000000000000" . T.take 2 . T.drop 128 $ strippedSig
 
 -- create functions to call CreditProtocol contract
 [abiFrom|data/CreditProtocol.abi|]
@@ -110,14 +110,14 @@ signCreditRecord r@(CreditRecord c d a m u) = do
 
 
 finalizeTransaction :: Text -> Text -> CreditRecord Signed -> IO (Either Web3Error TxHash)
-finalizeTransaction sig1 sig2 r@(CreditRecord c d a m _) = runWeb3 $ do
+finalizeTransaction sig1 sig2 r@(CreditRecord c d a m _) = do
       let s1@(sig1r, sig1s, sig1v) = decomposeSig sig1
-      let s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
-      issueCredit cpAddr (0 :: Ether) ucacIdB
-                  (textToAddress c) (textToAddress d) a
-                  [ sig1r, sig1s, sig1v ]
-                  [ sig2r, sig2s, sig2v ]
-                  (BytesN $ bytesDecode m)
+          s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
+      runWeb3 $ issueCredit cpAddr (0 :: Ether) ucacIdB
+                            (textToAddress c) (textToAddress d) a
+                            [ sig1r, sig1s, sig1v ]
+                            [ sig2r, sig2s, sig2v ]
+                            (BytesN $ bytesDecode m)
 
 -- TODO THIS CAN BE DONE IN A CLEANER WAY
 -- fetch cp logs related to LNDR UCAC
@@ -153,8 +153,8 @@ interpretUcacLog change = do
     pure $ IssueCreditLog (changeAddress change)
                           creditorAddr
                           debtorAddr
-                          (hexToInteger $ changeData change)
-                          "TODO fix"
+                          (hexToInteger . T.take 64 . stripHexPrefix $ changeData change)
+                          (T.take 64 . T.drop 64 . stripHexPrefix $ changeData change)
 
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the
 -- 40-char hex representation of an address
@@ -168,10 +168,10 @@ addressToBytes32 = T.append "0x000000000000000000000000" . Addr.toText
 textToAddress :: Text -> Address
 textToAddress = fromRight Addr.zero . Addr.fromText
 
+
 hexToInteger :: Text -> Integer
-hexToInteger = fst . head . readHex . dropHexPrefix . T.unpack
-    where dropHexPrefix ('0' : 'x' : xs) = xs
-          dropHexPrefix xs = xs
+hexToInteger = fst . head . readHex . T.unpack . stripHexPrefix
+
 
 stripHexPrefix :: Text -> Text
 stripHexPrefix x | T.isPrefixOf "0x" x = T.drop 2 x

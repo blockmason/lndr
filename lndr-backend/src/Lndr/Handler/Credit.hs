@@ -26,7 +26,7 @@ rejectHandler(RejectRecord sig hash) = do
     pendingRecordM <- liftIO . atomically $ Map.lookup hash pendingMapping
     case pendingRecordM of
         Nothing -> throwError $ err404 {errBody = "credit hash does not refer to pending record"}
-        Just pr@(PendingRecord (CreditRecord c d _ _ _) s _) -> do
+        Just pr@(PendingRecord (CreditRecord c d _ _ _) s _ _) -> do
             liftIO . atomically $ Map.delete hash pendingMapping
             let counterparty = if textToAddress c == s then d else c
             -- recover address from sig
@@ -107,7 +107,7 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor debtor 
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> liftIO . atomically $
-                        Map.insert (PendingRecord signedRecord submitterAddr hash)
+                        Map.insert (PendingRecord signedRecord submitterAddr nonce hash)
                                    hash creditMap
 
     return NoContent

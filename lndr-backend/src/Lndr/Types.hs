@@ -67,6 +67,7 @@ $(deriveJSON defaultOptions ''CreditRecord)
 
 data PendingRecord = PendingRecord { creditRecord :: CreditRecord Signed
                                    , submitter :: Address
+                                   , nonce :: Integer
                                    , hash :: Text
                                    } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''PendingRecord)

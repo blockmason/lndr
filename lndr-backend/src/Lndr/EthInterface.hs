@@ -25,6 +25,7 @@ import           Data.Data
 import           Data.Either (rights)
 import           Data.Either.Combinators (fromRight, mapLeft)
 import           Data.List.Safe ((!!))
+import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -71,8 +72,7 @@ decomposeSig sig = (sigR, sigS, sigV)
     where strippedSig = stripHexPrefix sig
           sigR = BytesN . bytesDecode $ T.take 64 strippedSig
           sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
-          -- TODO use align function
-          sigV = BytesN . bytesDecode . T.append "00000000000000000000000000000000000000000000000000000000000000" . T.take 2 . T.drop 128 $ strippedSig
+          sigV = BytesN . bytesDecode . alignR . T.take 2 . T.drop 128 $ strippedSig
 
 -- create functions to call CreditProtocol contract
 [abiFrom|data/CreditProtocol.abi|]
@@ -118,7 +118,7 @@ finalizeTransaction sig1 sig2 r@(CreditRecord c d a m _) = do
                             (textToAddress c) (textToAddress d) a
                             [ sig1r, sig1s, sig1v ]
                             [ sig2r, sig2s, sig2v ]
-                            (BytesN $ bytesDecode m)
+                            (BytesN . bytesDecode $ alignL m)
 
 -- TODO THIS CAN BE DONE IN A CLEANER WAY
 -- fetch cp logs related to LNDR UCAC
@@ -163,8 +163,7 @@ bytes32ToAddress :: Text -> Either SomeException Address
 bytes32ToAddress = mapLeft (toException . TypeError) . Addr.fromText . T.drop 26
 
 addressToBytes32 :: Address -> Text
--- TODO use align function
-addressToBytes32 = T.append "0x000000000000000000000000" . Addr.toText
+addressToBytes32 = alignR . Addr.toText
 
 -- TODO keep this in either
 textToAddress :: Text -> Address
@@ -179,10 +178,10 @@ stripHexPrefix :: Text -> Text
 stripHexPrefix x | T.isPrefixOf "0x" x = T.drop 2 x
                  | otherwise = x
 
+
 integerToHex :: Integer -> Text
-integerToHex x = T.pack strRep'
-    where strRep = showHex x ""
-          strRep' = "0x" ++ replicate (64 - length strRep) '0' ++ strRep
+integerToHex x = T.append "0x" strRep
+    where strRep = alignR . T.pack $ showHex x ""
 
 
 hashPrefixedMessage :: String -> Text -> Text
@@ -192,3 +191,13 @@ hashPrefixedMessage pre message = T.pack . show $ keccakDigest
             pre ++ show (B.length messageBytes)
           keccakDigest :: C.Digest C.Keccak_256
           keccakDigest = C.hash (prefix `B.append` messageBytes)
+
+
+align :: Text -> (Text, Text)
+align v = (v <> zeros, zeros <> v)
+  where zerosLen | T.length v `mod` 64 == 0 = 0
+                 | otherwise                = 64 - (T.length v `mod` 64)
+        zeros = T.replicate zerosLen "0"
+
+alignL = fst . align
+alignR = snd . align

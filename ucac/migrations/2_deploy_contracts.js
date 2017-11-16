@@ -82,25 +82,6 @@ module.exports = function(deployer, network, accounts) {
                                                             , usd
                                                             , web3.toWei(100)
                                                             , {from: web3.eth.accounts[0]});
-        }).then(() => {
-            fs.writeFile('../test/config1'
-                  , "{ fidAddress = \"" + fidContract.address
-                    + "\", fidUcacId = \"" + ucacId1
-                    + "\", cpAddress = \"" + creditProtocolContract.address
-                    + "\", userAddress = \"" + web3.eth.accounts[0] + "\"}"
-                  , (err) => {
-                        if (err) throw err;
-                        console.log('config1 has been saved.');
-                  });
-            fs.writeFile('../test/config2'
-                  , "{ fidAddress = \"" + fidContract.address
-                    + "\", fidUcacId = \"" + ucacId1
-                    + "\", cpAddress = \"" + creditProtocolContract.address
-                    + "\", userAddress = \"" + web3.eth.accounts[1] + "\"}"
-                  , (err) => {
-                        if (err) throw err;
-                        console.log('config2 has been saved.');
-                  });
         }).catch(function(e) {
             console.log(e);
         });

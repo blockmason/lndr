@@ -56,7 +56,7 @@ On AWS ubuntu server. Deploy will be automated soon.
 # install stack
 curl -sSL https://get.haskellstack.org/ | sh
 
-# clone friend in debt repo
+# clone lndr repo
 git clone http://github.com/blockmason/lndr.git
 
 # install geth
@@ -68,14 +68,14 @@ sudo apt-get install autoconf
 sudo apt-get install libtool
 
 # start a local blockchain in the background
-cd friend-in-debt/ucac
+cd lndr/ucac
 sudo apt-get install npm
 sudo npm install -g truffle
 npm install
 ./gethtest.sh &
 
 # install ghc and lndr-server application
-cd friend-in-debt
+cd lndr
 stack setup
 stack build
 ```

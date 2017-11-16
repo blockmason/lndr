@@ -1,70 +1,97 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Lndr.Handler.Credit where
 
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Except
+import qualified Data.ByteString as B
 import           Data.Text (Text)
+import qualified Data.Text.Encoding as T
 import           ListT
 import           Lndr.EthInterface
 import           Lndr.Handler.Types
 import           Lndr.Types
 import qualified Network.Ethereum.Util as EU
 import           Network.Ethereum.Web3
+import           Servant
 import           Servant.API
 import qualified STMContainers.Map as Map
 
 
 -- submit a signed message consisting of "REJECT + CreditRecord HASH"
--- each credit record will be referenced by its hash
 rejectHandler :: RejectRecord -> LndrHandler NoContent
 rejectHandler(RejectRecord sig hash) = do
-    -- TODO verify sig!
     pendingMapping <- pendingMap <$> ask
-    liftIO . atomically $ Map.delete hash pendingMapping
-    return NoContent
+    pendingRecordM <- liftIO . atomically $ Map.lookup hash pendingMapping
+    case pendingRecordM of
+        Nothing -> throwError $ err404 {errBody = "credit hash does not refer to pending record"}
+        Just pr@(PendingRecord (CreditRecord c d _ _ _) s _ _) -> do
+            liftIO . atomically $ Map.delete hash pendingMapping
+            let counterparty = if textToAddress c == s then d else c
+            -- recover address from sig
+            let message = hashPrefixedMessage "REJECT" hash
+            let signer = EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
+            case signer of
+                Left err -> throwError $ err404 {errBody = "unable to recover addr from sig"}
+                Right addr -> if textToAddress addr == textToAddress counterparty
+                                    then return ()
+                                    else throwError $ err404 {errBody = "bad rejection sig"}
+
+            -- verify that address is counterparty
+            liftIO . atomically $ Map.delete hash pendingMapping
+            return NoContent
 
 
-transactionsHandler :: LndrHandler [IssueCreditLog]
-transactionsHandler = lndrWeb3 lndrLogs
+transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
+transactionsHandler Nothing = lndrWeb3 lndrLogs
+transactionsHandler (Just addr) = (++) <$> lndrWeb3 (lndrCreditLogs addr)
+                                       <*> lndrWeb3 (lndrDebitLogs addr)
 
 
-pendingHandler :: LndrHandler [PendingRecord]
-pendingHandler = do
+pendingHandler :: Maybe Address -> LndrHandler [PendingRecord]
+pendingHandler addrM = do
     creditMap <- pendingMap <$> ask
-    fmap (fmap snd) . liftIO . atomically . toList $ Map.stream creditMap
+    fmap processRecords . liftIO . atomically . toList $ Map.stream creditMap
 
+    where involves (Just addr) x = addr == textToAddress (creditor $ creditRecord x)
+                                || addr == textToAddress (debtor $ creditRecord x)
+          involves Nothing _ = True
+          processRecords = filter (involves addrM) . fmap snd
 
 lendHandler :: CreditRecord Signed -> LndrHandler NoContent
-lendHandler cr@(CreditRecord creditor _ _ _ _) = submitSignedHandler creditor cr
+lendHandler cr@(CreditRecord creditor _ _ _ _) = submitHandler creditor cr
 
 
 borrowHandler :: CreditRecord Signed -> LndrHandler NoContent
-borrowHandler cr@(CreditRecord _ debtor _ _ _) = submitSignedHandler debtor cr
+borrowHandler cr@(CreditRecord _ debtor _ _ _) = submitHandler debtor cr
 
 
-submitSignedHandler :: Text -> CreditRecord Signed
+submitHandler :: Text -> CreditRecord Signed
                     -> LndrHandler NoContent
-submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ sig) = do
+submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ sig) = do
     creditMap <- pendingMap <$> ask
     (nonce, hash) <- lndrWeb3 $ hashCreditRecord signedRecord
 
     -- submitter is one of creditor or debtor
     if submitterAddress == creditor || submitterAddress == debtor
-        then return ()
-        else throwError (LndrError "Submitter is not creditor nor debtor")
+        then (if creditor /= debtor
+                    then return ()
+                    else throwError (err400 {errBody = "creditor and debtor cannot be equal"}))
+        else throwError (err400 {errBody = "Submitter is not creditor nor debtor"})
 
-    signer <- web3ToLndr . return $ EU.ecrecover sig $ EU.hashPersonalMessage hash
+    signer <- web3ToLndr . return $ EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
 
     -- submitter signed the tx
     if signer == submitterAddress
         then return ()
-        else throwError (LndrError "Bad submitter sig")
+        else throwError (err400 {errBody = "Bad submitter sig"})
 
     -- check if hash is already registered in pending txs
-    pendingRecord <- liftIO . atomically $ Map.lookup hash creditMap
-    let cr = creditRecord <$> pendingRecord
+    pendingCredit <- fmap (fmap creditRecord) . liftIO . atomically $
+                                                    Map.lookup hash creditMap
 
-    case cr of
+    case pendingCredit of
         Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do
             -- if the submitted credit record has a matching pending record,
             -- finalize the transaction on the blockchain
@@ -80,7 +107,7 @@ submitSignedHandler submitterAddress signedRecord@(CreditRecord creditor debtor 
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> liftIO . atomically $
-                        Map.insert (PendingRecord signedRecord submitterAddr hash)
+                        Map.insert (PendingRecord signedRecord submitterAddr nonce hash)
                                    hash creditMap
 
     return NoContent

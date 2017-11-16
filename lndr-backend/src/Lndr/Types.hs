@@ -3,7 +3,18 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Lndr.Types where
+module Lndr.Types
+    ( ServerState(..)
+    , NickRequest(..)
+    , NickInfo(..)
+    , CreditRecord(..)
+    , Unsigned
+    , Signed
+    , IssueCreditLog(IssueCreditLog)
+    , RejectRecord(..)
+    , PendingRecord(..)
+    , Nonce(..)
+    ) where
 
 import           Data.Aeson
 import           Data.Aeson.TH
@@ -56,6 +67,7 @@ $(deriveJSON defaultOptions ''CreditRecord)
 
 data PendingRecord = PendingRecord { creditRecord :: CreditRecord Signed
                                    , submitter :: Address
+                                   , nonce :: Integer
                                    , hash :: Text
                                    } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''PendingRecord)
@@ -72,8 +84,10 @@ data NickRequest = NickRequest { addr :: Address
                                }
 $(deriveJSON defaultOptions ''NickRequest)
 
-newtype LndrError = LndrError { unLndrError :: String } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''LndrError)
+data NickInfo = NickInfo { addr :: Address
+                         , nick :: Text
+                         } deriving Show
+$(deriveJSON defaultOptions ''NickInfo)
 
 data ServerState = ServerState { pendingMap :: Map.Map Text PendingRecord
                                , nickMap :: Map.Map Address Text

@@ -24,6 +24,7 @@ library
                      , aeson
                      , base16-bytestring
                      , bytestring
+                     , cryptonite
                      , either
                      , ethereumhs-util
                      , hashable

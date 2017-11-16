@@ -7,7 +7,6 @@ module Lndr.Server
     ( ServerState
     , LndrAPI(..)
     , lndrAPI
-    , LndrError(..)
     , LndrHandler(..)
     , freshState
     , app
@@ -32,16 +31,19 @@ import           Network.Wai
 import           Servant
 import           Servant.Docs
 
+import Debug.Trace
+
 type LndrAPI =
-        "transactions" :> Get '[JSON] [IssueCreditLog]
-   :<|> "pending" :> Get '[JSON] [PendingRecord]
+        "transactions" :> QueryParam "user" Address :> Get '[JSON] [IssueCreditLog]
+   :<|> "pending" :> QueryParam "user" Address :> Get '[JSON] [PendingRecord]
    :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> PostNoContent '[JSON] NoContent
    :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> PostNoContent '[JSON] NoContent
-   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> Post '[JSON] NoContent
+   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> PostNoContent '[JSON] NoContent
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
    :<|> "nick" :> Capture "user" Address :> Get '[JSON] Text
-   :<|> "friends" :> Capture "user" Address :> Get '[JSON] [Address]
+   :<|> "search_nick" :> Capture "nick" Text :> Get '[JSON] [NickInfo]
+   :<|> "friends" :> Capture "user" Address :> Get '[JSON] [NickInfo]
    :<|> "add_friends" :> Capture "user" Address
                       :> ReqBody '[JSON] [Address]
                       :> PostNoContent '[JSON] NoContent
@@ -73,6 +75,7 @@ server = transactionsHandler
     :<|> nonceHandler
     :<|> nickHandler
     :<|> nickLookupHandler
+    :<|> nickSearchHandler
     :<|> friendHandler
     :<|> addFriendsHandler
     :<|> removeFriendsHandler
@@ -84,9 +87,9 @@ server = transactionsHandler
 readerToHandler' :: forall a. ServerState -> LndrHandler a -> Handler a
 readerToHandler' state r = do
     res <- liftIO . runExceptT $ runReaderT (runLndr r) state
-    Handler . ExceptT . return $ case res of
-      Left (LndrError text) -> Left err500 { errBody = T.encodeUtf8 $ T.pack text }
-      Right a  -> Right a
+    case res of
+      Left err -> traceShow err $ throwError err
+      Right a  -> return a
 
 readerToHandler :: ServerState -> LndrHandler :~> Handler
 readerToHandler state = NT (readerToHandler' state)

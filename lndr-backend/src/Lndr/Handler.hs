@@ -10,12 +10,12 @@ module Lndr.Handler (
     , pendingHandler
     , lendHandler
     , borrowHandler
-    , submitSignedHandler
     , nonceHandler
 
       -- * Friend Handlers
     , nickHandler
     , nickLookupHandler
+    , nickSearchHandler
     , friendHandler
     , addFriendsHandler
     , removeFriendsHandler

@@ -58,8 +58,8 @@ data Unsigned = Unsigned
 $(deriveJSON defaultOptions ''Unsigned)
 
 -- `a` is a phantom type that indicates whether a record has been signed or not
-data CreditRecord a = CreditRecord { creditor :: Text
-                                   , debtor :: Text
+data CreditRecord a = CreditRecord { creditor :: Address
+                                   , debtor :: Address
                                    , amount :: Integer
                                    , memo :: Text
                                    , signature :: Text

@@ -83,32 +83,15 @@ queryNonce = getNonce cpAddr
 
 hashCreditRecord :: forall a b. Provider b => CreditRecord a -> Web3 b (Integer, Text)
 hashCreditRecord r@(CreditRecord c d a m u) = do
-                nonce <- queryNonce debtorAddr creditorAddr
+                nonce <- queryNonce c d
                 let message = T.concat $
                       stripHexPrefix <$> [ ucacId
-                                         , c
-                                         , d
+                                         , Addr.toText c
+                                         , Addr.toText d
                                          , integerToHex a
                                          , integerToHex nonce
                                          ]
                 return (nonce, EU.hashText message)
-    where debtorAddr = textToAddress d
-          creditorAddr = textToAddress c
-
-
-signCreditRecord :: CreditRecord Unsigned
-                 -> ExceptT Web3Error IO (Integer, Text, CreditRecord Signed)
-signCreditRecord r@(CreditRecord c d a m u) = do
-            if c == d
-                then throwError $ UserFail "same creditor and debtor"
-                else pure ()
-            ExceptT . runWeb3 $ do
-                (nonce, hash) <- hashCreditRecord r
-                sig <- Eth.sign initiatorAddr hash
-                return (nonce, hash, r { signature = sig })
-    where debtorAddr = textToAddress d
-          creditorAddr = textToAddress c
-          initiatorAddr = textToAddress u
 
 
 finalizeTransaction :: Text -> Text -> CreditRecord Signed -> IO (Either Web3Error TxHash)
@@ -118,7 +101,7 @@ finalizeTransaction sig1 sig2 r@(CreditRecord c d a m _) = do
           encodedMemo :: BytesN 32
           encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ m
       runWeb3 $ issueCredit cpAddr (0 :: Ether) ucacIdB
-                            (textToAddress c) (textToAddress d) a
+                            c d a
                             [ sig1r, sig1s, sig1v ]
                             [ sig2r, sig2s, sig2v ]
                             encodedMemo

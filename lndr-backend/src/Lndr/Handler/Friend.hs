@@ -64,7 +64,9 @@ removeFriendsHandler address removes = do
 lookupFriends :: Address -> Map.Map Address [Address] -> LndrHandler [Address]
 lookupFriends x y = fmap (fromMaybe []) . liftIO . atomically $ Map.lookup x y
 
-lookupFriendsWithNick :: Address -> Map.Map Address [Address] -> Bimap.Bimap Address Text -> LndrHandler [NickInfo]
+
+lookupFriendsWithNick :: Address -> Map.Map Address [Address]
+                      -> Bimap.Bimap Address Text -> LndrHandler [NickInfo]
 lookupFriendsWithNick x y z = do
     friends <- lookupFriends x y
     liftIO . atomically $ mapM toNickInfo friends

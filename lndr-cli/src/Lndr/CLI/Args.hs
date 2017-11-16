@@ -26,17 +26,17 @@ import qualified Text.Pretty.Simple as Pr
 
 data LndrCmd = Transactions
              | Pending
-             | Lend { friend :: Address
+             | Lend { friend :: Text
                     , amount :: Integer
                     , memo :: Text
                     }
-             | Borrow { friend :: Address
+             | Borrow { friend :: Text
                       , amount :: Integer
                       , memo :: Text
                       }
              | Nick { nick :: Text }
-             | GetNonce { friend :: Address }
-             | AddFriend { friend :: Address }
+             | GetNonce { friend :: Text }
+             | AddFriend { friend :: Text }
              | Info
              deriving (Show, Data, Typeable)
 
@@ -69,10 +69,10 @@ runMode (Config url sk _) Pending = do
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: [PendingRecord])
 runMode (Config url sk _) (Lend friend amount memo) =
     submitCredit (LT.unpack url) (LT.toStrict sk) $
-        CreditRecord (textToAddress $ userFromSK sk) friend amount memo ""
+        CreditRecord (textToAddress $ userFromSK sk) (textToAddress friend) amount memo ""
 runMode (Config url sk _) (Borrow friend amount memo) =
     submitCredit (LT.unpack url) (LT.toStrict sk) $
-        CreditRecord friend (textToAddress $ userFromSK sk) amount memo ""
+        CreditRecord (textToAddress friend) (textToAddress $ userFromSK sk) amount memo ""
 
 -- Friend-related Modes
 runMode (Config url sk _) (Nick nick) =
@@ -80,10 +80,10 @@ runMode (Config url sk _) (Nick nick) =
     in print =<< setNick (LT.unpack url) (NickRequest userAddr nick "")
 
 runMode (Config url sk _) (AddFriend friend) =
-    print =<< addFriend (LT.unpack url) (textToAddress $ userFromSK sk) friend
+    print =<< addFriend (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)
 
 runMode (Config url sk _) (GetNonce friend) =
-    print =<< getNonce (LT.unpack url) (textToAddress $ userFromSK sk) friend
+    print =<< getNonce (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)
 
 runMode (Config url sk _) Info =
     print =<< getInfo (LT.unpack url) (userFromSK sk)

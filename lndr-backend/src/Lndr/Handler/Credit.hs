@@ -73,6 +73,9 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ si
     creditMap <- pendingMap <$> ask
     (nonce, hash) <- lndrWeb3 $ hashCreditRecord signedRecord
 
+    -- TODO verify that credit record memo is under 32 chars (all validation
+    -- should happen in separate function perhaps
+
     -- submitter is one of creditor or debtor
     if submitterAddress == creditor || submitterAddress == debtor
         then (if creditor /= debtor

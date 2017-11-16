@@ -114,11 +114,13 @@ finalizeTransaction :: Text -> Text -> CreditRecord Signed -> IO (Either Web3Err
 finalizeTransaction sig1 sig2 r@(CreditRecord c d a m _) = do
       let s1@(sig1r, sig1s, sig1v) = decomposeSig sig1
           s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
+          encodedMemo :: BytesN 32
+          encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ m
       runWeb3 $ issueCredit cpAddr (0 :: Ether) ucacIdB
                             (textToAddress c) (textToAddress d) a
                             [ sig1r, sig1s, sig1v ]
                             [ sig2r, sig2s, sig2v ]
-                            (BytesN . bytesDecode $ alignL m)
+                            encodedMemo
 
 -- TODO THIS CAN BE DONE IN A CLEANER WAY
 -- fetch cp logs related to LNDR UCAC
@@ -155,7 +157,7 @@ interpretUcacLog change = do
                           creditorAddr
                           debtorAddr
                           (hexToInteger . T.take 64 . stripHexPrefix $ changeData change)
-                          (T.take 64 . T.drop 64 . stripHexPrefix $ changeData change)
+                          (T.decodeUtf8 . fst . BS16.decode . T.encodeUtf8 . T.take 64 . T.drop 64 . stripHexPrefix $ changeData change)
 
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the
 -- 40-char hex representation of an address
@@ -195,8 +197,7 @@ hashPrefixedMessage pre message = T.pack . show $ keccakDigest
 
 align :: Text -> (Text, Text)
 align v = (v <> zeros, zeros <> v)
-  where zerosLen | T.length v `mod` 64 == 0 = 0
-                 | otherwise                = 64 - (T.length v `mod` 64)
+  where zerosLen = 64 - (T.length v `mod` 64)
         zeros = T.replicate zerosLen "0"
 
 alignL = fst . align

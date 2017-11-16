@@ -67,4 +67,6 @@ lookupFriends x y = fmap (fromMaybe []) . liftIO . atomically $ Map.lookup x y
 lookupFriendsWithNick :: Address -> Map.Map Address [Address] -> Bimap.Bimap Address Text -> LndrHandler [NickInfo]
 lookupFriendsWithNick x y z = do
     friends <- lookupFriends x y
-    liftIO . atomically $ mapM (\x -> NickInfo x <$> (fromMaybe "N/A" <$> Bimap.lookup1 x z)) friends
+    liftIO . atomically $ mapM toNickInfo friends
+    where
+        toNickInfo x = NickInfo x . fromMaybe "N/A" <$> Bimap.lookup1 x z

@@ -26,6 +26,7 @@ import           GHC.Generics
 import           Network.Ethereum.Web3.Address (Address)
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Servant.API
+import qualified STMContainers.Bimap as Bimap
 import qualified STMContainers.Map as Map
 
 -- TODO remove this once Address derives Generic in hs-web3
@@ -90,6 +91,6 @@ data NickInfo = NickInfo { addr :: Address
 $(deriveJSON defaultOptions ''NickInfo)
 
 data ServerState = ServerState { pendingMap :: Map.Map Text PendingRecord
-                               , nickMap :: Map.Map Address Text
+                               , nickMap :: Bimap.Bimap Address Text
                                , friendlistMap :: Map.Map Address [Address]
                                }

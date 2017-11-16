@@ -42,12 +42,13 @@ import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
 import           Numeric (readHex, showHex)
 import           Prelude hiding ((!!))
+import qualified STMContainers.Bimap as Bimap
 import qualified STMContainers.Map as Map
 
 
 freshState :: IO ServerState
 freshState = ServerState <$> atomically Map.new
-                         <*> atomically Map.new
+                         <*> atomically Bimap.new
                          <*> atomically Map.new
 
 ucacId :: Text

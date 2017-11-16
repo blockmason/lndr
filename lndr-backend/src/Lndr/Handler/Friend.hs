@@ -12,6 +12,7 @@ import           Lndr.Handler.Types
 import           Lndr.Types
 import           Network.Ethereum.Web3
 import           Servant.API
+import qualified STMContainers.Bimap as Bimap
 import qualified STMContainers.Map as Map
 
 -- TODO nicks should be unique
@@ -19,21 +20,20 @@ nickHandler :: NickRequest -> LndrHandler NoContent
 nickHandler (NickRequest addr nick sig) = do
     -- TODO verify signature
     nickMapping <- nickMap <$> ask
-    liftIO . atomically $ Map.insert nick addr nickMapping
+    liftIO . atomically $ Bimap.insert1 nick addr nickMapping
     return NoContent
 
 
 nickLookupHandler :: Address -> LndrHandler Text
 nickLookupHandler addr = do
     nickMapping <- nickMap <$> ask
-    ioMaybeToLndr "addr not found in nick db" . atomically $ Map.lookup addr nickMapping
+    ioMaybeToLndr "addr not found in nick db" . atomically $ Bimap.lookup1 addr nickMapping
 
 
 nickSearchHandler :: Text -> LndrHandler [NickInfo]
 nickSearchHandler nick = do
     nickMapping <- nickMap <$> ask
-    assocs <- liftIO . atomically . toList $ Map.stream nickMapping
-    return . (: []) . uncurry NickInfo . head . dropWhile ((/= nick) . snd) $ assocs
+    ioMaybeToLndr "addr not found in nick db" . atomically $ fmap ((:[]) . (`NickInfo` nick)) <$> Bimap.lookup2 nick nickMapping
 
 
 friendHandler :: Address -> LndrHandler [NickInfo]

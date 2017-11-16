@@ -31,8 +31,6 @@ import           Network.Wai
 import           Servant
 import           Servant.Docs
 
-import Debug.Trace
-
 type LndrAPI =
         "transactions" :> QueryParam "user" Address :> Get '[JSON] [IssueCreditLog]
    :<|> "pending" :> QueryParam "user" Address :> Get '[JSON] [PendingRecord]
@@ -50,6 +48,8 @@ type LndrAPI =
    :<|> "remove_friends" :> Capture "user" Address
                          :> ReqBody '[JSON] [Address]
                          :> PostNoContent '[JSON] NoContent
+   :<|> "counterparties" :> Capture "user" Address :> Get '[JSON] [Address]
+   -- :<|> "balances" :> Capture "user" Address :> Get '[JSON]
    :<|> "docs" :> Raw
 
 
@@ -79,17 +79,20 @@ server = transactionsHandler
     :<|> friendHandler
     :<|> addFriendsHandler
     :<|> removeFriendsHandler
+    :<|> counterpartiesHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS
           plain = ("Content-Type", "text/plain")
 
+
 readerToHandler' :: forall a. ServerState -> LndrHandler a -> Handler a
 readerToHandler' state r = do
     res <- liftIO . runExceptT $ runReaderT (runLndr r) state
     case res of
-      Left err -> traceShow err $ throwError err
+      Left err -> throwError err
       Right a  -> return a
+
 
 readerToHandler :: ServerState -> LndrHandler :~> Handler
 readerToHandler state = NT (readerToHandler' state)

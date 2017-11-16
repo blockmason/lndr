@@ -49,6 +49,10 @@ transactionsHandler (Just addr) = (++) <$> lndrWeb3 (lndrCreditLogs addr)
                                        <*> lndrWeb3 (lndrDebitLogs addr)
 
 
+counterpartiesHandler :: Address -> LndrHandler [Address]
+counterpartiesHandler = undefined
+
+
 pendingHandler :: Maybe Address -> LndrHandler [PendingRecord]
 pendingHandler addrM = do
     creditMap <- pendingMap <$> ask

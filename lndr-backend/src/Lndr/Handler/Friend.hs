@@ -38,8 +38,8 @@ nickSearchHandler nick = do
 
 friendHandler :: Address -> LndrHandler [NickInfo]
 friendHandler addr = do
-    friendListMapping <- friendlistMap <$> ask
-    lookupFriends addr friendListMapping
+    (ServerState _ nickMapping friendListMapping) <- ask
+    lookupFriendsWithNick addr friendListMapping nickMapping
 
 
 addFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
@@ -47,7 +47,7 @@ addFriendsHandler address adds = do
     -- TODO verify signature
     friendListMapping <- friendlistMap <$> ask
     -- TODO fix this once long-term data structures are in place
-    friendList <-  fmap (\(NickInfo addr _) -> addr) <$> lookupFriends address friendListMapping
+    friendList <- lookupFriends address friendListMapping
     liftIO . atomically $ Map.insert (nub $ friendList ++ adds) address friendListMapping
     return NoContent
 
@@ -56,10 +56,15 @@ removeFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
 removeFriendsHandler address removes = do
     -- TODO verify signature
     friendListMapping <- friendlistMap <$> ask
-    friendList <- fmap (\(NickInfo addr _) -> addr) <$> lookupFriends address friendListMapping
+    friendList <- lookupFriends address friendListMapping
     liftIO . atomically $ Map.insert (friendList \\ removes) address friendListMapping
     return NoContent
 
 
-lookupFriends :: Address -> Map.Map Address [Address] -> LndrHandler [NickInfo]
-lookupFriends x y = fmap (fmap (`NickInfo` "N/A") . fromMaybe []) . liftIO . atomically $ Map.lookup x y
+lookupFriends :: Address -> Map.Map Address [Address] -> LndrHandler [Address]
+lookupFriends x y = fmap (fromMaybe []) . liftIO . atomically $ Map.lookup x y
+
+lookupFriendsWithNick :: Address -> Map.Map Address [Address] -> Bimap.Bimap Address Text -> LndrHandler [NickInfo]
+lookupFriendsWithNick x y z = do
+    friends <- lookupFriends x y
+    liftIO . atomically $ mapM (\x -> NickInfo x <$> (fromMaybe "N/A" <$> Bimap.lookup1 x z)) friends

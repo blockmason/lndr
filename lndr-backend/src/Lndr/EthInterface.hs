@@ -83,7 +83,10 @@ decomposeSig sig = (sigR, sigS, sigV)
 
 
 queryBalance :: Address -> IO (Either Web3Error Integer)
-queryBalance = runWeb3 . balances cpAddr ucacIdB
+queryBalance = runWeb3 . fmap adjustSigned . balances cpAddr ucacIdB
+    where adjustSigned x | x > div maxNeg 2 = x - maxNeg
+                         | otherwise        = x
+          maxNeg = 115792089237316195423570985008687907853269984665640564039457584007913129639936
 
 
 queryNonce :: Provider a => Address -> Address -> Web3 a Integer

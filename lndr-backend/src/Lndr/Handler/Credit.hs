@@ -26,9 +26,9 @@ rejectHandler(RejectRecord sig hash) = do
     pendingRecordM <- liftIO . atomically $ Map.lookup hash pendingMapping
     case pendingRecordM of
         Nothing -> throwError $ err404 {errBody = "credit hash does not refer to pending record"}
-        Just pr@(PendingRecord (CreditRecord c d _ _ _) s _ _) -> do
+        Just pr@(PendingRecord (CreditRecord creditor debtor _ _ _) submitter _ _) -> do
             liftIO . atomically $ Map.delete hash pendingMapping
-            let counterparty = if c == s then d else c
+            let counterparty = if creditor == submitter then debtor else creditor
             -- recover address from sig
             let message = hashPrefixedMessage "REJECT" hash
             let signer = EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash

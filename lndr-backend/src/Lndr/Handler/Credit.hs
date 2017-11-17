@@ -54,6 +54,10 @@ counterpartiesHandler addr = fmap takeCounterParty <$> transactionsHandler (Just
     where takeCounterParty (IssueCreditLog _ c d _ _) = if c == addr then d else c
 
 
+balanceHandler :: Address -> LndrHandler Integer
+balanceHandler addr = web3ToLndr $ queryBalance addr
+
+
 pendingHandler :: Maybe Address -> LndrHandler [PendingRecord]
 pendingHandler addrM = do
     creditMap <- pendingMap <$> ask

@@ -12,6 +12,7 @@ module Lndr.Handler (
     , borrowHandler
     , nonceHandler
     , counterpartiesHandler
+    , balanceHandler
 
       -- * Friend Handlers
     , nickHandler

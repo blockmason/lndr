@@ -81,6 +81,11 @@ decomposeSig sig = (sigR, sigS, sigV)
 -- create functions to call CreditProtocol contract
 [abiFrom|data/CreditProtocol.abi|]
 
+
+queryBalance :: Address -> IO (Either Web3Error Integer)
+queryBalance = runWeb3 . balances cpAddr ucacIdB
+
+
 queryNonce :: Provider a => Address -> Address -> Web3 a Integer
 queryNonce = getNonce cpAddr
 

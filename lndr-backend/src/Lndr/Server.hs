@@ -49,7 +49,7 @@ type LndrAPI =
                          :> ReqBody '[JSON] [Address]
                          :> PostNoContent '[JSON] NoContent
    :<|> "counterparties" :> Capture "user" Address :> Get '[JSON] [Address]
-   -- :<|> "balances" :> Capture "user" Address :> Get '[JSON]
+   :<|> "balance" :> Capture "user" Address :> Get '[JSON] Integer
    :<|> "docs" :> Raw
 
 
@@ -80,6 +80,7 @@ server = transactionsHandler
     :<|> addFriendsHandler
     :<|> removeFriendsHandler
     :<|> counterpartiesHandler
+    :<|> balanceHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS

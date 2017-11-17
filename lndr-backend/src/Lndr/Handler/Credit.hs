@@ -50,7 +50,8 @@ transactionsHandler (Just addr) = (++) <$> lndrWeb3 (lndrCreditLogs addr)
 
 
 counterpartiesHandler :: Address -> LndrHandler [Address]
-counterpartiesHandler = undefined
+counterpartiesHandler addr = fmap takeCounterParty <$> transactionsHandler (Just addr)
+    where takeCounterParty (IssueCreditLog _ c d _ _) = if c == addr then d else c
 
 
 pendingHandler :: Maybe Address -> LndrHandler [PendingRecord]

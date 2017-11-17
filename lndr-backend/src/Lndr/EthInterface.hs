@@ -113,7 +113,7 @@ finalizeTransaction sig1 sig2 r@(CreditRecord creditor debtor amount memo _) = d
 lndrLogs :: Provider a => Web3 a [IssueCreditLog]
 lndrLogs = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
-                        (Just [Just issueCreditEvent])
+                        (Just [Just issueCreditEvent, Just ucacId])
                         (Just "0x0") -- start from block 0
                         Nothing)
 
@@ -121,7 +121,7 @@ lndrLogs = rights . fmap interpretUcacLog <$>
 lndrDebitLogs :: Provider a => Address -> Web3 a [IssueCreditLog]
 lndrDebitLogs addr = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
-                        (Just [Just issueCreditEvent, Nothing, Nothing, Just (addressToBytes32 addr)])
+                        (Just [Just issueCreditEvent, Just ucacId, Nothing, Just (addressToBytes32 addr)])
                         (Just "0x0") -- start from block 0
                         Nothing)
 
@@ -129,7 +129,7 @@ lndrDebitLogs addr = rights . fmap interpretUcacLog <$>
 lndrCreditLogs :: Provider a => Address -> Web3 a [IssueCreditLog]
 lndrCreditLogs addr = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
-                        (Just [Just issueCreditEvent, Nothing, Just (addressToBytes32 addr)])
+                        (Just [Just issueCreditEvent, Just ucacId, Just (addressToBytes32 addr)])
                         (Just "0x0") -- start from block 0
                         Nothing)
 

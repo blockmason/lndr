@@ -51,6 +51,9 @@ freshState = ServerState <$> atomically Map.new
                          <*> atomically Bimap.new
                          <*> atomically Map.new
 
+issueCreditEvent :: Text
+issueCreditEvent = "0xf3478cc0d8e00370ff63723580cb5543f72da9ca849bb45098417575c51de3cb"
+
 ucacId :: Text
 ucacId = "0x7624778dedc75f8b322b9fa1632a610d40b85e106c7d9bf0e743a9ce291b9c6f"
 
@@ -106,13 +109,11 @@ finalizeTransaction sig1 sig2 r@(CreditRecord creditor debtor amount memo _) = d
                             [ sig2r, sig2s, sig2v ]
                             encodedMemo
 
--- TODO THIS CAN BE DONE IN A CLEANER WAY
--- fetch cp logs related to LNDR UCAC
--- verify that these are proper logs
+
 lndrLogs :: Provider a => Web3 a [IssueCreditLog]
 lndrLogs = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
-                        Nothing
+                        (Just [Just issueCreditEvent])
                         (Just "0x0") -- start from block 0
                         Nothing)
 
@@ -120,8 +121,7 @@ lndrLogs = rights . fmap interpretUcacLog <$>
 lndrDebitLogs :: Provider a => Address -> Web3 a [IssueCreditLog]
 lndrDebitLogs addr = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
-                        -- TODO make first identify issue credit event
-                        (Just [Nothing, Nothing, Nothing, Just (addressToBytes32 addr)])
+                        (Just [Just issueCreditEvent, Nothing, Nothing, Just (addressToBytes32 addr)])
                         (Just "0x0") -- start from block 0
                         Nothing)
 
@@ -129,8 +129,7 @@ lndrDebitLogs addr = rights . fmap interpretUcacLog <$>
 lndrCreditLogs :: Provider a => Address -> Web3 a [IssueCreditLog]
 lndrCreditLogs addr = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
-                        -- TODO make first identify issue credit event
-                        (Just [Nothing, Nothing, Just (addressToBytes32 addr)])
+                        (Just [Just issueCreditEvent, Nothing, Just (addressToBytes32 addr)])
                         (Just "0x0") -- start from block 0
                         Nothing)
 

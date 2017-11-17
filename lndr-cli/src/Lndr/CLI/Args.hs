@@ -26,6 +26,7 @@ import qualified Text.Pretty.Simple as Pr
 
 data LndrCmd = Transactions
              | Pending
+             | RejectPending
              | Lend { friend :: Text
                     , amount :: Integer
                     , memo :: Text
@@ -121,11 +122,18 @@ getFriends url userAddr = do
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
-getInfo :: String -> Text -> IO (Address, Text, [NickInfo])
+getBalance :: String -> Address -> IO Integer
+getBalance url userAddr = do
+    req <- HTTP.parseRequest $ url ++ "/balance/" ++ show userAddr
+    HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
+getInfo :: String -> Text -> IO (Address, Text, Integer, [NickInfo])
 getInfo url userAddr = do
     nick <- getNick url address
+    balance <- getBalance url address
     friends <- getFriends url address
-    return (address, nick, friends)
+    return (address, nick, balance, friends)
     where address = textToAddress userAddr
 
 

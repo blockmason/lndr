@@ -120,7 +120,8 @@ lndrLogs = rights . fmap interpretUcacLog <$>
 lndrDebitLogs :: Provider a => Address -> Web3 a [IssueCreditLog]
 lndrDebitLogs addr = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
-                        (Just [Nothing, Nothing, Just (addressToBytes32 addr)])
+                        -- TODO make first identify issue credit event
+                        (Just [Nothing, Nothing, Nothing, Just (addressToBytes32 addr)])
                         (Just "0x0") -- start from block 0
                         Nothing)
 
@@ -128,7 +129,8 @@ lndrDebitLogs addr = rights . fmap interpretUcacLog <$>
 lndrCreditLogs :: Provider a => Address -> Web3 a [IssueCreditLog]
 lndrCreditLogs addr = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
-                        (Just [Nothing, Just (addressToBytes32 addr)])
+                        -- TODO make first identify issue credit event
+                        (Just [Nothing, Nothing, Just (addressToBytes32 addr)])
                         (Just "0x0") -- start from block 0
                         Nothing)
 

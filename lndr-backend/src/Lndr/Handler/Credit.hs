@@ -87,7 +87,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ si
                     else throwError (err400 {errBody = "creditor and debtor cannot be equal"}))
         else throwError (err400 {errBody = "Submitter is not creditor nor debtor"})
 
-    signer <- web3ToLndr . return $ EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
+    signer <- web3ToLndr . return . EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
 
     -- submitter signed the tx
     if textToAddress signer == submitterAddress
@@ -95,8 +95,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ si
         else throwError (err400 {errBody = "Bad submitter sig"})
 
     -- check if hash is already registered in pending txs
-    pendingCredit <- fmap (fmap creditRecord) . liftIO . atomically $
-                                                    Map.lookup hash creditMap
+    pendingCredit <- fmap (fmap creditRecord) . liftIO . atomically $ Map.lookup hash creditMap
 
     case pendingCredit of
         Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do

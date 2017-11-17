@@ -89,6 +89,41 @@ Clients must supply the following data
 
 ```
 
+## GET /balance/:user
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Captures:
+
+- *user*: the address of the user whose friends will be returned
+
+#### Response:
+
+- Status code 200
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+19
+```
+
+-
+
+```javascript
+19
+```
+
 ## POST /borrow
 
 #### Authentication
@@ -137,6 +172,59 @@ Clients must supply the following data
 
 ```javascript
 
+```
+
+## GET /counterparties/:user
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Captures:
+
+- *user*: the address of the user whose friends will be returned
+
+#### Response:
+
+- Status code 200
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+[]
+```
+
+-
+
+```javascript
+[]
+```
+
+-
+
+```javascript
+["0x11edd217a875063583dd1b638d16810c5d34d54b"]
+```
+
+-
+
+```javascript
+["0x11edd217a875063583dd1b638d16810c5d34d54b"]
+```
+
+-
+
+```javascript
+["0x11edd217a875063583dd1b638d16810c5d34d54b","0x11edd217a875063583dd1b638d16810c5d34d54b"]
 ```
 
 ## GET /docs

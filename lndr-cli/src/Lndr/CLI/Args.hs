@@ -60,11 +60,11 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
 
 runMode :: Config -> LndrCmd -> IO ()
 runMode (Config url sk _) Transactions = do
-    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/transactions"
+    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/transactions?user=" ++ T.unpack (userFromSK sk)
     resp <- HTTP.httpJSON initReq
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: [IssueCreditLog])
 runMode (Config url sk _) Pending = do
-    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/pending"
+    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/pending?user=" ++ T.unpack (userFromSK sk)
     resp <- HTTP.httpJSON initReq
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: [PendingRecord])
 runMode (Config url sk _) (Lend friend amount memo) =

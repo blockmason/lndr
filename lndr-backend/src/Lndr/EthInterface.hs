@@ -148,12 +148,14 @@ interpretUcacLog change = do
 bytes32ToAddress :: Text -> Either SomeException Address
 bytes32ToAddress = mapLeft (toException . TypeError) . Addr.fromText . T.drop 26
 
-addressToBytes32 :: Address -> Text
-addressToBytes32 = alignR . Addr.toText
 
--- TODO keep this in either
+addressToBytes32 :: Address -> Text
+addressToBytes32 = T.append "0x" . alignR . Addr.toText
+
+
+-- TODO handle the error better
 textToAddress :: Text -> Address
-textToAddress = fromRight Addr.zero . Addr.fromText
+textToAddress = fromRight (error "bad address") . Addr.fromText
 
 
 hexToInteger :: Text -> Integer

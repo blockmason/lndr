@@ -108,6 +108,7 @@ getNick url userAddr = do
         Left a -> "nick not found"
         Right b -> b
 
+
 addFriend :: String -> Address -> Address -> IO Int
 addFriend url userAddr addr = do
     initReq <- HTTP.parseRequest $ url ++ "/add_friends/" ++ show userAddr

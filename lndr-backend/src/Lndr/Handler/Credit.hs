@@ -6,6 +6,7 @@ import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Except
 import qualified Data.ByteString as B
+import           Data.List (nub)
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import           ListT
@@ -44,18 +45,28 @@ rejectHandler(RejectRecord sig hash) = do
 
 
 transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
-transactionsHandler Nothing = lndrWeb3 lndrLogs
-transactionsHandler (Just addr) = (++) <$> lndrWeb3 (lndrCreditLogs addr)
-                                       <*> lndrWeb3 (lndrDebitLogs addr)
+transactionsHandler Nothing = lndrWeb3 (lndrLogs Nothing Nothing)
+transactionsHandler (Just addr) = (++) <$> lndrWeb3 (lndrLogs (Just addr) Nothing)
+                                       <*> lndrWeb3 (lndrLogs Nothing (Just addr))
 
 
 counterpartiesHandler :: Address -> LndrHandler [Address]
-counterpartiesHandler addr = fmap takeCounterParty <$> transactionsHandler (Just addr)
+counterpartiesHandler addr = nub . fmap takeCounterParty <$> transactionsHandler (Just addr)
     where takeCounterParty (IssueCreditLog _ c d _ _) = if c == addr then d else c
 
 
 balanceHandler :: Address -> LndrHandler Integer
 balanceHandler addr = web3ToLndr $ queryBalance addr
+
+
+twoPartyBalanceHandler :: Address -> Address -> LndrHandler Integer
+twoPartyBalanceHandler p1 p2 = do
+    debts <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs (Just p2) (Just p1))
+    credits <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs (Just p1) (Just p2))
+    return $ credits - debts
+    where
+        -- TODO lens needed
+        extractAmount (IssueCreditLog _ _ _ amount _) = amount
 
 
 pendingHandler :: Maybe Address -> LndrHandler [PendingRecord]

@@ -20,7 +20,6 @@ import           Servant.API
 import qualified STMContainers.Map as Map
 
 
--- submit a signed message consisting of "REJECT + CreditRecord HASH"
 rejectHandler :: RejectRecord -> LndrHandler NoContent
 rejectHandler(RejectRecord sig hash) = do
     pendingMapping <- pendingMap <$> ask
@@ -31,7 +30,6 @@ rejectHandler(RejectRecord sig hash) = do
             liftIO . atomically $ Map.delete hash pendingMapping
             let counterparty = if creditor == submitter then debtor else creditor
             -- recover address from sig
-            let message = hashPrefixedMessage "REJECT" hash
             let signer = EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
             case signer of
                 Left err -> throwError $ err404 {errBody = "unable to recover addr from sig"}

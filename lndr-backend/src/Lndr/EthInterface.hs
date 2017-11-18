@@ -167,15 +167,6 @@ integerToHex x = T.append "0x" strRep
     where strRep = alignR . T.pack $ showHex x ""
 
 
-hashPrefixedMessage :: String -> Text -> Text
-hashPrefixedMessage pre message = T.pack . show $ keccakDigest
-    where messageBytes = fst . BS16.decode . T.encodeUtf8 $ message
-          prefix = T.encodeUtf8 . T.pack $
-            pre ++ show (B.length messageBytes)
-          keccakDigest :: C.Digest C.Keccak_256
-          keccakDigest = C.hash (prefix `B.append` messageBytes)
-
-
 align :: Text -> (Text, Text)
 align v = (v <> zeros, zeros <> v)
   where zerosLen = 64 - (T.length v `mod` 64)

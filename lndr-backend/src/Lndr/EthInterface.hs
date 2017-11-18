@@ -42,13 +42,17 @@ import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
 import           Numeric (readHex, showHex)
 import           Prelude hiding ((!!))
+import qualified STMContainers.Bimap as Bimap
 import qualified STMContainers.Map as Map
 
 
 freshState :: IO ServerState
 freshState = ServerState <$> atomically Map.new
+                         <*> atomically Bimap.new
                          <*> atomically Map.new
-                         <*> atomically Map.new
+
+issueCreditEvent :: Text
+issueCreditEvent = "0xf3478cc0d8e00370ff63723580cb5543f72da9ca849bb45098417575c51de3cb"
 
 ucacId :: Text
 ucacId = "0x7624778dedc75f8b322b9fa1632a610d40b85e106c7d9bf0e743a9ce291b9c6f"
@@ -77,56 +81,47 @@ decomposeSig sig = (sigR, sigS, sigV)
 -- create functions to call CreditProtocol contract
 [abiFrom|data/CreditProtocol.abi|]
 
+
+queryBalance :: Address -> IO (Either Web3Error Integer)
+queryBalance = runWeb3 . fmap adjustSigned . balances cpAddr ucacIdB
+    where adjustSigned x | x > div maxNeg 2 = x - maxNeg
+                         | otherwise        = x
+          maxNeg = 2^256
+
+
 queryNonce :: Provider a => Address -> Address -> Web3 a Integer
 queryNonce = getNonce cpAddr
 
 hashCreditRecord :: forall a b. Provider b => CreditRecord a -> Web3 b (Integer, Text)
-hashCreditRecord r@(CreditRecord c d a m u) = do
-                nonce <- queryNonce debtorAddr creditorAddr
+hashCreditRecord r@(CreditRecord creditor debtor amount _ _) = do
+                nonce <- queryNonce creditor debtor
                 let message = T.concat $
                       stripHexPrefix <$> [ ucacId
-                                         , c
-                                         , d
-                                         , integerToHex a
+                                         , Addr.toText creditor
+                                         , Addr.toText debtor
+                                         , integerToHex amount
                                          , integerToHex nonce
                                          ]
                 return (nonce, EU.hashText message)
-    where debtorAddr = textToAddress d
-          creditorAddr = textToAddress c
-
-
-signCreditRecord :: CreditRecord Unsigned
-                 -> ExceptT Web3Error IO (Integer, Text, CreditRecord Signed)
-signCreditRecord r@(CreditRecord c d a m u) = do
-            if c == d
-                then throwError $ UserFail "same creditor and debtor"
-                else pure ()
-            ExceptT . runWeb3 $ do
-                (nonce, hash) <- hashCreditRecord r
-                sig <- Eth.sign initiatorAddr hash
-                return (nonce, hash, r { signature = sig })
-    where debtorAddr = textToAddress d
-          creditorAddr = textToAddress c
-          initiatorAddr = textToAddress u
 
 
 finalizeTransaction :: Text -> Text -> CreditRecord Signed -> IO (Either Web3Error TxHash)
-finalizeTransaction sig1 sig2 r@(CreditRecord c d a m _) = do
+finalizeTransaction sig1 sig2 r@(CreditRecord creditor debtor amount memo _) = do
       let s1@(sig1r, sig1s, sig1v) = decomposeSig sig1
           s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
+          encodedMemo :: BytesN 32
+          encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
       runWeb3 $ issueCredit cpAddr (0 :: Ether) ucacIdB
-                            (textToAddress c) (textToAddress d) a
+                            creditor debtor amount
                             [ sig1r, sig1s, sig1v ]
                             [ sig2r, sig2s, sig2v ]
-                            (BytesN . bytesDecode $ alignL m)
+                            encodedMemo
 
--- TODO THIS CAN BE DONE IN A CLEANER WAY
--- fetch cp logs related to LNDR UCAC
--- verify that these are proper logs
+
 lndrLogs :: Provider a => Web3 a [IssueCreditLog]
 lndrLogs = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
-                        Nothing
+                        (Just [Just issueCreditEvent, Just ucacId])
                         (Just "0x0") -- start from block 0
                         Nothing)
 
@@ -134,7 +129,7 @@ lndrLogs = rights . fmap interpretUcacLog <$>
 lndrDebitLogs :: Provider a => Address -> Web3 a [IssueCreditLog]
 lndrDebitLogs addr = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
-                        (Just [Nothing, Nothing, Just (addressToBytes32 addr)])
+                        (Just [Just issueCreditEvent, Just ucacId, Nothing, Just (addressToBytes32 addr)])
                         (Just "0x0") -- start from block 0
                         Nothing)
 
@@ -142,7 +137,7 @@ lndrDebitLogs addr = rights . fmap interpretUcacLog <$>
 lndrCreditLogs :: Provider a => Address -> Web3 a [IssueCreditLog]
 lndrCreditLogs addr = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
-                        (Just [Nothing, Just (addressToBytes32 addr)])
+                        (Just [Just issueCreditEvent, Just ucacId, Just (addressToBytes32 addr)])
                         (Just "0x0") -- start from block 0
                         Nothing)
 
@@ -155,19 +150,21 @@ interpretUcacLog change = do
                           creditorAddr
                           debtorAddr
                           (hexToInteger . T.take 64 . stripHexPrefix $ changeData change)
-                          (T.take 64 . T.drop 64 . stripHexPrefix $ changeData change)
+                          (T.decodeUtf8 . fst . BS16.decode . T.encodeUtf8 . T.take 64 . T.drop 64 . stripHexPrefix $ changeData change)
 
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the
 -- 40-char hex representation of an address
 bytes32ToAddress :: Text -> Either SomeException Address
 bytes32ToAddress = mapLeft (toException . TypeError) . Addr.fromText . T.drop 26
 
-addressToBytes32 :: Address -> Text
-addressToBytes32 = alignR . Addr.toText
 
--- TODO keep this in either
+addressToBytes32 :: Address -> Text
+addressToBytes32 = T.append "0x" . alignR . Addr.toText
+
+
+-- TODO handle the error better
 textToAddress :: Text -> Address
-textToAddress = fromRight Addr.zero . Addr.fromText
+textToAddress = fromRight (error "bad address") . Addr.fromText
 
 
 hexToInteger :: Text -> Integer
@@ -195,8 +192,7 @@ hashPrefixedMessage pre message = T.pack . show $ keccakDigest
 
 align :: Text -> (Text, Text)
 align v = (v <> zeros, zeros <> v)
-  where zerosLen | T.length v `mod` 64 == 0 = 0
-                 | otherwise                = 64 - (T.length v `mod` 64)
+  where zerosLen = 64 - (T.length v `mod` 64)
         zeros = T.replicate zerosLen "0"
 
 alignL = fst . align

@@ -18,6 +18,7 @@ import           Lndr.CLI.Config
 import           Lndr.Types
 import           Network.Ethereum.Util (hashPersonalMessage, ecsign, privateToAddress, hashText)
 import           Network.Ethereum.Web3
+import qualified Network.Ethereum.Web3.Address as Addr
 import qualified Network.HTTP.Simple as HTTP
 import           System.Console.CmdArgs hiding (def)
 import           System.Console.CmdArgs.Explicit(helpText, HelpFormat(..), modeEmpty)
@@ -59,19 +60,19 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
 
 runMode :: Config -> LndrCmd -> IO ()
 runMode (Config url sk _) Transactions = do
-    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/transactions"
+    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/transactions?user=" ++ T.unpack (userFromSK sk)
     resp <- HTTP.httpJSON initReq
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: [IssueCreditLog])
 runMode (Config url sk _) Pending = do
-    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/pending"
+    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/pending?user=" ++ T.unpack (userFromSK sk)
     resp <- HTTP.httpJSON initReq
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: [PendingRecord])
 runMode (Config url sk _) (Lend friend amount memo) =
     submitCredit (LT.unpack url) (LT.toStrict sk) $
-        CreditRecord (userFromSK sk) friend amount memo ""
+        CreditRecord (textToAddress $ userFromSK sk) (textToAddress friend) amount memo ""
 runMode (Config url sk _) (Borrow friend amount memo) =
     submitCredit (LT.unpack url) (LT.toStrict sk) $
-        CreditRecord friend (userFromSK sk) amount memo ""
+        CreditRecord (textToAddress friend) (textToAddress $ userFromSK sk) amount memo ""
 
 -- Friend-related Modes
 runMode (Config url sk _) (Nick nick) =
@@ -79,11 +80,10 @@ runMode (Config url sk _) (Nick nick) =
     in print =<< setNick (LT.unpack url) (NickRequest userAddr nick "")
 
 runMode (Config url sk _) (AddFriend friend) =
-    print =<< addFriend (LT.unpack url) (textToAddress $ userFromSK sk)
-                                        (textToAddress friend)
+    print =<< addFriend (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)
 
 runMode (Config url sk _) (GetNonce friend) =
-    print =<< getNonce (LT.unpack url) (userFromSK sk) friend
+    print =<< getNonce (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)
 
 runMode (Config url sk _) Info =
     print =<< getInfo (LT.unpack url) (userFromSK sk)
@@ -129,9 +129,9 @@ getInfo url userAddr = do
     where address = textToAddress userAddr
 
 
-getNonce :: String -> Text -> Text -> IO Integer
+getNonce :: String -> Address -> Address -> IO Integer
 getNonce url addr1 addr2 = do
-    req <- HTTP.parseRequest $ url ++ "/nonce/" ++ T.unpack addr1 ++ "/" ++ T.unpack addr2
+    req <- HTTP.parseRequest $ url ++ "/nonce/" ++ T.unpack (Addr.toText addr1) ++ "/" ++ T.unpack (Addr.toText addr2)
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
@@ -139,8 +139,8 @@ signCredit :: Text -> Integer -> CreditRecord Unsigned -> CreditRecord Signed
 signCredit secretKey nonce r@(CreditRecord c d a m u) = r { signature = sig }
     where message = hashText . T.concat $
                         stripHexPrefix <$> [ ucacId
-                                           , c
-                                           , d
+                                           , Addr.toText c
+                                           , Addr.toText d
                                            , integerToHex a
                                            , integerToHex nonce
                                            ]
@@ -151,7 +151,7 @@ signCredit secretKey nonce r@(CreditRecord c d a m u) = r { signature = sig }
 submitCredit :: String -> Text -> CreditRecord Unsigned -> IO ()
 submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _) = do
     nonce <- getNonce url debtor creditor
-    initReq <- if userFromSK (LT.fromStrict secretKey) == creditor
+    initReq <- if textToAddress (userFromSK (LT.fromStrict secretKey)) == creditor
                    then HTTP.parseRequest $ url ++ "/lend"
                    else HTTP.parseRequest $ url ++ "/borrow"
     let signedCredit = signCredit secretKey nonce unsignedCredit

@@ -12,6 +12,7 @@ import           Lndr.Handler.Types
 import           Lndr.Types
 import           Network.Ethereum.Web3
 import           Servant.API
+import qualified STMContainers.Bimap as Bimap
 import qualified STMContainers.Map as Map
 
 -- TODO nicks should be unique
@@ -19,27 +20,26 @@ nickHandler :: NickRequest -> LndrHandler NoContent
 nickHandler (NickRequest addr nick sig) = do
     -- TODO verify signature
     nickMapping <- nickMap <$> ask
-    liftIO . atomically $ Map.insert nick addr nickMapping
+    liftIO . atomically $ Bimap.insert1 nick addr nickMapping
     return NoContent
 
 
 nickLookupHandler :: Address -> LndrHandler Text
 nickLookupHandler addr = do
     nickMapping <- nickMap <$> ask
-    ioMaybeToLndr "addr not found in nick db" . atomically $ Map.lookup addr nickMapping
+    ioMaybeToLndr "addr not found in nick db" . atomically $ Bimap.lookup1 addr nickMapping
 
 
 nickSearchHandler :: Text -> LndrHandler [NickInfo]
 nickSearchHandler nick = do
     nickMapping <- nickMap <$> ask
-    assocs <- liftIO . atomically . toList $ Map.stream nickMapping
-    return . (: []) . uncurry NickInfo . head . dropWhile ((/= nick) . snd) $ assocs
+    ioMaybeToLndr "addr not found in nick db" . atomically $ fmap ((:[]) . (`NickInfo` nick)) <$> Bimap.lookup2 nick nickMapping
 
 
 friendHandler :: Address -> LndrHandler [NickInfo]
 friendHandler addr = do
-    friendListMapping <- friendlistMap <$> ask
-    lookupFriends addr friendListMapping
+    (ServerState _ nickMapping friendListMapping) <- ask
+    lookupFriendsWithNick addr friendListMapping nickMapping
 
 
 addFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
@@ -47,7 +47,7 @@ addFriendsHandler address adds = do
     -- TODO verify signature
     friendListMapping <- friendlistMap <$> ask
     -- TODO fix this once long-term data structures are in place
-    friendList <-  fmap (\(NickInfo addr _) -> addr) <$> lookupFriends address friendListMapping
+    friendList <- lookupFriends address friendListMapping
     liftIO . atomically $ Map.insert (nub $ friendList ++ adds) address friendListMapping
     return NoContent
 
@@ -56,10 +56,19 @@ removeFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
 removeFriendsHandler address removes = do
     -- TODO verify signature
     friendListMapping <- friendlistMap <$> ask
-    friendList <- fmap (\(NickInfo addr _) -> addr) <$> lookupFriends address friendListMapping
+    friendList <- lookupFriends address friendListMapping
     liftIO . atomically $ Map.insert (friendList \\ removes) address friendListMapping
     return NoContent
 
 
-lookupFriends :: Address -> Map.Map Address [Address] -> LndrHandler [NickInfo]
-lookupFriends x y = fmap (fmap (`NickInfo` "N/A") . fromMaybe []) . liftIO . atomically $ Map.lookup x y
+lookupFriends :: Address -> Map.Map Address [Address] -> LndrHandler [Address]
+lookupFriends x y = fmap (fromMaybe []) . liftIO . atomically $ Map.lookup x y
+
+
+lookupFriendsWithNick :: Address -> Map.Map Address [Address]
+                      -> Bimap.Bimap Address Text -> LndrHandler [NickInfo]
+lookupFriendsWithNick x y z = do
+    friends <- lookupFriends x y
+    liftIO . atomically $ mapM toNickInfo friends
+    where
+        toNickInfo x = NickInfo x . fromMaybe "N/A" <$> Bimap.lookup1 x z

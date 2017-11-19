@@ -6,6 +6,7 @@ import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Except
 import qualified Data.ByteString as B
+import           Data.List (nub)
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import           ListT
@@ -19,43 +20,47 @@ import           Servant.API
 import qualified STMContainers.Map as Map
 
 
--- submit a signed message consisting of "REJECT + CreditRecord HASH"
 rejectHandler :: RejectRecord -> LndrHandler NoContent
 rejectHandler(RejectRecord sig hash) = do
     pendingMapping <- pendingMap <$> ask
     pendingRecordM <- liftIO . atomically $ Map.lookup hash pendingMapping
+    -- TODO this is easily de-cascaded
     case pendingRecordM of
         Nothing -> throwError $ err404 {errBody = "credit hash does not refer to pending record"}
         Just pr@(PendingRecord (CreditRecord creditor debtor _ _ _) submitter _ _) -> do
-            liftIO . atomically $ Map.delete hash pendingMapping
-            let counterparty = if creditor == submitter then debtor else creditor
             -- recover address from sig
-            let message = hashPrefixedMessage "REJECT" hash
-            let signer = EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
+            let signer = EU.ecrecover (stripHexPrefix sig) $ hash
             case signer of
-                Left err -> throwError $ err404 {errBody = "unable to recover addr from sig"}
-                Right addr -> if textToAddress addr == counterparty
-                                    then return ()
-                                    else throwError $ err404 {errBody = "bad rejection sig"}
-
-            -- verify that address is counterparty
-            liftIO . atomically $ Map.delete hash pendingMapping
-            return NoContent
+                Left err -> throwError $ err400 {errBody = "unable to recover addr from sig"}
+                Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
+                                    then do liftIO . atomically $ Map.delete hash pendingMapping
+                                            return NoContent
+                                    else throwError $ err400 {errBody = "bad rejection sig"}
 
 
 transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
-transactionsHandler Nothing = lndrWeb3 lndrLogs
-transactionsHandler (Just addr) = (++) <$> lndrWeb3 (lndrCreditLogs addr)
-                                       <*> lndrWeb3 (lndrDebitLogs addr)
+transactionsHandler Nothing = lndrWeb3 (lndrLogs Nothing Nothing)
+transactionsHandler (Just addr) = (++) <$> lndrWeb3 (lndrLogs (Just addr) Nothing)
+                                       <*> lndrWeb3 (lndrLogs Nothing (Just addr))
 
 
 counterpartiesHandler :: Address -> LndrHandler [Address]
-counterpartiesHandler addr = fmap takeCounterParty <$> transactionsHandler (Just addr)
+counterpartiesHandler addr = nub . fmap takeCounterParty <$> transactionsHandler (Just addr)
     where takeCounterParty (IssueCreditLog _ c d _ _) = if c == addr then d else c
 
 
 balanceHandler :: Address -> LndrHandler Integer
 balanceHandler addr = web3ToLndr $ queryBalance addr
+
+
+twoPartyBalanceHandler :: Address -> Address -> LndrHandler Integer
+twoPartyBalanceHandler p1 p2 = do
+    debts <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs (Just p2) (Just p1))
+    credits <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs (Just p1) (Just p2))
+    return $ credits - debts
+    where
+        -- TODO lens needed
+        extractAmount (IssueCreditLog _ _ _ amount _) = amount
 
 
 pendingHandler :: Maybe Address -> LndrHandler [PendingRecord]

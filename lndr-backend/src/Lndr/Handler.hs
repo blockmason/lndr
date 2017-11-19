@@ -13,6 +13,7 @@ module Lndr.Handler (
     , nonceHandler
     , counterpartiesHandler
     , balanceHandler
+    , twoPartyBalanceHandler
 
       -- * Friend Handlers
     , nickHandler

@@ -118,26 +118,12 @@ finalizeTransaction sig1 sig2 r@(CreditRecord creditor debtor amount memo _) = d
                             encodedMemo
 
 
-lndrLogs :: Provider a => Web3 a [IssueCreditLog]
-lndrLogs = rights . fmap interpretUcacLog <$>
+lndrLogs :: Provider a => Maybe Address -> Maybe Address -> Web3 a [IssueCreditLog]
+lndrLogs p1M p2M = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just cpAddr)
-                        (Just [Just issueCreditEvent, Just ucacId])
-                        (Just "0x0") -- start from block 0
-                        Nothing)
-
-
-lndrDebitLogs :: Provider a => Address -> Web3 a [IssueCreditLog]
-lndrDebitLogs addr = rights . fmap interpretUcacLog <$>
-    Eth.getLogs (Filter (Just cpAddr)
-                        (Just [Just issueCreditEvent, Just ucacId, Nothing, Just (addressToBytes32 addr)])
-                        (Just "0x0") -- start from block 0
-                        Nothing)
-
-
-lndrCreditLogs :: Provider a => Address -> Web3 a [IssueCreditLog]
-lndrCreditLogs addr = rights . fmap interpretUcacLog <$>
-    Eth.getLogs (Filter (Just cpAddr)
-                        (Just [Just issueCreditEvent, Just ucacId, Just (addressToBytes32 addr)])
+                        (Just [ Just issueCreditEvent, Just ucacId
+                              , addressToBytes32 <$> p1M
+                              , addressToBytes32 <$> p2M ])
                         (Just "0x0") -- start from block 0
                         Nothing)
 
@@ -179,15 +165,6 @@ stripHexPrefix x | T.isPrefixOf "0x" x = T.drop 2 x
 integerToHex :: Integer -> Text
 integerToHex x = T.append "0x" strRep
     where strRep = alignR . T.pack $ showHex x ""
-
-
-hashPrefixedMessage :: String -> Text -> Text
-hashPrefixedMessage pre message = T.pack . show $ keccakDigest
-    where messageBytes = fst . BS16.decode . T.encodeUtf8 $ message
-          prefix = T.encodeUtf8 . T.pack $
-            pre ++ show (B.length messageBytes)
-          keccakDigest :: C.Digest C.Keccak_256
-          keccakDigest = C.hash (prefix `B.append` messageBytes)
 
 
 align :: Text -> (Text, Text)

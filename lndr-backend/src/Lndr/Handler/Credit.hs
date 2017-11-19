@@ -32,10 +32,10 @@ rejectHandler(RejectRecord sig hash) = do
             -- recover address from sig
             let signer = EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
             case signer of
-                Left err -> throwError $ err404 {errBody = "unable to recover addr from sig"}
+                Left err -> throwError $ err400 {errBody = "unable to recover addr from sig"}
                 Right addr -> if textToAddress addr == counterparty
                                     then return ()
-                                    else throwError $ err404 {errBody = "bad rejection sig"}
+                                    else throwError $ err400 {errBody = "bad rejection sig"}
 
             -- verify that address is counterparty
             liftIO . atomically $ Map.delete hash pendingMapping

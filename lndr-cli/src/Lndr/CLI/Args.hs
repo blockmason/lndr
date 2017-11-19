@@ -44,6 +44,7 @@ data LndrCmd = Transactions
 
 programModes = modes [ Transactions &= help "list all transactions processed by Lndr UCAC"
                      , Pending &= help "list all pending transactions"
+                     , RejectPending
                      , Lend "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
                             123
                             "default"
@@ -68,6 +69,14 @@ runMode (Config url sk _) Pending = do
     initReq <- HTTP.parseRequest $ LT.unpack url ++ "/pending?user=" ++ T.unpack (userFromSK sk)
     resp <- HTTP.httpJSON initReq
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: [PendingRecord])
+
+runMode (Config url sk _) RejectPending = do
+    req <- HTTP.parseRequest $ LT.unpack url ++ "/pending?user=" ++ T.unpack (userFromSK sk)
+    records <- HTTP.getResponseBody <$> HTTP.httpJSON req :: IO [PendingRecord]
+    Pr.pPrintNoColor records
+    index <- (read :: String -> Int) <$> getLine
+    rejectCredit (LT.unpack url) (LT.toStrict sk) (records !! index)
+
 runMode (Config url sk _) (Lend friend amount memo) =
     submitCredit (LT.unpack url) (LT.toStrict sk) $
         CreditRecord (textToAddress $ userFromSK sk) (textToAddress friend) amount memo ""
@@ -165,6 +174,17 @@ submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _) =
                    else HTTP.parseRequest $ url ++ "/borrow"
     let signedCredit = signCredit secretKey nonce unsignedCredit
     let req = HTTP.setRequestBodyJSON signedCredit $
+                HTTP.setRequestMethod "POST" initReq
+    resp <- HTTP.httpNoBody req
+    Pr.pPrintNoColor (HTTP.getResponseStatusCode resp)
+
+
+rejectCredit :: String -> Text -> PendingRecord -> IO ()
+rejectCredit url secretKey (PendingRecord _ _ _ hash) = do
+    initReq <- HTTP.parseRequest $ url ++ "/reject"
+    let (Right sig) = ecsign hash secretKey
+        rejectRecord = RejectRecord sig hash
+        req = HTTP.setRequestBodyJSON rejectRecord $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     Pr.pPrintNoColor (HTTP.getResponseStatusCode resp)

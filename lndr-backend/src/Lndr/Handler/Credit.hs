@@ -24,22 +24,18 @@ rejectHandler :: RejectRecord -> LndrHandler NoContent
 rejectHandler(RejectRecord sig hash) = do
     pendingMapping <- pendingMap <$> ask
     pendingRecordM <- liftIO . atomically $ Map.lookup hash pendingMapping
+    -- TODO this is easily de-cascaded
     case pendingRecordM of
         Nothing -> throwError $ err404 {errBody = "credit hash does not refer to pending record"}
         Just pr@(PendingRecord (CreditRecord creditor debtor _ _ _) submitter _ _) -> do
-            liftIO . atomically $ Map.delete hash pendingMapping
-            let counterparty = if creditor == submitter then debtor else creditor
             -- recover address from sig
-            let signer = EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
+            let signer = EU.ecrecover (stripHexPrefix sig) $ hash
             case signer of
                 Left err -> throwError $ err400 {errBody = "unable to recover addr from sig"}
-                Right addr -> if textToAddress addr == counterparty
-                                    then return ()
+                Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
+                                    then do liftIO . atomically $ Map.delete hash pendingMapping
+                                            return NoContent
                                     else throwError $ err400 {errBody = "bad rejection sig"}
-
-            -- verify that address is counterparty
-            liftIO . atomically $ Map.delete hash pendingMapping
-            return NoContent
 
 
 transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]

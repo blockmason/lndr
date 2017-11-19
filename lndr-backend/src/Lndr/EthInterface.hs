@@ -14,7 +14,6 @@ module Lndr.EthInterface where
 import           Control.Exception
 import           Control.Monad
 import           Control.Monad.Except
-import           Control.Concurrent.STM
 import qualified Crypto.Hash as C (Digest, Keccak_256, hash)
 import           Data.Aeson
 import           Data.Aeson.TH
@@ -42,14 +41,7 @@ import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
 import           Numeric (readHex, showHex)
 import           Prelude hiding ((!!))
-import qualified STMContainers.Bimap as Bimap
-import qualified STMContainers.Map as Map
 
-
-freshState :: IO ServerState
-freshState = ServerState <$> atomically Map.new
-                         <*> atomically Bimap.new
-                         <*> atomically Map.new
 
 issueCreditEvent :: Text
 issueCreditEvent = "0xf3478cc0d8e00370ff63723580cb5543f72da9ca849bb45098417575c51de3cb"

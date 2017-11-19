@@ -22,6 +22,7 @@ import           Data.Either.Combinators (mapLeft)
 import           Data.Hashable
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           Database.PostgreSQL.Simple
 import           GHC.Generics
 import           Network.Ethereum.Web3.Address (Address)
 import qualified Network.Ethereum.Web3.Address as Addr
@@ -93,4 +94,5 @@ $(deriveJSON defaultOptions ''NickInfo)
 data ServerState = ServerState { pendingMap :: Map.Map Text PendingRecord
                                , nickMap :: Bimap.Bimap Address Text
                                , friendlistMap :: Map.Map Address [Address]
+                               , dbConnection :: Connection
                                }

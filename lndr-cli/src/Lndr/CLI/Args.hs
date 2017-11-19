@@ -36,6 +36,7 @@ data LndrCmd = Transactions
                       , memo :: Text
                       }
              | Nick { nick :: Text }
+             | SearchNick { nick :: Text }
              | GetNonce { friend :: Text }
              | AddFriend { friend :: Text }
              | Info

@@ -7,6 +7,7 @@ import           Control.Concurrent.STM
 import           Data.List ((\\), nub)
 import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
+import qualified Lndr.Db as Db
 import           ListT (toList)
 import           Lndr.Handler.Types
 import           Lndr.Types
@@ -19,6 +20,7 @@ import qualified STMContainers.Map as Map
 nickHandler :: NickRequest -> LndrHandler NoContent
 nickHandler (NickRequest addr nick sig) = do
     -- TODO verify signature
+    -- liftIO $ print =<< Db.hello
     nickMapping <- nickMap <$> ask
     liftIO . atomically $ Bimap.insert1 nick addr nickMapping
     return NoContent
@@ -38,7 +40,7 @@ nickSearchHandler nick = do
 
 friendHandler :: Address -> LndrHandler [NickInfo]
 friendHandler addr = do
-    (ServerState _ nickMapping friendListMapping) <- ask
+    (ServerState _ nickMapping friendListMapping _) <- ask
     lookupFriendsWithNick addr friendListMapping nickMapping
 
 

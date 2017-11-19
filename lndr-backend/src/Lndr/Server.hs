@@ -12,6 +12,7 @@ module Lndr.Server
     , app
     ) where
 
+import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
@@ -21,8 +22,9 @@ import           Data.Text.Lazy (pack)
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as T
+import qualified Database.PostgreSQL.Simple as DB
+import           Lndr.Db
 import           Lndr.Docs
-import           Lndr.EthInterface (freshState)
 import           Lndr.Handler
 import           Lndr.Types
 import           Network.Ethereum.Web3.Address
@@ -30,6 +32,9 @@ import           Network.HTTP.Types
 import           Network.Wai
 import           Servant
 import           Servant.Docs
+import qualified STMContainers.Bimap as Bimap
+import qualified STMContainers.Map as Map
+
 
 type LndrAPI =
         "transactions" :> QueryParam "user" Address :> Get '[JSON] [IssueCreditLog]
@@ -107,3 +112,10 @@ readerServer state = enter (readerToHandler state) server
 
 app :: ServerState -> Application
 app state = serve lndrAPI (readerServer state)
+
+
+freshState :: IO ServerState
+freshState = ServerState <$> atomically Map.new
+                         <*> atomically Bimap.new
+                         <*> atomically Map.new
+                         <*> DB.connect dbConfig

@@ -62,6 +62,7 @@ cpAddr = fromRight Addr.zero . Addr.fromText $ cpAddress
 bytesDecode :: Text -> Bytes
 bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
 
+addrToBS = fst . BS16.decode . T.encodeUtf8 . Addr.toText
 
 decomposeSig :: Text -> (BytesN 32, BytesN 32, BytesN 32)
 decomposeSig sig = (sigR, sigS, sigV)

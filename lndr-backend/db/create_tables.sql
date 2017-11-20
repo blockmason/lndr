@@ -18,16 +18,6 @@ CREATE TABLE friendships (
 );
 
 CREATE TABLE nicknames (
-  id bigint,
-  first varchar(100),
-  middle varchar(100),
-  last varchar(100),
-  line1 varchar(200),
-  line2 varchar(200),
-  state varchar(4),
-  city varchar (100),
-  zip varchar (20),
-  lat double precision,
-  lng double precision,
-  primary key (id)
+    address char(20) PRIMARY KEY,
+    nickname text
 );

@@ -8,6 +8,7 @@ module Lndr.Db (
     -- * 'nicknames' table functions
     , insertNick
     , lookupNick
+    , lookupAddresByNick
 
     -- * 'friendships' table functions
     , addFriends
@@ -44,8 +45,9 @@ dbConfig = defaultConnectInfo { connectUser = "aupiff"
 instance ToField Address where
     toField addr = Plain . byteString . addrToBS  $ addr
 
--- instance FromField Address where
---     fromField f dat = textToAddress <$> field f dat
+instance FromField Address
+
+instance FromRow PendingRecordFlat
 
 -- nicknames table manipulations
 
@@ -57,6 +59,11 @@ insertNick conn addr nick = fmap fromIntegral $
 lookupNick :: Connection -> Address -> IO (Maybe Text)
 lookupNick conn addr = listToMaybe . fmap T.pack <$>
     query conn "select nickname from nicknames where address = ?" (Only addr)
+
+lookupAddresByNick :: Connection -> Text -> IO [NickInfo]
+lookupAddresByNick conn nick = fmap ((\x -> NickInfo x nick) . textToAddress . T.pack) <$>
+    query conn "select nickname from nicknames where nickname = ?" (Only nick)
+
 
 -- friendships table manipulations
 
@@ -76,12 +83,13 @@ lookupFriends conn addr = fmap (textToAddress . T.pack) <$>
 
 -- pending_credits table manipulations
 
-lookupPending :: Connection -> Maybe Address -> IO [PendingRecord]
-lookupPending = undefined
+lookupPending :: Connection -> Text -> IO [PendingRecordFlat]
+lookupPending conn hash = query conn "SELECT friend FROM pending_credits WHERE hash = ?" (Only hash)
 
 
-deletePending :: Connection -> Text -> IO ()
-deletePending = undefined
+deletePending :: Connection -> Text -> IO Int
+deletePending conn hash = fromIntegral <$>
+    execute conn "DELETE FROM pending_credits WHERE hash = ?" (Only hash)
 
 
 insertPending :: Connection -> PendingRecord -> IO ()

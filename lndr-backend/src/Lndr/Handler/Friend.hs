@@ -16,26 +16,26 @@ import           Servant.API
 import qualified STMContainers.Bimap as Bimap
 import qualified STMContainers.Map as Map
 
--- TODO nicks should be unique
+
 nickHandler :: NickRequest -> LndrHandler NoContent
 nickHandler (NickRequest addr nick sig) = do
-    -- TODO verify signature
-    -- liftIO $ print =<< Db.hello
-    nickMapping <- nickMap <$> ask
-    liftIO . atomically $ Bimap.insert1 nick addr nickMapping
+    conn <- dbConnection <$> ask
+    liftIO $ Db.insertNick conn addr nick
     return NoContent
 
 
 nickLookupHandler :: Address -> LndrHandler Text
 nickLookupHandler addr = do
-    nickMapping <- nickMap <$> ask
-    ioMaybeToLndr "addr not found in nick db" . atomically $ Bimap.lookup1 addr nickMapping
+    conn <- dbConnection <$> ask
+    ioMaybeToLndr "addr not found in nick db" $ Db.lookupNick conn addr
 
 
 nickSearchHandler :: Text -> LndrHandler [NickInfo]
 nickSearchHandler nick = do
-    nickMapping <- nickMap <$> ask
-    ioMaybeToLndr "addr not found in nick db" . atomically $ fmap ((:[]) . (`NickInfo` nick)) <$> Bimap.lookup2 nick nickMapping
+    conn <- dbConnection <$> ask
+    -- nickMapping <- nickMap <$> ask
+    -- ioMaybeToLndr "addr not found in nick db" . atomically $ fmap ((:[]) . (`NickInfo` nick)) <$> Bimap.lookup2 nick nickMapping
+    liftIO $ Db.lookupAddresByNick conn nick
 
 
 friendHandler :: Address -> LndrHandler [NickInfo]

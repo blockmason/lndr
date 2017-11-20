@@ -20,5 +20,5 @@ CREATE TABLE friendships (
 
 CREATE TABLE nicknames (
     address char(20) PRIMARY KEY,
-    nickname text
+    nickname text UNIQUE
 );

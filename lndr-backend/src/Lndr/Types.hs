@@ -13,6 +13,7 @@ module Lndr.Types
     , IssueCreditLog(IssueCreditLog)
     , RejectRecord(..)
     , PendingRecord(..)
+    , PendingRecordFlat(..)
     , Nonce(..)
     ) where
 
@@ -66,6 +67,16 @@ data CreditRecord a = CreditRecord { creditor :: Address
                                    , signature :: Text
                                    } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''CreditRecord)
+
+data PendingRecordFlat = PendingRecordFlat { flatCreditor :: Address
+                                           , flatDebtor :: Address
+                                           , flatAmount :: Integer
+                                           , flatMemo :: Text
+                                           , flatSignature :: Text
+                                           , flatSubmitter :: Address
+                                           , flatNonce :: Integer
+                                           , flatHash :: Text
+                                           } deriving (Show, Generic)
 
 data PendingRecord = PendingRecord { creditRecord :: CreditRecord Signed
                                    , submitter :: Address

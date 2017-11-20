@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Lndr.Db (
     -- * DB Configuration
@@ -43,6 +44,9 @@ dbConfig = defaultConnectInfo { connectUser = "aupiff"
 instance ToField Address where
     toField addr = Plain . byteString . addrToBS  $ addr
 
+-- instance FromField Address where
+--     fromField f dat = textToAddress <$> field f dat
+
 -- nicknames table manipulations
 
 insertNick :: Connection -> Address -> Text -> IO Int
@@ -52,20 +56,23 @@ insertNick conn addr nick = fmap fromIntegral $
 
 lookupNick :: Connection -> Address -> IO (Maybe Text)
 lookupNick conn addr = listToMaybe . fmap T.pack <$>
-    query conn "select * from nicknames where address = ?" (Only addr)
+    query conn "select nickname from nicknames where address = ?" (Only addr)
 
 -- friendships table manipulations
 
-addFriends :: Connection -> Address -> [Address] -> IO ()
-addFriends = undefined
+addFriends :: Connection -> Address -> [Address] -> IO Int
+addFriends conn addr addresses = fromIntegral <$>
+    executeMany conn "insert into friendships (origin, friend) values (?,?)" ((addr,) <$> addresses)
 
 
-removeFriends :: Connection -> Address -> [Address] -> IO ()
-removeFriends = undefined
+removeFriends :: Connection -> Address -> [Address] -> IO Int
+removeFriends conn addr addresses = fromIntegral <$>
+    executeMany conn "delete from friendships where origin = ?, friend = ?" ((addr,) <$> addresses)
 
 
 lookupFriends :: Connection -> Address -> IO [Address]
-lookupFriends = undefined
+lookupFriends conn addr = fmap (textToAddress . T.pack) <$>
+    query conn "SELECT friend FROM friendships WHERE origin = ?" (Only addr)
 
 -- pending_credits table manipulations
 

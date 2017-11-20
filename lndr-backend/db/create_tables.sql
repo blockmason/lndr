@@ -14,7 +14,8 @@ CREATE TABLE pending_credits (
 CREATE TABLE friendships (
     id int PRIMARY KEY,
     origin char(20),
-    friend char(20)
+    friend char(20),
+    unique (origin, friend)
 );
 
 CREATE TABLE nicknames (

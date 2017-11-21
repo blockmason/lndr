@@ -53,28 +53,28 @@ instance FromRow PendingRecordFlat
 
 insertNick :: Connection -> Address -> Text -> IO Int
 insertNick conn addr nick = fmap fromIntegral $
-    execute conn "insert into nicknames (address, nickname) values (?,?)" (addr, nick)
+    execute conn "INSERT INTO nicknames (address, nickname) VALUES (?,?)" (addr, nick)
 
 
 lookupNick :: Connection -> Address -> IO (Maybe Text)
 lookupNick conn addr = listToMaybe . fmap fromOnly <$>
-    (query conn "select nickname from nicknames where address = ?" (Only addr) :: IO [Only Text])
+    (query conn "SELECT nickname FROM nicknames WHERE address = ?" (Only addr) :: IO [Only Text])
 
 
 lookupAddresByNick :: Connection -> Text -> IO [NickInfo]
 lookupAddresByNick conn nick = fmap ((\x -> NickInfo x nick) . fromOnly) <$>
-    (query conn "select address from nicknames where nickname = ?" (Only nick) :: IO [Only Address])
+    (query conn "SELECT address FROM nicknames WHERE nickname = ?" (Only nick) :: IO [Only Address])
 
 -- friendships table manipulations
 
 addFriends :: Connection -> Address -> [Address] -> IO Int
 addFriends conn addr addresses = fromIntegral <$>
-    executeMany conn "insert into friendships (origin, friend) values (?,?)" ((addr,) <$> addresses)
+    executeMany conn "INSERT INTO friendships (origin, friend) VALUES (?,?)" ((addr,) <$> addresses)
 
 
 removeFriends :: Connection -> Address -> [Address] -> IO Int
 removeFriends conn addr addresses = fromIntegral <$>
-    executeMany conn "delete from friendships where origin = ?, friend = ?" ((addr,) <$> addresses)
+    execute conn "DELETE FROM friendships WHERE origin = ? AND friend in ?" (addr, In addresses)
 
 
 lookupFriends :: Connection -> Address -> IO [Address]

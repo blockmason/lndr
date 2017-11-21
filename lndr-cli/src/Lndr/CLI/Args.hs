@@ -39,6 +39,7 @@ data LndrCmd = Transactions
              | SearchNick { nick :: Text }
              | GetNonce { friend :: Text }
              | AddFriend { friend :: Text }
+             | RemoveFriend { friend :: Text }
              | Info
              deriving (Show, Data, Typeable)
 
@@ -58,6 +59,7 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
                      , SearchNick "aupiff" &= help "find address for a corresponding nickname"
                      , GetNonce "0x198e13017d2333712bd942d8b028610b95c363da"
                      , AddFriend "0x198e13017d2333712bd942d8b028610b95c363da"
+                     , RemoveFriend "0x198e13017d2333712bd942d8b028610b95c363da"
                      , Info &= help "prints config, nick, and friends"
                      ] &= help "Lend and borrow money" &= program "lndr" &= summary "lndr v0.1"
 
@@ -98,6 +100,9 @@ runMode (Config url sk _) (SearchNick nick) =
 runMode (Config url sk _) (AddFriend friend) =
     print =<< addFriend (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)
 
+runMode (Config url sk _) (RemoveFriend friend) =
+    print =<< removeFriend (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)
+
 runMode (Config url sk _) (GetNonce friend) =
     print =<< getNonce (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)
 
@@ -133,6 +138,14 @@ searchNick url nick = do
 addFriend :: String -> Address -> Address -> IO Int
 addFriend url userAddr addr = do
     initReq <- HTTP.parseRequest $ url ++ "/add_friends/" ++ show userAddr
+    let req = HTTP.setRequestBodyJSON [addr] $
+                HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+
+
+removeFriend :: String -> Address -> Address -> IO Int
+removeFriend url userAddr addr = do
+    initReq <- HTTP.parseRequest $ url ++ "/remove_friends/" ++ show userAddr
     let req = HTTP.setRequestBodyJSON [addr] $
                 HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req

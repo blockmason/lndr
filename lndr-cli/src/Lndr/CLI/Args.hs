@@ -55,6 +55,7 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
                               "default"
                               &= help "submit a unilateral transaction as a debtor"
                      , Nick "aupiff" &= help "set a nickname for default user"
+                     , SearchNick "aupiff" &= help "find address for a corresponding nickname"
                      , GetNonce "0x198e13017d2333712bd942d8b028610b95c363da"
                      , AddFriend "0x198e13017d2333712bd942d8b028610b95c363da"
                      , Info &= help "prints config, nick, and friends"
@@ -89,6 +90,10 @@ runMode (Config url sk _) (Borrow friend amount memo) =
 runMode (Config url sk _) (Nick nick) =
     let userAddr = textToAddress $ userFromSK sk
     in print =<< setNick (LT.unpack url) (NickRequest userAddr nick "")
+runMode (Config url sk _) (SearchNick nick) =
+    let userAddr = textToAddress $ userFromSK sk
+    in print =<< searchNick (LT.unpack url) nick
+
 
 runMode (Config url sk _) (AddFriend friend) =
     print =<< addFriend (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)
@@ -117,6 +122,12 @@ getNick url userAddr = do
     return $ case resp of
         Left a -> "nick not found"
         Right b -> b
+
+
+searchNick :: String -> Text -> IO [NickInfo]
+searchNick url nick = do
+    req <- HTTP.parseRequest $ url ++ "/search_nick/" ++ T.unpack nick
+    HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
 addFriend :: String -> Address -> Address -> IO Int

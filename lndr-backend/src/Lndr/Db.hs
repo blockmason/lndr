@@ -33,7 +33,6 @@ import           Lndr.EthInterface
 import           Lndr.Types
 import           Network.Ethereum.Web3
 
-
 -- DB configuration
 
 dbConfig :: ConnectInfo
@@ -45,7 +44,8 @@ dbConfig = defaultConnectInfo { connectUser = "aupiff"
 instance ToField Address where
     toField addr = Escape . addrToBS  $ addr
 
-instance FromField Address
+instance FromField Address where
+    fromField f dat = textToAddress <$> fromField f dat
 
 instance FromRow PendingRecordFlat
 
@@ -62,9 +62,8 @@ lookupNick conn addr = listToMaybe . fmap fromOnly <$>
 
 
 lookupAddresByNick :: Connection -> Text -> IO [NickInfo]
-lookupAddresByNick conn nick = fmap ((\x -> NickInfo x nick) . textToAddress . T.pack) <$>
-    query conn "select nickname from nicknames where nickname = ?" (Only nick)
-
+lookupAddresByNick conn nick = fmap ((\x -> NickInfo x nick) . fromOnly) <$>
+    (query conn "select address from nicknames where nickname = ?" (Only nick) :: IO [Only Address])
 
 -- friendships table manipulations
 

@@ -33,8 +33,6 @@ nickLookupHandler addr = do
 nickSearchHandler :: Text -> LndrHandler [NickInfo]
 nickSearchHandler nick = do
     conn <- dbConnection <$> ask
-    -- nickMapping <- nickMap <$> ask
-    -- ioMaybeToLndr "addr not found in nick db" . atomically $ fmap ((:[]) . (`NickInfo` nick)) <$> Bimap.lookup2 nick nickMapping
     liftIO $ Db.lookupAddresByNick conn nick
 
 

@@ -1,24 +1,24 @@
 -- todo make a alias for address char(20)
 
 CREATE TABLE pending_credits (
-    hash char(32) PRIMARY KEY,
-    submitter char(20),
+    hash char(64) PRIMARY KEY,
+    submitter char(40),
     nonce int,
-    creditor char(20),
-    debtor char(20),
+    creditor char(40),
+    debtor char(40),
     amount int,
-    memo char(32),
-    signature char(64)
+    memo char(64),
+    signature char(128)
 );
 
 CREATE TABLE friendships (
     id int PRIMARY KEY,
-    origin char(20),
-    friend char(20),
+    origin char(40),
+    friend char(40),
     unique (origin, friend)
 );
 
 CREATE TABLE nicknames (
-    address char(20) PRIMARY KEY,
+    address char(40) PRIMARY KEY,
     nickname text UNIQUE
 );

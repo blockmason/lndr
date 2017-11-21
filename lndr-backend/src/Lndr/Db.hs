@@ -43,7 +43,7 @@ dbConfig = defaultConnectInfo { connectUser = "aupiff"
 -- DB Typeclass instances
 
 instance ToField Address where
-    toField addr = Plain . byteString . addrToBS  $ addr
+    toField addr = Escape . addrToBS  $ addr
 
 instance FromField Address
 

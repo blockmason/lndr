@@ -57,8 +57,9 @@ insertNick conn addr nick = fmap fromIntegral $
 
 
 lookupNick :: Connection -> Address -> IO (Maybe Text)
-lookupNick conn addr = listToMaybe . fmap T.pack <$>
-    query conn "select nickname from nicknames where address = ?" (Only addr)
+lookupNick conn addr = listToMaybe . fmap fromOnly <$>
+    (query conn "select nickname from nicknames where address = ?" (Only addr) :: IO [Only Text])
+
 
 lookupAddresByNick :: Connection -> Text -> IO [NickInfo]
 lookupAddresByNick conn nick = fmap ((\x -> NickInfo x nick) . textToAddress . T.pack) <$>

@@ -38,8 +38,6 @@ library
                      , servant
                      , servant-docs
                      , servant-server
-                     , stm
-                     , stm-containers
                      , text
                      , time
                      , transformers

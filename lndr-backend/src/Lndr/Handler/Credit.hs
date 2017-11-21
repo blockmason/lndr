@@ -2,7 +2,6 @@
 
 module Lndr.Handler.Credit where
 
-import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Except
 import qualified Data.ByteString as B
@@ -10,6 +9,7 @@ import           Data.List (nub)
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import           ListT
+import qualified Lndr.Db as Db
 import           Lndr.EthInterface
 import           Lndr.Handler.Types
 import           Lndr.Types
@@ -17,13 +17,12 @@ import qualified Network.Ethereum.Util as EU
 import           Network.Ethereum.Web3
 import           Servant
 import           Servant.API
-import qualified STMContainers.Map as Map
 
 
 rejectHandler :: RejectRecord -> LndrHandler NoContent
 rejectHandler(RejectRecord sig hash) = do
-    pendingMapping <- pendingMap <$> ask
-    pendingRecordM <- liftIO . atomically $ Map.lookup hash pendingMapping
+    conn <- dbConnection <$> ask
+    pendingRecordM <- liftIO $ Db.lookupPending conn hash
     -- TODO this is easily de-cascaded
     case pendingRecordM of
         Nothing -> throwError $ err404 {errBody = "credit hash does not refer to pending record"}
@@ -33,7 +32,7 @@ rejectHandler(RejectRecord sig hash) = do
             case signer of
                 Left err -> throwError $ err400 {errBody = "unable to recover addr from sig"}
                 Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
-                                    then do liftIO . atomically $ Map.delete hash pendingMapping
+                                    then do liftIO $ Db.deletePending conn hash
                                             return NoContent
                                     else throwError $ err400 {errBody = "bad rejection sig"}
 
@@ -63,15 +62,11 @@ twoPartyBalanceHandler p1 p2 = do
         extractAmount (IssueCreditLog _ _ _ amount _) = amount
 
 
-pendingHandler :: Maybe Address -> LndrHandler [CreditRecord]
-pendingHandler addrM = do
-    creditMap <- pendingMap <$> ask
-    fmap processRecords . liftIO . atomically . toList $ Map.stream creditMap
+pendingHandler :: Address -> LndrHandler [CreditRecord]
+pendingHandler addr = do
+    conn <- dbConnection <$> ask
+    liftIO $ Db.lookupPendingByAddress conn addr
 
-    where involves (Just addr) x = addr == creditor x
-                                || addr == debtor x
-          involves Nothing _ = True
-          processRecords = filter (involves addrM) . fmap snd
 
 lendHandler :: CreditRecord -> LndrHandler NoContent
 lendHandler cr@(CreditRecord creditor _ _ _ _ _ _ _) = submitHandler creditor cr
@@ -83,7 +78,7 @@ borrowHandler cr@(CreditRecord _ debtor _ _ _ _ _ _) = submitHandler debtor cr
 
 submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
 submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ _ _ sig) = do
-    creditMap <- pendingMap <$> ask
+    conn <- dbConnection <$> ask
     (nonce, hash) <- lndrWeb3 $ hashCreditRecord signedRecord
 
     -- TODO verify that credit record memo is under 32 chars (all validation
@@ -106,7 +101,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ 
         else throwError (err400 {errBody = "Bad submitter sig"})
 
     -- check if hash is already registered in pending txs
-    pendingCredit <- liftIO . atomically $ Map.lookup hash creditMap
+    pendingCredit <- liftIO $ Db.lookupPending conn hash
 
     case pendingCredit of
         Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do
@@ -120,10 +115,10 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ 
                                          (signature storedRecord)
                                          storedRecord
             -- delete pending record after transaction finalization
-            atomically $ Map.delete hash creditMap
+            void . liftIO $ Db.deletePending conn hash
 
         -- if no matching transaction is found, create pending transaction
-        Nothing -> liftIO . atomically $ Map.insert signedRecord hash creditMap
+        Nothing -> void . liftIO $ Db.insertPending conn signedRecord
 
     return NoContent
 

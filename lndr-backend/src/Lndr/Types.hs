@@ -9,7 +9,7 @@ module Lndr.Types
     , NickInfo(..)
     , CreditRecord(..)
     , IssueCreditLog(IssueCreditLog)
-    , RejectRecord(..)
+    , RejectRecord(RejectRecord)
     , Nonce(..)
     ) where
 
@@ -24,8 +24,6 @@ import           GHC.Generics
 import           Network.Ethereum.Web3.Address (Address)
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Servant.API
-import qualified STMContainers.Bimap as Bimap
-import qualified STMContainers.Map as Map
 
 -- TODO remove this once Address derives Generic in hs-web3
 instance Hashable Address where
@@ -77,6 +75,4 @@ data NickInfo = NickInfo { addr :: Address
                          } deriving Show
 $(deriveJSON defaultOptions ''NickInfo)
 
-data ServerState = ServerState { pendingMap :: Map.Map Text CreditRecord
-                               , dbConnection :: Connection
-                               }
+data ServerState = ServerState { dbConnection :: Connection }

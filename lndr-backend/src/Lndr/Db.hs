@@ -18,6 +18,7 @@ module Lndr.Db (
 
     -- * 'pending_credit' table functions
     , lookupPending
+    , lookupPendingByAddress
     , deletePending
     , insertPending
     ) where
@@ -48,7 +49,9 @@ instance ToField Address where
 instance FromField Address where
     fromField f dat = textToAddress <$> fromField f dat
 
-instance FromRow CreditRecord
+instance FromRow CreditRecord -- where
+--     fromRow = CreditRecord <$> field <*> field <*> field <*> field
+--                            <*> field <*> field <*> field <*> field
 
 -- nicknames table manipulations
 
@@ -88,8 +91,12 @@ lookupFriendsWithNick conn addr = fmap (uncurry NickInfo) <$>
 
 -- pending_credits table manipulations
 
-lookupPending :: Connection -> Text -> IO [CreditRecord]
-lookupPending conn hash = query conn "SELECT friend FROM pending_credits WHERE hash = ?" (Only hash)
+lookupPending :: Connection -> Text -> IO (Maybe CreditRecord)
+lookupPending conn hash = listToMaybe <$> query conn "SELECT (creditor, debtor, amount, memo, submitter, nonce, hash, sig) FROM pending_credits WHERE hash = ?" (Only hash)
+
+
+lookupPendingByAddress :: Connection -> Address -> IO [CreditRecord]
+lookupPendingByAddress conn addr = query conn "SELECT (creditor, debtor, amount, memo, submitter, nonce, hash, sig) FROM pending_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
 
 
 deletePending :: Connection -> Text -> IO Int
@@ -97,5 +104,6 @@ deletePending conn hash = fromIntegral <$>
     execute conn "DELETE FROM pending_credits WHERE hash = ?" (Only hash)
 
 
-insertPending :: Connection -> CreditRecord -> IO ()
-insertPending = undefined
+insertPending :: Connection -> CreditRecord -> IO Int
+insertPending conn (CreditRecord creditor debtor amount memo submitter nonce hash sig) =
+    fmap fromIntegral $ execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, sig) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, submitter, nonce, hash, sig)

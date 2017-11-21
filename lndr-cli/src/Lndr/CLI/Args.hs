@@ -79,14 +79,14 @@ runMode (Config url sk _) RejectPending = do
     records <- HTTP.getResponseBody <$> HTTP.httpJSON req :: IO [CreditRecord]
     Pr.pPrintNoColor records
     index <- (read :: String -> Int) <$> getLine
-    rejectCredit (LT.unpack url) (LT.toStrict sk) (records !! index)
+    rejectCredit (LT.unpack url) (LT.toStrict sk) (hash $ records !! index)
 
 runMode (Config url sk _) (Lend friend amount memo) =
     submitCredit (LT.unpack url) (LT.toStrict sk) $
-        CreditRecord (textToAddress $ userFromSK sk) (textToAddress friend) amount memo "" 0 "" ""
+        CreditRecord (textToAddress $ userFromSK sk) (textToAddress friend) amount memo (textToAddress $ userFromSK sk) 0 "" ""
 runMode (Config url sk _) (Borrow friend amount memo) =
     submitCredit (LT.unpack url) (LT.toStrict sk) $
-        CreditRecord (textToAddress friend) (textToAddress $ userFromSK sk) amount memo "" 0 "" ""
+        CreditRecord (textToAddress friend) (textToAddress $ userFromSK sk) amount memo (textToAddress $ userFromSK sk) 0 "" ""
 
 -- Friend-related Modes
 runMode (Config url sk _) (Nick nick) =
@@ -178,8 +178,8 @@ getNonce url addr1 addr2 = do
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
-signCredit :: Text -> Integer -> CreditRecord -> CreditRecord
-signCredit secretKey nonce r@(CreditRecord c d a m u _ _ _) = r { signature = sig }
+signCredit :: Text -> CreditRecord -> CreditRecord
+signCredit secretKey r@(CreditRecord c d a m _ nonce _ _) = r { signature = sig }
     where message = hashText . T.concat $
                         stripHexPrefix <$> [ ucacId
                                            , Addr.toText c
@@ -198,15 +198,15 @@ submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ 
     initReq <- if textToAddress (userFromSK (LT.fromStrict secretKey)) == creditor
                    then HTTP.parseRequest $ url ++ "/lend"
                    else HTTP.parseRequest $ url ++ "/borrow"
-    let signedCredit = signCredit secretKey nonce unsignedCredit
+    let signedCredit = signCredit secretKey (unsignedCredit { nonce = nonce })
     let req = HTTP.setRequestBodyJSON signedCredit $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     Pr.pPrintNoColor (HTTP.getResponseStatusCode resp)
 
 
-rejectCredit :: String -> Text -> CreditRecord -> IO ()
-rejectCredit url secretKey (CreditRecord _ _ _ _ _ _ hash _) = do
+rejectCredit :: String -> Text -> Text -> IO ()
+rejectCredit url secretKey hash = do
     initReq <- HTTP.parseRequest $ url ++ "/reject"
     let (Right sig) = ecsign hash secretKey
         rejectRecord = RejectRecord sig hash

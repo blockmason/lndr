@@ -12,7 +12,6 @@ module Lndr.Server
     , app
     ) where
 
-import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
@@ -32,13 +31,11 @@ import           Network.HTTP.Types
 import           Network.Wai
 import           Servant
 import           Servant.Docs
-import qualified STMContainers.Bimap as Bimap
-import qualified STMContainers.Map as Map
 
 
 type LndrAPI =
         "transactions" :> QueryParam "user" Address :> Get '[JSON] [IssueCreditLog]
-   :<|> "pending" :> QueryParam "user" Address :> Get '[JSON] [CreditRecord]
+   :<|> "pending" :> Capture "user" Address :> Get '[JSON] [CreditRecord]
    :<|> "lend" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "borrow" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "reject" :> ReqBody '[JSON] RejectRecord :> PostNoContent '[JSON] NoContent
@@ -115,5 +112,4 @@ app state = serve lndrAPI (readerServer state)
 
 
 freshState :: IO ServerState
-freshState = ServerState <$> atomically Map.new
-                         <*> DB.connect dbConfig
+freshState = ServerState <$> DB.connect dbConfig

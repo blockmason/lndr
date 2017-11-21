@@ -14,6 +14,7 @@ module Lndr.Db (
     , addFriends
     , removeFriends
     , lookupFriends
+    , lookupFriendsWithNick
 
     -- * 'pending_credit' table functions
     , lookupPending
@@ -80,6 +81,10 @@ removeFriends conn addr addresses = fromIntegral <$>
 lookupFriends :: Connection -> Address -> IO [Address]
 lookupFriends conn addr = fmap fromOnly <$>
     (query conn "SELECT friend FROM friendships WHERE origin = ?" (Only addr) :: IO [Only Address])
+
+lookupFriendsWithNick :: Connection -> Address -> IO [NickInfo]
+lookupFriendsWithNick conn addr = fmap (uncurry NickInfo) <$>
+    (query conn "SELECT friend, nickname FROM friendships, nicknames WHERE origin = ? AND address = friend" (Only addr) :: IO [(Address, Text)])
 
 -- pending_credits table manipulations
 

@@ -39,8 +39,9 @@ nickSearchHandler nick = do
 friendHandler :: Address -> LndrHandler [NickInfo]
 friendHandler addr = do
     conn <- dbConnection <$> ask
-    -- TODO lookupFriendsWithNick in DB
-    fmap (\x -> NickInfo x "") <$> (liftIO $ Db.lookupFriends conn addr)
+    -- TODO currently won't return friends who don't have nicks. Is this
+    -- behavior acceptable?
+    liftIO $ Db.lookupFriendsWithNick conn addr
 
 
 addFriendsHandler :: Address -> [Address] -> LndrHandler NoContent

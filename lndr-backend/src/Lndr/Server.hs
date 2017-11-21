@@ -38,9 +38,9 @@ import qualified STMContainers.Map as Map
 
 type LndrAPI =
         "transactions" :> QueryParam "user" Address :> Get '[JSON] [IssueCreditLog]
-   :<|> "pending" :> QueryParam "user" Address :> Get '[JSON] [PendingRecord]
-   :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> PostNoContent '[JSON] NoContent
-   :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> PostNoContent '[JSON] NoContent
+   :<|> "pending" :> QueryParam "user" Address :> Get '[JSON] [CreditRecord]
+   :<|> "lend" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
+   :<|> "borrow" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "reject" :> ReqBody '[JSON] RejectRecord :> PostNoContent '[JSON] NoContent
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent

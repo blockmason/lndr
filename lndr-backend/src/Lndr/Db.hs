@@ -48,7 +48,7 @@ instance ToField Address where
 instance FromField Address where
     fromField f dat = textToAddress <$> fromField f dat
 
-instance FromRow PendingRecordFlat
+instance FromRow CreditRecord
 
 -- nicknames table manipulations
 
@@ -88,7 +88,7 @@ lookupFriendsWithNick conn addr = fmap (uncurry NickInfo) <$>
 
 -- pending_credits table manipulations
 
-lookupPending :: Connection -> Text -> IO [PendingRecordFlat]
+lookupPending :: Connection -> Text -> IO [CreditRecord]
 lookupPending conn hash = query conn "SELECT friend FROM pending_credits WHERE hash = ?" (Only hash)
 
 
@@ -97,5 +97,5 @@ deletePending conn hash = fromIntegral <$>
     execute conn "DELETE FROM pending_credits WHERE hash = ?" (Only hash)
 
 
-insertPending :: Connection -> PendingRecord -> IO ()
+insertPending :: Connection -> CreditRecord -> IO ()
 insertPending = undefined

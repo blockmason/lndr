@@ -72,21 +72,21 @@ runMode (Config url sk _) Transactions = do
 runMode (Config url sk _) Pending = do
     initReq <- HTTP.parseRequest $ LT.unpack url ++ "/pending?user=" ++ T.unpack (userFromSK sk)
     resp <- HTTP.httpJSON initReq
-    Pr.pPrintNoColor (HTTP.getResponseBody resp :: [PendingRecord])
+    Pr.pPrintNoColor (HTTP.getResponseBody resp :: [CreditRecord])
 
 runMode (Config url sk _) RejectPending = do
     req <- HTTP.parseRequest $ LT.unpack url ++ "/pending?user=" ++ T.unpack (userFromSK sk)
-    records <- HTTP.getResponseBody <$> HTTP.httpJSON req :: IO [PendingRecord]
+    records <- HTTP.getResponseBody <$> HTTP.httpJSON req :: IO [CreditRecord]
     Pr.pPrintNoColor records
     index <- (read :: String -> Int) <$> getLine
     rejectCredit (LT.unpack url) (LT.toStrict sk) (records !! index)
 
 runMode (Config url sk _) (Lend friend amount memo) =
     submitCredit (LT.unpack url) (LT.toStrict sk) $
-        CreditRecord (textToAddress $ userFromSK sk) (textToAddress friend) amount memo ""
+        CreditRecord (textToAddress $ userFromSK sk) (textToAddress friend) amount memo "" 0 "" ""
 runMode (Config url sk _) (Borrow friend amount memo) =
     submitCredit (LT.unpack url) (LT.toStrict sk) $
-        CreditRecord (textToAddress friend) (textToAddress $ userFromSK sk) amount memo ""
+        CreditRecord (textToAddress friend) (textToAddress $ userFromSK sk) amount memo "" 0 "" ""
 
 -- Friend-related Modes
 runMode (Config url sk _) (Nick nick) =
@@ -178,8 +178,8 @@ getNonce url addr1 addr2 = do
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
-signCredit :: Text -> Integer -> CreditRecord Unsigned -> CreditRecord Signed
-signCredit secretKey nonce r@(CreditRecord c d a m u) = r { signature = sig }
+signCredit :: Text -> Integer -> CreditRecord -> CreditRecord
+signCredit secretKey nonce r@(CreditRecord c d a m u _ _ _) = r { signature = sig }
     where message = hashText . T.concat $
                         stripHexPrefix <$> [ ucacId
                                            , Addr.toText c
@@ -191,8 +191,9 @@ signCredit secretKey nonce r@(CreditRecord c d a m u) = r { signature = sig }
           (Right sig) = ecsign hashedMessage secretKey
 
 
-submitCredit :: String -> Text -> CreditRecord Unsigned -> IO ()
-submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _) = do
+-- TODO Don't take a credit record
+submitCredit :: String -> Text -> CreditRecord -> IO ()
+submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ _ _) = do
     nonce <- getNonce url debtor creditor
     initReq <- if textToAddress (userFromSK (LT.fromStrict secretKey)) == creditor
                    then HTTP.parseRequest $ url ++ "/lend"
@@ -204,8 +205,8 @@ submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _) =
     Pr.pPrintNoColor (HTTP.getResponseStatusCode resp)
 
 
-rejectCredit :: String -> Text -> PendingRecord -> IO ()
-rejectCredit url secretKey (PendingRecord _ _ _ hash) = do
+rejectCredit :: String -> Text -> CreditRecord -> IO ()
+rejectCredit url secretKey (CreditRecord _ _ _ _ _ _ hash _) = do
     initReq <- HTTP.parseRequest $ url ++ "/reject"
     let (Right sig) = ecsign hash secretKey
         rejectRecord = RejectRecord sig hash

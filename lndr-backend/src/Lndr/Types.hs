@@ -8,12 +8,8 @@ module Lndr.Types
     , NickRequest(..)
     , NickInfo(..)
     , CreditRecord(..)
-    , Unsigned
-    , Signed
     , IssueCreditLog(IssueCreditLog)
     , RejectRecord(..)
-    , PendingRecord(..)
-    , PendingRecordFlat(..)
     , Nonce(..)
     ) where
 
@@ -53,38 +49,17 @@ data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      } deriving Show
 $(deriveJSON defaultOptions ''IssueCreditLog)
 
--- Types that populate `CreditRecord`'s phantom type field
-data Signed = Signed
-$(deriveJSON defaultOptions ''Signed)
-data Unsigned = Unsigned
-$(deriveJSON defaultOptions ''Unsigned)
-
 -- `a` is a phantom type that indicates whether a record has been signed or not
-data CreditRecord a = CreditRecord { creditor :: Address
-                                   , debtor :: Address
-                                   , amount :: Integer
-                                   , memo :: Text
-                                   , signature :: Text
-                                   } deriving (Show, Generic)
+data CreditRecord = CreditRecord { creditor :: Address
+                                 , debtor :: Address
+                                 , amount :: Integer
+                                 , memo :: Text
+                                 , submitter :: Address
+                                 , nonce :: Integer
+                                 , hash :: Text
+                                 , signature :: Text
+                                 } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''CreditRecord)
-
-data PendingRecordFlat = PendingRecordFlat { flatCreditor :: Address
-                                           , flatDebtor :: Address
-                                           , flatAmount :: Integer
-                                           , flatMemo :: Text
-                                           , flatSignature :: Text
-                                           , flatSubmitter :: Address
-                                           , flatNonce :: Integer
-                                           , flatHash :: Text
-                                           } deriving (Show, Generic)
-
-data PendingRecord = PendingRecord { creditRecord :: CreditRecord Signed
-                                   , submitter :: Address
-                                   , nonce :: Integer
-                                   , hash :: Text
-                                   } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''PendingRecord)
-
 
 data RejectRecord = RejectRecord { rejectSig :: Text
                                  , hash :: Text
@@ -102,6 +77,6 @@ data NickInfo = NickInfo { addr :: Address
                          } deriving Show
 $(deriveJSON defaultOptions ''NickInfo)
 
-data ServerState = ServerState { pendingMap :: Map.Map Text PendingRecord
+data ServerState = ServerState { pendingMap :: Map.Map Text CreditRecord
                                , dbConnection :: Connection
                                }

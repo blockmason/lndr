@@ -85,8 +85,8 @@ queryBalance = runWeb3 . fmap adjustSigned . balances cpAddr ucacIdB
 queryNonce :: Provider a => Address -> Address -> Web3 a Integer
 queryNonce = getNonce cpAddr
 
-hashCreditRecord :: forall a b. Provider b => CreditRecord a -> Web3 b (Integer, Text)
-hashCreditRecord r@(CreditRecord creditor debtor amount _ _) = do
+hashCreditRecord :: forall b. Provider b => CreditRecord -> Web3 b (Integer, Text)
+hashCreditRecord r@(CreditRecord creditor debtor amount _ _ _ _ _) = do
                 nonce <- queryNonce creditor debtor
                 let message = T.concat $
                       stripHexPrefix <$> [ ucacId
@@ -98,8 +98,8 @@ hashCreditRecord r@(CreditRecord creditor debtor amount _ _) = do
                 return (nonce, EU.hashText message)
 
 
-finalizeTransaction :: Text -> Text -> CreditRecord Signed -> IO (Either Web3Error TxHash)
-finalizeTransaction sig1 sig2 r@(CreditRecord creditor debtor amount memo _) = do
+finalizeTransaction :: Text -> Text -> CreditRecord -> IO (Either Web3Error TxHash)
+finalizeTransaction sig1 sig2 r@(CreditRecord creditor debtor amount memo _ _ _ _) = do
       let s1@(sig1r, sig1s, sig1v) = decomposeSig sig1
           s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
           encodedMemo :: BytesN 32

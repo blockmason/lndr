@@ -116,6 +116,4 @@ app state = serve lndrAPI (readerServer state)
 
 freshState :: IO ServerState
 freshState = ServerState <$> atomically Map.new
-                         <*> atomically Bimap.new
-                         <*> atomically Map.new
                          <*> DB.connect dbConfig

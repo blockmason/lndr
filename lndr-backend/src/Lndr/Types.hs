@@ -103,7 +103,5 @@ data NickInfo = NickInfo { addr :: Address
 $(deriveJSON defaultOptions ''NickInfo)
 
 data ServerState = ServerState { pendingMap :: Map.Map Text PendingRecord
-                               , nickMap :: Bimap.Bimap Address Text
-                               , friendlistMap :: Map.Map Address [Address]
                                , dbConnection :: Connection
                                }

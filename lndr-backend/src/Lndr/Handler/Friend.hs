@@ -38,37 +38,24 @@ nickSearchHandler nick = do
 
 friendHandler :: Address -> LndrHandler [NickInfo]
 friendHandler addr = do
-    (ServerState _ nickMapping friendListMapping _) <- ask
-    lookupFriendsWithNick addr friendListMapping nickMapping
+    conn <- dbConnection <$> ask
+    -- TODO lookupFriendsWithNick in DB
+    fmap (\x -> NickInfo x "") <$> (liftIO $ Db.lookupFriends conn addr)
 
 
 addFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
 addFriendsHandler address adds = do
     -- TODO verify signature
-    friendListMapping <- friendlistMap <$> ask
-    -- TODO fix this once long-term data structures are in place
-    friendList <- lookupFriends address friendListMapping
-    liftIO . atomically $ Map.insert (nub $ friendList ++ adds) address friendListMapping
+    conn <- dbConnection <$> ask
+    -- TODO check that return SUCCESS
+    liftIO $ Db.addFriends conn address adds
     return NoContent
 
 
 removeFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
 removeFriendsHandler address removes = do
     -- TODO verify signature
-    friendListMapping <- friendlistMap <$> ask
-    friendList <- lookupFriends address friendListMapping
-    liftIO . atomically $ Map.insert (friendList \\ removes) address friendListMapping
+    conn <- dbConnection <$> ask
+    -- TODO check that return SUCCESS
+    liftIO $ Db.removeFriends conn address removes
     return NoContent
-
-
-lookupFriends :: Address -> Map.Map Address [Address] -> LndrHandler [Address]
-lookupFriends x y = fmap (fromMaybe []) . liftIO . atomically $ Map.lookup x y
-
-
-lookupFriendsWithNick :: Address -> Map.Map Address [Address]
-                      -> Bimap.Bimap Address Text -> LndrHandler [NickInfo]
-lookupFriendsWithNick x y z = do
-    friends <- lookupFriends x y
-    liftIO . atomically $ mapM toNickInfo friends
-    where
-        toNickInfo x = NickInfo x . fromMaybe "N/A" <$> Bimap.lookup1 x z

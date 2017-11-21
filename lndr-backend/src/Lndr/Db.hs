@@ -78,8 +78,8 @@ removeFriends conn addr addresses = fromIntegral <$>
 
 
 lookupFriends :: Connection -> Address -> IO [Address]
-lookupFriends conn addr = fmap (textToAddress . T.pack) <$>
-    query conn "SELECT friend FROM friendships WHERE origin = ?" (Only addr)
+lookupFriends conn addr = fmap fromOnly <$>
+    (query conn "SELECT friend FROM friendships WHERE origin = ?" (Only addr) :: IO [Only Address])
 
 -- pending_credits table manipulations
 

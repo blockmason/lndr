@@ -49,9 +49,7 @@ instance ToField Address where
 instance FromField Address where
     fromField f dat = textToAddress <$> fromField f dat
 
-instance FromRow CreditRecord -- where
---     fromRow = CreditRecord <$> field <*> field <*> field <*> field
---                            <*> field <*> field <*> field <*> field
+instance FromRow CreditRecord
 
 -- nicknames table manipulations
 

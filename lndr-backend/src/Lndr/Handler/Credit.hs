@@ -6,6 +6,7 @@ import           Control.Monad.Reader
 import           Control.Monad.Except
 import qualified Data.ByteString as B
 import           Data.List (nub)
+import           Data.Pool (withResource)
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import           ListT
@@ -21,8 +22,8 @@ import           Servant.API
 
 rejectHandler :: RejectRecord -> LndrHandler NoContent
 rejectHandler(RejectRecord sig hash) = do
-    conn <- dbConnection <$> ask
-    pendingRecordM <- liftIO $ Db.lookupPending conn hash
+    pool <- dbConnectionPool <$> ask
+    pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
     -- TODO this is easily de-cascaded
     case pendingRecordM of
         Nothing -> throwError $ err404 {errBody = "credit hash does not refer to pending record"}
@@ -32,7 +33,7 @@ rejectHandler(RejectRecord sig hash) = do
             case signer of
                 Left err -> throwError $ err400 {errBody = "unable to recover addr from sig"}
                 Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
-                                    then do liftIO $ Db.deletePending conn hash
+                                    then do liftIO . withResource pool $ Db.deletePending hash
                                             return NoContent
                                     else throwError $ err400 {errBody = "bad rejection sig"}
 
@@ -64,8 +65,8 @@ twoPartyBalanceHandler p1 p2 = do
 
 pendingHandler :: Address -> LndrHandler [CreditRecord]
 pendingHandler addr = do
-    conn <- dbConnection <$> ask
-    liftIO $ Db.lookupPendingByAddress conn addr
+    pool <- dbConnectionPool <$> ask
+    liftIO $ withResource pool $ Db.lookupPendingByAddress addr
 
 
 lendHandler :: CreditRecord -> LndrHandler NoContent
@@ -78,7 +79,7 @@ borrowHandler cr@(CreditRecord _ debtor _ _ _ _ _ _) = submitHandler debtor cr
 
 submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
 submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ _ _ sig) = do
-    conn <- dbConnection <$> ask
+    pool <- dbConnectionPool <$> ask
     (nonce, hash) <- lndrWeb3 $ hashCreditRecord signedRecord
 
     -- TODO verify that credit record memo is under 32 chars (all validation
@@ -101,7 +102,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ 
         else throwError (err400 {errBody = "Bad submitter sig"})
 
     -- check if hash is already registered in pending txs
-    pendingCredit <- liftIO $ Db.lookupPending conn hash
+    pendingCredit <- liftIO . withResource pool $ Db.lookupPending hash
 
     case pendingCredit of
         Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do
@@ -115,10 +116,10 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ 
                                          (signature storedRecord)
                                          storedRecord
             -- delete pending record after transaction finalization
-            void . liftIO $ Db.deletePending conn hash
+            void . liftIO . withResource pool $ Db.deletePending hash
 
         -- if no matching transaction is found, create pending transaction
-        Nothing -> void . liftIO $ Db.insertPending conn (signedRecord { hash = hash })
+        Nothing -> void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash })
 
     return NoContent
 

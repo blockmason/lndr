@@ -17,6 +17,7 @@ import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Either.Combinators (mapLeft)
 import           Data.Hashable
+import           Data.Pool
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Database.PostgreSQL.Simple
@@ -75,4 +76,4 @@ data NickInfo = NickInfo { addr :: Address
                          } deriving Show
 $(deriveJSON defaultOptions ''NickInfo)
 
-data ServerState = ServerState { dbConnection :: Connection }
+data ServerState = ServerState { dbConnectionPool :: Pool Connection }

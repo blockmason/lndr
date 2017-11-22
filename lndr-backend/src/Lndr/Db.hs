@@ -53,55 +53,55 @@ instance FromRow CreditRecord
 
 -- nicknames table manipulations
 
-insertNick :: Connection -> Address -> Text -> IO Int
-insertNick conn addr nick = fmap fromIntegral $
+insertNick :: Address -> Text -> Connection -> IO Int
+insertNick addr nick conn = fmap fromIntegral $
     execute conn "INSERT INTO nicknames (address, nickname) VALUES (?,?)" (addr, nick)
 
 
-lookupNick :: Connection -> Address -> IO (Maybe Text)
-lookupNick conn addr = listToMaybe . fmap fromOnly <$>
+lookupNick :: Address -> Connection -> IO (Maybe Text)
+lookupNick addr conn = listToMaybe . fmap fromOnly <$>
     (query conn "SELECT nickname FROM nicknames WHERE address = ?" (Only addr) :: IO [Only Text])
 
 
-lookupAddresByNick :: Connection -> Text -> IO [NickInfo]
-lookupAddresByNick conn nick = fmap ((\x -> NickInfo x nick) . fromOnly) <$>
+lookupAddresByNick :: Text -> Connection -> IO [NickInfo]
+lookupAddresByNick nick conn = fmap ((\x -> NickInfo x nick) . fromOnly) <$>
     (query conn "SELECT address FROM nicknames WHERE nickname = ?" (Only nick) :: IO [Only Address])
 
 -- friendships table manipulations
 
-addFriends :: Connection -> Address -> [Address] -> IO Int
-addFriends conn addr addresses = fromIntegral <$>
+addFriends :: Address -> [Address] -> Connection -> IO Int
+addFriends addr addresses conn = fromIntegral <$>
     executeMany conn "INSERT INTO friendships (origin, friend) VALUES (?,?)" ((addr,) <$> addresses)
 
 
-removeFriends :: Connection -> Address -> [Address] -> IO Int
-removeFriends conn addr addresses = fromIntegral <$>
+removeFriends :: Address -> [Address] -> Connection -> IO Int
+removeFriends addr addresses conn = fromIntegral <$>
     execute conn "DELETE FROM friendships WHERE origin = ? AND friend in ?" (addr, In addresses)
 
 
-lookupFriends :: Connection -> Address -> IO [Address]
-lookupFriends conn addr = fmap fromOnly <$>
+lookupFriends :: Address -> Connection -> IO [Address]
+lookupFriends addr conn = fmap fromOnly <$>
     (query conn "SELECT friend FROM friendships WHERE origin = ?" (Only addr) :: IO [Only Address])
 
-lookupFriendsWithNick :: Connection -> Address -> IO [NickInfo]
-lookupFriendsWithNick conn addr = fmap (uncurry NickInfo) <$>
+lookupFriendsWithNick :: Address -> Connection -> IO [NickInfo]
+lookupFriendsWithNick addr conn = fmap (uncurry NickInfo) <$>
     (query conn "SELECT friend, nickname FROM friendships, nicknames WHERE origin = ? AND address = friend" (Only addr) :: IO [(Address, Text)])
 
 -- pending_credits table manipulations
 
-lookupPending :: Connection -> Text -> IO (Maybe CreditRecord)
-lookupPending conn hash = listToMaybe <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE hash = ?" (Only hash)
+lookupPending :: Text -> Connection -> IO (Maybe CreditRecord)
+lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE hash = ?" (Only hash)
 
 
-lookupPendingByAddress :: Connection -> Address -> IO [CreditRecord]
-lookupPendingByAddress conn addr = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
+lookupPendingByAddress :: Address -> Connection -> IO [CreditRecord]
+lookupPendingByAddress addr conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
 
 
-deletePending :: Connection -> Text -> IO Int
-deletePending conn hash = fromIntegral <$>
+deletePending :: Text -> Connection -> IO Int
+deletePending hash conn = fromIntegral <$>
     execute conn "DELETE FROM pending_credits WHERE hash = ?" (Only hash)
 
 
-insertPending :: Connection -> CreditRecord -> IO Int
-insertPending conn (CreditRecord creditor debtor amount memo submitter nonce hash sig) =
+insertPending :: CreditRecord -> Connection -> IO Int
+insertPending (CreditRecord creditor debtor amount memo submitter nonce hash sig) conn =
     fmap fromIntegral $ execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, submitter, nonce, hash, sig)

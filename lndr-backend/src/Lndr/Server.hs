@@ -21,8 +21,9 @@ import           Data.Text.Lazy (pack)
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as T
+import qualified Database.PostgreSQL.Simple as DB
+import           Lndr.Db
 import           Lndr.Docs
-import           Lndr.EthInterface (freshState)
 import           Lndr.Handler
 import           Lndr.Types
 import           Network.Ethereum.Web3.Address
@@ -31,11 +32,12 @@ import           Network.Wai
 import           Servant
 import           Servant.Docs
 
+
 type LndrAPI =
         "transactions" :> QueryParam "user" Address :> Get '[JSON] [IssueCreditLog]
-   :<|> "pending" :> QueryParam "user" Address :> Get '[JSON] [PendingRecord]
-   :<|> "lend" :> ReqBody '[JSON] (CreditRecord Signed) :> PostNoContent '[JSON] NoContent
-   :<|> "borrow" :> ReqBody '[JSON] (CreditRecord Signed) :> PostNoContent '[JSON] NoContent
+   :<|> "pending" :> Capture "user" Address :> Get '[JSON] [CreditRecord]
+   :<|> "lend" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
+   :<|> "borrow" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "reject" :> ReqBody '[JSON] RejectRecord :> PostNoContent '[JSON] NoContent
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
@@ -107,3 +109,7 @@ readerServer state = enter (readerToHandler state) server
 
 app :: ServerState -> Application
 app state = serve lndrAPI (readerServer state)
+
+
+freshState :: IO ServerState
+freshState = ServerState <$> DB.connect dbConfig

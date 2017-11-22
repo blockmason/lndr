@@ -13,6 +13,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lndr.Docs
+                     , Lndr.Db
                      , Lndr.EthInterface
                      , Lndr.Handler
                      , Lndr.Handler.Credit
@@ -33,11 +34,10 @@ library
                      , list-t
                      , memory
                      , mtl
+                     , postgresql-simple
                      , servant
                      , servant-docs
                      , servant-server
-                     , stm
-                     , stm-containers
                      , text
                      , time
                      , transformers

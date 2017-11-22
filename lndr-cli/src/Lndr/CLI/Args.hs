@@ -179,7 +179,7 @@ getNonce url addr1 addr2 = do
 
 
 signCredit :: Text -> CreditRecord -> CreditRecord
-signCredit secretKey r@(CreditRecord c d a m _ nonce _ _) = r { signature = sig }
+signCredit secretKey r@(CreditRecord c d a m _ nonce _ _) = r { signature = sig , hash = message }
     where message = hashText . T.concat $
                         stripHexPrefix <$> [ ucacId
                                            , Addr.toText c

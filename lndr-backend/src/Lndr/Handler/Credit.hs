@@ -118,7 +118,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ 
             void . liftIO $ Db.deletePending conn hash
 
         -- if no matching transaction is found, create pending transaction
-        Nothing -> void . liftIO $ Db.insertPending conn signedRecord
+        Nothing -> void . liftIO $ Db.insertPending conn (signedRecord { hash = hash })
 
     return NoContent
 

@@ -113,4 +113,4 @@ app state = serve lndrAPI (readerServer state)
 
 
 freshState :: IO ServerState
-freshState = ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 10
+freshState = ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95

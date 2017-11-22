@@ -26,7 +26,6 @@ import           Network.Ethereum.Web3.Address (Address)
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Servant.API
 
--- TODO remove this once Address derives Generic in hs-web3
 instance Hashable Address where
     hashWithSalt x = hashWithSalt x . Addr.toText
 

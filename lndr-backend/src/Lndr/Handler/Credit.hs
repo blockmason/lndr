@@ -59,7 +59,6 @@ twoPartyBalanceHandler p1 p2 = do
     credits <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs (Just p1) (Just p2))
     return $ credits - debts
     where
-        -- TODO lens needed
         extractAmount (IssueCreditLog _ _ _ amount _) = amount
 
 
@@ -70,11 +69,11 @@ pendingHandler addr = do
 
 
 lendHandler :: CreditRecord -> LndrHandler NoContent
-lendHandler cr@(CreditRecord creditor _ _ _ _ _ _ _) = submitHandler creditor cr
+lendHandler creditRecord = submitHandler (creditor creditRecord) creditRecord
 
 
 borrowHandler :: CreditRecord -> LndrHandler NoContent
-borrowHandler cr@(CreditRecord _ debtor _ _ _ _ _ _) = submitHandler debtor cr
+borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
 
 
 submitHandler :: Address -> CreditRecord -> LndrHandler NoContent

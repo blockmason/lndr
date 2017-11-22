@@ -6,7 +6,7 @@ CREATE TABLE pending_credits (
     debtor      CHAR(40),
     amount      INT,
     memo        CHAR(64),
-    signature   CHAR(128)
+    signature   CHAR(130)
 );
 
 CREATE TABLE friendships (

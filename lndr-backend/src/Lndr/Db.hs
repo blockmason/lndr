@@ -92,11 +92,14 @@ lookupFriendsWithNick conn addr = fmap (uncurry NickInfo) <$>
 -- pending_credits table manipulations
 
 lookupPending :: Connection -> Text -> IO (Maybe CreditRecord)
-lookupPending conn hash = listToMaybe <$> query conn "SELECT (creditor, debtor, amount, memo, submitter, nonce, hash, sig) FROM pending_credits WHERE hash = ?" (Only hash)
+lookupPending conn hash = listToMaybe <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE hash = ?" (Only hash)
 
 
 lookupPendingByAddress :: Connection -> Address -> IO [CreditRecord]
-lookupPendingByAddress conn addr = query conn "SELECT (creditor, debtor, amount, memo, submitter, nonce, hash, sig) FROM pending_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
+lookupPendingByAddress conn addr = fmap tupleToCreditRecord <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
+    where
+        tupleToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, signature) =
+            CreditRecord creditor debtor amount memo submitter nonce hash signature
 
 
 deletePending :: Connection -> Text -> IO Int
@@ -106,4 +109,4 @@ deletePending conn hash = fromIntegral <$>
 
 insertPending :: Connection -> CreditRecord -> IO Int
 insertPending conn (CreditRecord creditor debtor amount memo submitter nonce hash sig) =
-    fmap fromIntegral $ execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, sig) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, submitter, nonce, hash, sig)
+    fmap fromIntegral $ execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, submitter, nonce, hash, sig)

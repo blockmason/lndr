@@ -96,10 +96,7 @@ lookupPending conn hash = listToMaybe <$> query conn "SELECT creditor, debtor, a
 
 
 lookupPendingByAddress :: Connection -> Address -> IO [CreditRecord]
-lookupPendingByAddress conn addr = fmap tupleToCreditRecord <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
-    where
-        tupleToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, signature) =
-            CreditRecord creditor debtor amount memo submitter nonce hash signature
+lookupPendingByAddress conn addr = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
 
 
 deletePending :: Connection -> Text -> IO Int

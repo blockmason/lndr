@@ -16,6 +16,7 @@ import           Control.Monad.Except
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import           Data.ByteString.Lazy (ByteString)
+import           Data.Pool (createPool)
 import           Data.Text (Text)
 import           Data.Text.Lazy (pack)
 import           Data.Text.Lazy.Encoding (encodeUtf8)
@@ -112,4 +113,4 @@ app state = serve lndrAPI (readerServer state)
 
 
 freshState :: IO ServerState
-freshState = ServerState <$> DB.connect dbConfig
+freshState = ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95

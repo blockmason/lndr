@@ -17,6 +17,7 @@ import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Either.Combinators (mapLeft)
 import           Data.Hashable
+import           Data.Pool
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Database.PostgreSQL.Simple
@@ -25,7 +26,6 @@ import           Network.Ethereum.Web3.Address (Address)
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Servant.API
 
--- TODO remove this once Address derives Generic in hs-web3
 instance Hashable Address where
     hashWithSalt x = hashWithSalt x . Addr.toText
 
@@ -75,4 +75,4 @@ data NickInfo = NickInfo { addr :: Address
                          } deriving Show
 $(deriveJSON defaultOptions ''NickInfo)
 
-data ServerState = ServerState { dbConnection :: Connection }
+data ServerState = ServerState { dbConnectionPool :: Pool Connection }

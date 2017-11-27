@@ -4,11 +4,12 @@ Server, CLI, and UCAC Solidity contracts.
 
 ## API
 
-Server answering requests at `http://34.202.214.156:80`
+Dev server answering requests at `http://34.202.214.156:80`
+Production server answering requests at `http://34.238.20.130`
 
 ## Install
 
-Once you have [stack]() installed, run the following commands:
+Once you have [stack](https://github.com/commercialhaskell/stack) installed, run the following commands:
 
 ```
 stack setup
@@ -49,6 +50,11 @@ sudo apt-get update
 sudo apt-get install ethereum
 sudo apt-get install autoconf
 sudo apt-get install libtool
+
+# install postgres
+
+sudo apt-get install postgresql postgresql-contrib libpq-dev
+# https://wixelhq.com/blog/how-to-install-postgresql-on-ubuntu-remote-access
 
 # start a local blockchain in the background
 cd lndr/ucac

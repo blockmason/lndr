@@ -46,18 +46,18 @@ import           Prelude hiding ((!!))
 issueCreditEvent :: Text
 issueCreditEvent = "0xf3478cc0d8e00370ff63723580cb5543f72da9ca849bb45098417575c51de3cb"
 
+-- "lndr" in ascii"
 ucacId :: Text
-ucacId = "0x7624778dedc75f8b322b9fa1632a610d40b85e106c7d9bf0e743a9ce291b9c6f"
+ucacId = "0x6c6e647200000000000000000000000000000000000000000000000000000000"
 
 ucacIdB :: BytesN 32
 ucacIdB = BytesN . bytesDecode . T.take 64 . T.drop 2 $ ucacId
 
 cpAddress :: Text
-cpAddress = "0xd5ec73eac35fc9dd6c3f440bce314779fed09f60"
+cpAddress = "0xed5ceb7730af034218d77130d96f46970f170c05"
 
 cpAddr :: Address
 cpAddr = fromRight Addr.zero . Addr.fromText $ cpAddress
-
 
 bytesDecode :: Text -> Bytes
 bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
@@ -117,7 +117,7 @@ lndrLogs p1M p2M = rights . fmap interpretUcacLog <$>
                         (Just [ Just issueCreditEvent, Just ucacId
                               , addressToBytes32 <$> p1M
                               , addressToBytes32 <$> p2M ])
-                        (Just "0x0") -- start from block 0
+                        (Just "0x0x46A400")
                         Nothing)
 
 

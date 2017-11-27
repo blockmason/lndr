@@ -44,7 +44,7 @@ dbConfig = defaultConnectInfo { connectUser = "aupiff"
 -- DB Typeclass instances
 
 instance ToField Address where
-    toField addr = Escape . addrToBS  $ addr
+    toField = Escape . addrToBS
 
 instance FromField Address where
     fromField f dat = textToAddress <$> fromField f dat
@@ -54,7 +54,7 @@ instance FromRow CreditRecord
 -- nicknames table manipulations
 
 insertNick :: Address -> Text -> Connection -> IO Int
-insertNick addr nick conn = fmap fromIntegral $
+insertNick addr nick conn = fromIntegral <$>
     execute conn "INSERT INTO nicknames (address, nickname) VALUES (?,?)" (addr, nick)
 
 
@@ -64,7 +64,7 @@ lookupNick addr conn = listToMaybe . fmap fromOnly <$>
 
 
 lookupAddresByNick :: Text -> Connection -> IO [NickInfo]
-lookupAddresByNick nick conn = fmap ((\x -> NickInfo x nick) . fromOnly) <$>
+lookupAddresByNick nick conn = fmap ((`NickInfo` nick) . fromOnly) <$>
     (query conn "SELECT address FROM nicknames WHERE nickname = ?" (Only nick) :: IO [Only Address])
 
 -- friendships table manipulations
@@ -104,4 +104,4 @@ deletePending hash conn = fromIntegral <$>
 
 insertPending :: CreditRecord -> Connection -> IO Int
 insertPending (CreditRecord creditor debtor amount memo submitter nonce hash sig) conn =
-    fmap fromIntegral $ execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, submitter, nonce, hash, sig)
+    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, submitter, nonce, hash, sig)

@@ -29,6 +29,7 @@ on your `PATH`.
 
 ## UCAC contract
 
+`0x869a8f2c3D22Be392618Ed06C8F548D1D5b5aeD6`
 [FriendInDebt.sol README](ucac/README.md)
 
 ## deploy process

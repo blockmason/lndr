@@ -42,7 +42,6 @@ module.exports = function(deployer, network, accounts) {
     if (network == "gethtest") {
         const usd = web3.fromAscii("USD");
         const ucacId1 = web3.sha3("hi");
-        const creationStake = web3.toBigNumber(web3.toWei(3500));
         const mintAmount = web3.toBigNumber(web3.toWei(20000))
         var cpTokenContract;
         var creditProtocolContract;

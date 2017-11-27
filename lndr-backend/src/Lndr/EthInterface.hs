@@ -117,7 +117,7 @@ lndrLogs p1M p2M = rights . fmap interpretUcacLog <$>
                         (Just [ Just issueCreditEvent, Just ucacId
                               , addressToBytes32 <$> p1M
                               , addressToBytes32 <$> p2M ])
-                        (Just "0x0x46A400")
+                        (Just "0x46A400")
                         Nothing)
 
 

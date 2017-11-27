@@ -29,7 +29,7 @@ rejectHandler(RejectRecord sig hash) = do
         Nothing -> throwError $ err404 {errBody = "credit hash does not refer to pending record"}
         Just pr@(CreditRecord creditor debtor _ _ _ submitter _ _) -> do
             -- recover address from sig
-            let signer = EU.ecrecover (stripHexPrefix sig) $ hash
+            let signer = EU.ecrecover (stripHexPrefix sig) hash
             case signer of
                 Left err -> throwError $ err400 {errBody = "unable to recover addr from sig"}
                 Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor

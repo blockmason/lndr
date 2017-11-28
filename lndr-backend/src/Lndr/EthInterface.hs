@@ -20,6 +20,7 @@ import           Data.Aeson.TH
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base16 as BS16
+import           Data.Configurator
 import           Data.Data
 import           Data.Either (rights)
 import           Data.Either.Combinators (fromRight, mapLeft)
@@ -54,7 +55,7 @@ ucacIdB :: BytesN 32
 ucacIdB = BytesN . bytesDecode . T.take 64 . T.drop 2 $ ucacId
 
 cpAddress :: Text
-cpAddress = "0xed5ceb7730af034218d77130d96f46970f170c05"
+cpAddress = "0xb558e46A365424522934a768CEc3DE0ac01DC5AD"
 
 cpAddr :: Address
 cpAddr = fromRight Addr.zero . Addr.fromText $ cpAddress

@@ -39,9 +39,13 @@ rejectHandler(RejectRecord sig hash) = do
 
 
 transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
-transactionsHandler Nothing = lndrWeb3 (lndrLogs Nothing Nothing)
-transactionsHandler (Just addr) = (++) <$> lndrWeb3 (lndrLogs (Just addr) Nothing)
-                                       <*> lndrWeb3 (lndrLogs Nothing (Just addr))
+transactionsHandler Nothing = do
+    config <- serverConfig <$> ask
+    lndrWeb3 (lndrLogs config Nothing Nothing)
+transactionsHandler (Just addr) = do
+    config <- serverConfig <$> ask
+    (++) <$> lndrWeb3 (lndrLogs config (Just addr) Nothing)
+         <*> lndrWeb3 (lndrLogs config Nothing (Just addr))
 
 
 counterpartiesHandler :: Address -> LndrHandler [Address]
@@ -50,13 +54,16 @@ counterpartiesHandler addr = nub . fmap takeCounterParty <$> transactionsHandler
 
 
 balanceHandler :: Address -> LndrHandler Integer
-balanceHandler addr = web3ToLndr $ queryBalance addr
+balanceHandler addr = do
+    config <- serverConfig <$> ask
+    web3ToLndr $ queryBalance config addr
 
 
 twoPartyBalanceHandler :: Address -> Address -> LndrHandler Integer
 twoPartyBalanceHandler p1 p2 = do
-    debts <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs (Just p2) (Just p1))
-    credits <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs (Just p1) (Just p2))
+    config <- serverConfig <$> ask
+    debts <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs config (Just p2) (Just p1))
+    credits <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs config (Just p1) (Just p2))
     return $ credits - debts
     where
         extractAmount (IssueCreditLog _ _ _ amount _) = amount
@@ -78,8 +85,8 @@ borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
 
 submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
 submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ _ _ sig) = do
-    pool <- dbConnectionPool <$> ask
-    (nonce, hash) <- lndrWeb3 $ hashCreditRecord signedRecord
+    (ServerState pool config) <- ask
+    (nonce, hash) <- lndrWeb3 $ hashCreditRecord config signedRecord
 
     -- TODO verify that credit record memo is under 32 chars (all validation
     -- should happen in separate function perhaps
@@ -108,10 +115,12 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ 
             -- if the submitted credit record has a matching pending record,
             -- finalize the transaction on the blockchain
             if creditor /= submitterAddress
-                then finalizeTransaction (signature storedRecord)
+                then finalizeTransaction config
+                                         (signature storedRecord)
                                          (signature signedRecord)
                                          storedRecord
-                else finalizeTransaction (signature signedRecord)
+                else finalizeTransaction config
+                                         (signature signedRecord)
                                          (signature storedRecord)
                                          storedRecord
             -- delete pending record after transaction finalization
@@ -124,4 +133,6 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ 
 
 
 nonceHandler :: Address -> Address -> LndrHandler Nonce
-nonceHandler p1 p2 = fmap Nonce . web3ToLndr . runWeb3 $ queryNonce p1 p2
+nonceHandler p1 p2 = do
+    config <- serverConfig <$> ask
+    fmap Nonce . web3ToLndr . runWeb3 $ queryNonce config p1 p2

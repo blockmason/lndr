@@ -21,10 +21,12 @@ import qualified Data.ByteArray as BA
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base16 as BS16
 import           Data.Configurator
+import           Data.Configurator.Types
 import           Data.Data
 import           Data.Either (rights)
 import           Data.Either.Combinators (fromRight, mapLeft)
 import           Data.List.Safe ((!!))
+import           Data.Maybe (fromJust)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -41,29 +43,31 @@ import qualified Network.Ethereum.Web3.Web3 as Web3
 import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
 import           Numeric (readHex, showHex)
-import           Prelude hiding ((!!))
+import           Prelude hiding (lookup, (!!))
+import           System.FilePath
 
 
-issueCreditEvent :: Text
-issueCreditEvent = "0xf3478cc0d8e00370ff63723580cb5543f72da9ca849bb45098417575c51de3cb"
+-- TODO do this with error handling & check if configurator supports loading
+-- datatypes
+loadConfig :: IO ServerConfig
+loadConfig = do config <- load [Required $ "data" </> "lndr-server.config"]
+                lndrUcacId <- fromJust <$> lookup config "lndrUcac"
+                cpAddr <- fromJust <$> lookup config "creditProtocolAddress"
+                issueCreditEvent <- fromJust <$> lookup config "issueCreditEvent"
+                return $ ServerConfig lndrUcacId (textToAddress cpAddr) issueCreditEvent
 
--- "lndr" in ascii"
-ucacId :: Text
-ucacId = "0x6c6e647200000000000000000000000000000000000000000000000000000000"
-
-ucacIdB :: BytesN 32
-ucacIdB = BytesN . bytesDecode . T.take 64 . T.drop 2 $ ucacId
-
-cpAddress :: Text
-cpAddress = "0xb558e46A365424522934a768CEc3DE0ac01DC5AD"
-
-cpAddr :: Address
-cpAddr = fromRight Addr.zero . Addr.fromText $ cpAddress
 
 bytesDecode :: Text -> Bytes
 bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
 
+
+textToBytesN32 :: Text -> BytesN 32
+textToBytesN32 = BytesN . bytesDecode . T.take 64 . T.drop 2
+
+
+addrToBS :: Address -> B.ByteString
 addrToBS = T.encodeUtf8 . Addr.toText
+
 
 decomposeSig :: Text -> (BytesN 32, BytesN 32, BytesN 32)
 decomposeSig sig = (sigR, sigS, sigV)
@@ -76,21 +80,23 @@ decomposeSig sig = (sigR, sigS, sigV)
 [abiFrom|data/CreditProtocol.abi|]
 
 
-queryBalance :: Address -> IO (Either Web3Error Integer)
-queryBalance = runWeb3 . fmap adjustSigned . balances cpAddr ucacIdB
+queryBalance :: ServerConfig -> Address -> IO (Either Web3Error Integer)
+queryBalance config userAddress = runWeb3 . fmap adjustSigned $ balances (creditProtocolAddress config) (textToBytesN32 $ lndrUcacId config) userAddress
+    -- TODO fix this issue in `hs-web3`
     where adjustSigned x | x > div maxNeg 2 = x - maxNeg
                          | otherwise        = x
           maxNeg = 2^256
 
 
-queryNonce :: Provider a => Address -> Address -> Web3 a Integer
-queryNonce = getNonce cpAddr
+queryNonce :: Provider a => ServerConfig -> Address -> Address -> Web3 a Integer
+queryNonce config = getNonce (creditProtocolAddress config)
 
-hashCreditRecord :: forall b. Provider b => CreditRecord -> Web3 b (Integer, Text)
-hashCreditRecord r@(CreditRecord creditor debtor amount _ _ _ _ _) = do
-                nonce <- queryNonce creditor debtor
+
+hashCreditRecord :: forall b. Provider b => ServerConfig -> CreditRecord -> Web3 b (Integer, Text)
+hashCreditRecord config r@(CreditRecord creditor debtor amount _ _ _ _ _) = do
+                nonce <- queryNonce config creditor debtor
                 let message = T.concat $
-                      stripHexPrefix <$> [ ucacId
+                      stripHexPrefix <$> [ lndrUcacId config
                                          , Addr.toText creditor
                                          , Addr.toText debtor
                                          , integerToHex amount
@@ -99,23 +105,26 @@ hashCreditRecord r@(CreditRecord creditor debtor amount _ _ _ _ _) = do
                 return (nonce, EU.hashText message)
 
 
-finalizeTransaction :: Text -> Text -> CreditRecord -> IO (Either Web3Error TxHash)
-finalizeTransaction sig1 sig2 r@(CreditRecord creditor debtor amount memo _ _ _ _) = do
+finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord
+                    -> IO (Either Web3Error TxHash)
+finalizeTransaction config sig1 sig2 r@(CreditRecord creditor debtor amount memo _ _ _ _) = do
       let s1@(sig1r, sig1s, sig1v) = decomposeSig sig1
           s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
           encodedMemo :: BytesN 32
           encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
-      runWeb3 $ issueCredit cpAddr (0 :: Ether) ucacIdB
+      runWeb3 $ issueCredit (creditProtocolAddress config) (0 :: Ether)
+                            (textToBytesN32 $ lndrUcacId config)
                             creditor debtor amount
                             [ sig1r, sig1s, sig1v ]
                             [ sig2r, sig2s, sig2v ]
                             encodedMemo
 
 
-lndrLogs :: Provider a => Maybe Address -> Maybe Address -> Web3 a [IssueCreditLog]
-lndrLogs p1M p2M = rights . fmap interpretUcacLog <$>
-    Eth.getLogs (Filter (Just cpAddr)
-                        (Just [ Just issueCreditEvent, Just ucacId
+lndrLogs :: Provider a => ServerConfig -> Maybe Address -> Maybe Address
+         -> Web3 a [IssueCreditLog]
+lndrLogs config p1M p2M = rights . fmap interpretUcacLog <$>
+    Eth.getLogs (Filter (Just $ creditProtocolAddress config)
+                        (Just [ Just (issueCreditEvent config), Just (lndrUcacId config)
                               , addressToBytes32 <$> p1M
                               , addressToBytes32 <$> p2M ])
                         (Just "0x46A400")

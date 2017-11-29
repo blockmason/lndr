@@ -5,6 +5,7 @@
 
 module Lndr.Types
     ( ServerState(..)
+    , ServerConfig(..)
     , NickRequest(..)
     , NickInfo(..)
     , CreditRecord(..)
@@ -15,6 +16,7 @@ module Lndr.Types
 
 import           Data.Aeson
 import           Data.Aeson.TH
+import           Data.Configurator.Types
 import           Data.Either.Combinators (mapLeft)
 import           Data.Hashable
 import           Data.Pool
@@ -75,4 +77,11 @@ data NickInfo = NickInfo { addr :: Address
                          } deriving Show
 $(deriveJSON defaultOptions ''NickInfo)
 
-data ServerState = ServerState { dbConnectionPool :: Pool Connection }
+data ServerConfig = ServerConfig { lndrUcacId :: Text
+                                 , creditProtocolAddress :: Address
+                                 , issueCreditEvent :: Text
+                                 }
+
+data ServerState = ServerState { dbConnectionPool :: Pool Connection
+                               , serverConfig :: ServerConfig
+                               }

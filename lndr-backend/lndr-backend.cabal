@@ -29,6 +29,7 @@ library
                      , cryptonite
                      , either
                      , ethereumhs-util
+                     , filepath
                      , hashable
                      , http-types
                      , listsafe

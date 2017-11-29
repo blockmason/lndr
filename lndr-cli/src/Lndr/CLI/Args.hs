@@ -178,8 +178,8 @@ getNonce url addr1 addr2 = do
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
-signCredit :: Text -> CreditRecord -> CreditRecord
-signCredit secretKey r@(CreditRecord c d a m _ nonce _ _) = r { signature = sig , hash = message }
+signCredit :: Text -> Text -> CreditRecord -> CreditRecord
+signCredit secretKey ucacId r@(CreditRecord c d a m _ nonce _ _) = r { signature = sig , hash = message }
     where message = hashText . T.concat $
                         stripHexPrefix <$> [ ucacId
                                            , Addr.toText c
@@ -194,11 +194,12 @@ signCredit secretKey r@(CreditRecord c d a m _ nonce _ _) = r { signature = sig 
 -- TODO Don't take a credit record
 submitCredit :: String -> Text -> CreditRecord -> IO ()
 submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ _ _) = do
+    ucacId <- lndrUcacId <$> loadConfig
     nonce <- getNonce url debtor creditor
     initReq <- if textToAddress (userFromSK (LT.fromStrict secretKey)) == creditor
                    then HTTP.parseRequest $ url ++ "/lend"
                    else HTTP.parseRequest $ url ++ "/borrow"
-    let signedCredit = signCredit secretKey (unsignedCredit { nonce = nonce })
+    let signedCredit = signCredit secretKey ucacId (unsignedCredit { nonce = nonce })
     let req = HTTP.setRequestBodyJSON signedCredit $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req

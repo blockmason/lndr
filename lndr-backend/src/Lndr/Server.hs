@@ -25,6 +25,7 @@ import qualified Data.Text.Lazy.Encoding as T
 import qualified Database.PostgreSQL.Simple as DB
 import           Lndr.Db
 import           Lndr.Docs
+import           Lndr.EthInterface
 import           Lndr.Handler
 import           Lndr.Types
 import           Network.Ethereum.Web3.Address
@@ -114,3 +115,4 @@ app state = serve lndrAPI (readerServer state)
 
 freshState :: IO ServerState
 freshState = ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
+                         <*> loadConfig

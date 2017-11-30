@@ -8,6 +8,7 @@ import qualified Data.ByteString as B
 import           Data.List (nub)
 import           Data.Pool (withResource)
 import           Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           ListT
 import qualified Lndr.Db as Db
@@ -84,16 +85,15 @@ borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
 
 
 submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
-submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ _ _ sig) = do
+submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig) = do
     (ServerState pool config) <- ask
     (nonce, hash) <- lndrWeb3 $ hashCreditRecord config signedRecord
 
-    -- TODO verify that credit record memo is under 32 chars (all validation
-    -- should happen in separate function perhaps
+    if T.length memo <= 32
+        then return ()
+        else throwError (err400 {errBody = "Memo too long. Memos must be no longer than 32 characters."})
 
-    -- TODO hash matches
-
-    -- submitter is one of creditor or debtor
+    -- verify that submitter is one of creditor or debtor
     if submitterAddress == creditor || submitterAddress == debtor
         then (if creditor /= debtor
                     then return ()

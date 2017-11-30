@@ -21,6 +21,9 @@ module Lndr.Db (
     , lookupPendingByAddress
     , deletePending
     , insertPending
+
+    -- * 'verified_credit' table functions
+    , insertCredit
     ) where
 
 import           Data.ByteString.Builder (byteString)
@@ -105,3 +108,8 @@ deletePending hash conn = fromIntegral <$>
 insertPending :: CreditRecord -> Connection -> IO Int
 insertPending (CreditRecord creditor debtor amount memo submitter nonce hash sig) conn =
     fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, submitter, nonce, hash, sig)
+
+
+insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
+insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo submitter nonce hash _) conn =
+    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, submitter, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, submitter, nonce, hash, creditorSig, debtorSig)

@@ -111,18 +111,17 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ 
     pendingCredit <- liftIO . withResource pool $ Db.lookupPending hash
 
     case pendingCredit of
+        -- if the submitted credit record has a matching pending record,
+        -- finalize the transaction on the blockchain
         Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do
-            -- if the submitted credit record has a matching pending record,
-            -- finalize the transaction on the blockchain
-            if creditor /= submitterAddress
-                then finalizeTransaction config
-                                         (signature storedRecord)
-                                         (signature signedRecord)
-                                         storedRecord
-                else finalizeTransaction config
-                                         (signature signedRecord)
-                                         (signature storedRecord)
-                                         storedRecord
+            let (creditorSig, debtorSig) = if creditor /= submitterAddress
+                                            then (signature storedRecord, signature signedRecord)
+                                            else (signature signedRecord, signature storedRecord)
+
+            finalizeTransaction config creditorSig debtorSig storedRecord
+
+            -- saving transaction record
+            liftIO . withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord
             -- delete pending record after transaction finalization
             void . liftIO . withResource pool $ Db.deletePending hash
 

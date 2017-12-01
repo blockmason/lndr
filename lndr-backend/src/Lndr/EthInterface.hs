@@ -54,9 +54,11 @@ loadConfig = do config <- load [Required $ "data" </> "lndr-server.config"]
                 lndrUcacAddr <- fromJust <$> lookup config "lndrUcac"
                 cpAddr <- fromJust <$> lookup config "creditProtocolAddress"
                 issueCreditEvent <- fromJust <$> lookup config "issueCreditEvent"
+                scanStartBlock <- fromJust <$> lookup config "scanStartBlock"
                 return $ ServerConfig (textToAddress lndrUcacAddr)
                                       (textToAddress cpAddr)
                                       issueCreditEvent
+                                      scanStartBlock
 
 
 bytesDecode :: Text -> Bytes
@@ -142,9 +144,12 @@ lndrLogs config p1M p2M = rights . fmap interpretUcacLog <$>
                               , Just (addressToBytes32 $ lndrUcacAddr config)
                               , addressToBytes32 <$> p1M
                               , addressToBytes32 <$> p2M ])
-                        (Just "0x46A400") -- roughly the blocknumber when the
-                                          -- LNDR UCAC was deployed
+                        (Just . integerToHex' $ scanStartBlock config)
                         Nothing)
+
+
+syncTransactions :: ServerState -> IO ()
+syncTransactions (ServerState pool config) = return ()
 
 
 interpretUcacLog :: Change -> Either SomeException IssueCreditLog
@@ -186,6 +191,10 @@ stripHexPrefix x | T.isPrefixOf "0x" x = T.drop 2 x
 integerToHex :: Integer -> Text
 integerToHex x = T.append "0x" strRep
     where strRep = alignR . T.pack $ showHex x ""
+
+
+integerToHex' :: Integer -> Text
+integerToHex' x = T.append "0x" . T.pack $ showHex x ""
 
 
 align :: Text -> (Text, Text)

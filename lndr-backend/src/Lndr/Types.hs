@@ -81,6 +81,7 @@ $(deriveJSON defaultOptions ''NickInfo)
 data ServerConfig = ServerConfig { lndrUcacAddr :: Address
                                  , creditProtocolAddress :: Address
                                  , issueCreditEvent :: Text
+                                 , scanStartBlock :: Integer
                                  }
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection

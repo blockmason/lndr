@@ -44,9 +44,8 @@ transactionsHandler Nothing = do
     config <- serverConfig <$> ask
     lndrWeb3 (lndrLogs config Nothing Nothing)
 transactionsHandler (Just addr) = do
-    config <- serverConfig <$> ask
-    (++) <$> lndrWeb3 (lndrLogs config (Just addr) Nothing)
-         <*> lndrWeb3 (lndrLogs config Nothing (Just addr))
+    pool <- dbConnectionPool <$> ask
+    liftIO $ withResource pool $ Db.lookupCreditByAddress addr
 
 
 counterpartiesHandler :: Address -> LndrHandler [Address]

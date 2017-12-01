@@ -25,6 +25,7 @@ module Lndr.Db (
     -- * 'verified_credit' table functions
     , insertCredit
     , insertCredits
+    , lookupCreditByAddress
     ) where
 
 import           Data.ByteString.Builder (byteString)
@@ -55,6 +56,8 @@ instance FromField Address where
     fromField f dat = textToAddress <$> fromField f dat
 
 instance FromRow CreditRecord
+
+instance FromRow IssueCreditLog
 
 -- nicknames table manipulations
 
@@ -120,6 +123,10 @@ insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo sub
 insertCredits :: [IssueCreditLog] -> Connection -> IO Int
 insertCredits creditLogs conn =
     fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING" (creditLogToCreditTuple <$> creditLogs)
+
+
+lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
+lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
 
 
 creditRecordToPendingTuple :: CreditRecord

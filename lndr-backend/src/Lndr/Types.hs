@@ -47,7 +47,7 @@ data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , amount :: Integer
                                      , nonce :: Integer
                                      , memo :: Text
-                                     } deriving Show
+                                     } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''IssueCreditLog)
 
 -- `a` is a phantom type that indicates whether a record has been signed or not

@@ -51,7 +51,7 @@ import           System.FilePath
 -- datatypes
 loadConfig :: IO ServerConfig
 loadConfig = do config <- load [Required $ "data" </> "lndr-server.config"]
-                lndrUcacAddr <- fromJust <$> lookup config "lndrUcac"
+                lndrUcacAddr <- fromJust <$> lookup config "lndrUcacAddr"
                 cpAddr <- fromJust <$> lookup config "creditProtocolAddress"
                 issueCreditEvent <- fromJust <$> lookup config "issueCreditEvent"
                 scanStartBlock <- fromJust <$> lookup config "scanStartBlock"
@@ -150,9 +150,10 @@ lndrLogs config p1M p2M = rights . fmap interpretUcacLog <$>
 
 interpretUcacLog :: Change -> Either SomeException IssueCreditLog
 interpretUcacLog change = do
+    ucacAddr <- bytes32ToAddress <=< (!! 1) $ changeTopics change
     creditorAddr <- bytes32ToAddress <=< (!! 2) $ changeTopics change
     debtorAddr <- bytes32ToAddress <=< (!! 3) $ changeTopics change
-    pure $ IssueCreditLog (changeAddress change)
+    pure $ IssueCreditLog ucacAddr
                           creditorAddr
                           debtorAddr
                           -- TODO clean this up

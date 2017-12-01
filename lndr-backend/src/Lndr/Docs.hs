@@ -53,6 +53,7 @@ instance ToSample IssueCreditLog where
                        "0x11edd217a875063583dd1b638d16810c5d34d54b"
                        "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
                        69
+                       0
                        "simple memo"
 
 instance ToSample Address where

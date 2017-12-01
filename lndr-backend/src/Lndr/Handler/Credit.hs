@@ -49,9 +49,18 @@ transactionsHandler (Just addr) = do
          <*> lndrWeb3 (lndrLogs config Nothing (Just addr))
 
 
+-- INSERT INTO customers (name, email) VALUES ( 'Microsoft', 'hotline@microsoft.com') ON CONFLICT (hash) DO NOTHING;
+
+updateDbFromLndrLogs :: LndrHandler ()
+updateDbFromLndrLogs = void $ do
+    (ServerState pool config) <- ask
+    logs <- lndrWeb3 (lndrLogs config Nothing Nothing)
+    liftIO $ withResource pool $ Db.insertCredits logs
+
+
 counterpartiesHandler :: Address -> LndrHandler [Address]
 counterpartiesHandler addr = nub . fmap takeCounterParty <$> transactionsHandler (Just addr)
-    where takeCounterParty (IssueCreditLog _ c d _ _) = if c == addr then d else c
+    where takeCounterParty (IssueCreditLog _ c d _ _ _) = if c == addr then d else c
 
 
 balanceHandler :: Address -> LndrHandler Integer
@@ -67,7 +76,7 @@ twoPartyBalanceHandler p1 p2 = do
     credits <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs config (Just p1) (Just p2))
     return $ credits - debts
     where
-        extractAmount (IssueCreditLog _ _ _ amount _) = amount
+        extractAmount (IssueCreditLog _ _ _ amount _ _) = amount
 
 
 pendingHandler :: Address -> LndrHandler [CreditRecord]

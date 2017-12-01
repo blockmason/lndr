@@ -51,10 +51,12 @@ import           System.FilePath
 -- datatypes
 loadConfig :: IO ServerConfig
 loadConfig = do config <- load [Required $ "data" </> "lndr-server.config"]
-                lndrUcacId <- fromJust <$> lookup config "lndrUcac"
+                lndrUcacAddr <- fromJust <$> lookup config "lndrUcac"
                 cpAddr <- fromJust <$> lookup config "creditProtocolAddress"
                 issueCreditEvent <- fromJust <$> lookup config "issueCreditEvent"
-                return $ ServerConfig lndrUcacId (textToAddress cpAddr) issueCreditEvent
+                return $ ServerConfig (textToAddress lndrUcacAddr)
+                                      (textToAddress cpAddr)
+                                      issueCreditEvent
 
 
 bytesDecode :: Text -> Bytes
@@ -81,7 +83,7 @@ decomposeSig sig = (sigR, sigS, sigV)
 
 
 queryBalance :: ServerConfig -> Address -> IO (Either Web3Error Integer)
-queryBalance config userAddress = runWeb3 . fmap adjustSigned $ balances (creditProtocolAddress config) (textToBytesN32 $ lndrUcacId config) userAddress
+queryBalance config userAddress = runWeb3 . fmap adjustSigned $ balances (creditProtocolAddress config) (lndrUcacAddr config) userAddress
     -- TODO fix this issue in `hs-web3`
     where adjustSigned x | x > div maxNeg 2 = x - maxNeg
                          | otherwise        = x
@@ -96,13 +98,25 @@ hashCreditRecord :: forall b. Provider b => ServerConfig -> CreditRecord -> Web3
 hashCreditRecord config r@(CreditRecord creditor debtor amount _ _ _ _ _) = do
                 nonce <- queryNonce config creditor debtor
                 let message = T.concat $
-                      stripHexPrefix <$> [ lndrUcacId config
+                      stripHexPrefix <$> [ Addr.toText (lndrUcacAddr config)
                                          , Addr.toText creditor
                                          , Addr.toText debtor
                                          , integerToHex amount
                                          , integerToHex nonce
                                          ]
                 return (nonce, EU.hashText message)
+
+
+hashCreditLog :: IssueCreditLog -> Text
+hashCreditLog (IssueCreditLog ucac creditor debtor amount nonce _) =
+                let message = T.concat $
+                      stripHexPrefix <$> [ Addr.toText ucac
+                                         , Addr.toText creditor
+                                         , Addr.toText debtor
+                                         , integerToHex amount
+                                         , integerToHex nonce
+                                         ]
+                in EU.hashText message
 
 
 finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord
@@ -113,7 +127,7 @@ finalizeTransaction config sig1 sig2 r@(CreditRecord creditor debtor amount memo
           encodedMemo :: BytesN 32
           encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
       runWeb3 $ issueCredit (creditProtocolAddress config) (0 :: Ether)
-                            (textToBytesN32 $ lndrUcacId config)
+                            (lndrUcacAddr config)
                             creditor debtor amount
                             [ sig1r, sig1s, sig1v ]
                             [ sig2r, sig2s, sig2v ]
@@ -124,10 +138,12 @@ lndrLogs :: Provider a => ServerConfig -> Maybe Address -> Maybe Address
          -> Web3 a [IssueCreditLog]
 lndrLogs config p1M p2M = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just $ creditProtocolAddress config)
-                        (Just [ Just (issueCreditEvent config), Just (lndrUcacId config)
+                        (Just [ Just (issueCreditEvent config)
+                              , Just (addressToBytes32 $ lndrUcacAddr config)
                               , addressToBytes32 <$> p1M
                               , addressToBytes32 <$> p2M ])
-                        (Just "0x46A400")
+                        (Just "0x46A400") -- roughly the blocknumber when the
+                                          -- LNDR UCAC was deployed
                         Nothing)
 
 
@@ -138,8 +154,10 @@ interpretUcacLog change = do
     pure $ IssueCreditLog (changeAddress change)
                           creditorAddr
                           debtorAddr
+                          -- TODO clean this up
                           (hexToInteger . T.take 64 . stripHexPrefix $ changeData change)
-                          (T.decodeUtf8 . fst . BS16.decode . T.encodeUtf8 . T.take 64 . T.drop 64 . stripHexPrefix $ changeData change)
+                          (hexToInteger . T.take 64 . T.drop 64 . stripHexPrefix $ changeData change)
+                          (T.decodeUtf8 . fst . BS16.decode . T.encodeUtf8 . T.take 64 . T.drop 128 . stripHexPrefix $ changeData change)
 
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the
 -- 40-char hex representation of an address

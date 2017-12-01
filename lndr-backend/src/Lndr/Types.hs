@@ -45,6 +45,7 @@ data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , creditor :: Address
                                      , debtor :: Address
                                      , amount :: Integer
+                                     , nonce :: Integer
                                      , memo :: Text
                                      } deriving Show
 $(deriveJSON defaultOptions ''IssueCreditLog)
@@ -77,7 +78,7 @@ data NickInfo = NickInfo { addr :: Address
                          } deriving Show
 $(deriveJSON defaultOptions ''NickInfo)
 
-data ServerConfig = ServerConfig { lndrUcacId :: Text
+data ServerConfig = ServerConfig { lndrUcacAddr :: Address
                                  , creditProtocolAddress :: Address
                                  , issueCreditEvent :: Text
                                  }

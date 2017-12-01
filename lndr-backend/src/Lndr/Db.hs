@@ -24,6 +24,7 @@ module Lndr.Db (
 
     -- * 'verified_credit' table functions
     , insertCredit
+    , insertCredits
     ) where
 
 import           Data.ByteString.Builder (byteString)
@@ -37,6 +38,7 @@ import           Database.PostgreSQL.Simple.ToField
 import           Lndr.EthInterface
 import           Lndr.Types
 import           Network.Ethereum.Web3
+import qualified Network.Ethereum.Web3.Address as Addr
 
 -- DB configuration
 
@@ -106,10 +108,24 @@ deletePending hash conn = fromIntegral <$>
 
 
 insertPending :: CreditRecord -> Connection -> IO Int
-insertPending (CreditRecord creditor debtor amount memo submitter nonce hash sig) conn =
-    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, submitter, nonce, hash, sig)
+insertPending creditRecord conn =
+    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord)
 
 
 insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
 insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo submitter nonce hash _) conn =
-    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, submitter, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, submitter, nonce, hash, creditorSig, debtorSig)
+    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, submitter, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, submitter, nonce, hash, creditorSig, debtorSig)
+
+insertCredits :: [IssueCreditLog] -> Connection -> IO Int
+insertCredits creditLogs conn =
+    fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, submitter, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditLogToCreditTuple <$> creditLogs)
+
+
+creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig) =
+    (creditor, debtor, amount, memo, submitter, nonce, hash, sig)
+
+
+creditLogToCreditTuple :: IssueCreditLog
+                       -> (Address, Address, Integer, Text, Address, Integer, Text, Text, Text)
+creditLogToCreditTuple cl@(IssueCreditLog ucac creditor debtor amount nonce memo) =
+    (creditor, debtor, amount, memo, Addr.zero, nonce, hashCreditLog cl, "", "")

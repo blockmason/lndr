@@ -116,9 +116,10 @@ insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
 insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo submitter nonce hash _) conn =
     fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig)
 
+
 insertCredits :: [IssueCreditLog] -> Connection -> IO Int
 insertCredits creditLogs conn =
-    fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)" (creditLogToCreditTuple <$> creditLogs)
+    fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING" (creditLogToCreditTuple <$> creditLogs)
 
 
 creditRecordToPendingTuple :: CreditRecord

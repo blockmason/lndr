@@ -148,10 +148,6 @@ lndrLogs config p1M p2M = rights . fmap interpretUcacLog <$>
                         Nothing)
 
 
-syncTransactions :: ServerState -> IO ()
-syncTransactions (ServerState pool config) = return ()
-
-
 interpretUcacLog :: Change -> Either SomeException IssueCreditLog
 interpretUcacLog change = do
     creditorAddr <- bytes32ToAddress <=< (!! 2) $ changeTopics change

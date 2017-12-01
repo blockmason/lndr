@@ -114,18 +114,20 @@ insertPending creditRecord conn =
 
 insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
 insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo submitter nonce hash _) conn =
-    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, submitter, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, submitter, nonce, hash, creditorSig, debtorSig)
+    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig)
 
 insertCredits :: [IssueCreditLog] -> Connection -> IO Int
 insertCredits creditLogs conn =
-    fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, submitter, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditLogToCreditTuple <$> creditLogs)
+    fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)" (creditLogToCreditTuple <$> creditLogs)
 
 
+creditRecordToPendingTuple :: CreditRecord
+                           -> (Address, Address, Integer, Text, Address, Integer, Text, Text)
 creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig) =
     (creditor, debtor, amount, memo, submitter, nonce, hash, sig)
 
 
 creditLogToCreditTuple :: IssueCreditLog
-                       -> (Address, Address, Integer, Text, Address, Integer, Text, Text, Text)
+                       -> (Address, Address, Integer, Text, Integer, Text, Text, Text)
 creditLogToCreditTuple cl@(IssueCreditLog ucac creditor debtor amount nonce memo) =
-    (creditor, debtor, amount, memo, Addr.zero, nonce, hashCreditLog cl, "", "")
+    (creditor, debtor, amount, memo, nonce, hashCreditLog cl, "", "")

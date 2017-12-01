@@ -11,7 +11,6 @@ CREATE TABLE pending_credits (
 
 CREATE TABLE verified_credits (
     hash               CHAR(64) PRIMARY KEY,
-    submitter          CHAR(40),
     nonce              INT,
     creditor           CHAR(40),
     debtor             CHAR(40),

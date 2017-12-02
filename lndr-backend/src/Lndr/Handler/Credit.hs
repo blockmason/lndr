@@ -47,6 +47,8 @@ transactionsHandler (Just addr) = do
     pool <- dbConnectionPool <$> ask
     liftIO $ withResource pool $ Db.lookupCreditByAddress addr
 
+
+-- TODO make a custom sql query for this
 counterpartiesHandler :: Address -> LndrHandler [Address]
 counterpartiesHandler addr = nub . fmap takeCounterParty <$> transactionsHandler (Just addr)
     where takeCounterParty (IssueCreditLog _ c d _ _ _) = if c == addr then d else c

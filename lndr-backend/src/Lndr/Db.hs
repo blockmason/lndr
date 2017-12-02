@@ -63,7 +63,7 @@ instance FromRow IssueCreditLog
 
 insertNick :: Address -> Text -> Connection -> IO Int
 insertNick addr nick conn = fromIntegral <$>
-    execute conn "INSERT INTO nicknames (address, nickname) VALUES (?,?)" (addr, nick)
+    execute conn "INSERT INTO nicknames (address, nickname) VALUES (?,?) ON CONFLICT (address) DO UPDATE SET nickname = EXCLUDED.nickname" (addr, nick)
 
 
 lookupNick :: Address -> Connection -> IO (Maybe Text)

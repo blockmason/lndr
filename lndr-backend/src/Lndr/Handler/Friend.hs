@@ -7,6 +7,7 @@ import           Data.List ((\\), nub)
 import           Data.Maybe (fromMaybe)
 import           Data.Pool (withResource)
 import           Data.Text (Text)
+import qualified Data.Text as T
 import qualified Lndr.Db as Db
 import           ListT (toList)
 import           Lndr.Handler.Types
@@ -18,7 +19,7 @@ import           Servant.API
 nickHandler :: NickRequest -> LndrHandler NoContent
 nickHandler (NickRequest addr nick sig) = do
     pool <- dbConnectionPool <$> ask
-    liftIO . withResource pool $ Db.insertNick addr nick
+    liftIO . withResource pool . Db.insertNick addr $ T.toLower nick
     return NoContent
 
 
@@ -31,7 +32,7 @@ nickLookupHandler addr = do
 nickSearchHandler :: Text -> LndrHandler [NickInfo]
 nickSearchHandler nick = do
     pool <- dbConnectionPool <$> ask
-    liftIO . withResource pool $ Db.lookupAddresByNick nick
+    liftIO . withResource pool . Db.lookupAddresByNick $ T.toLower nick
 
 
 friendHandler :: Address -> LndrHandler [NickInfo]

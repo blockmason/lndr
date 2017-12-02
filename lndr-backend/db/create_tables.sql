@@ -1,12 +1,23 @@
 CREATE TABLE pending_credits (
     hash        CHAR(64) PRIMARY KEY,
     submitter   CHAR(40),
-    nonce       INT,
+    nonce       BIGINT,
     creditor    CHAR(40),
     debtor      CHAR(40),
-    amount      INT,
-    memo        CHAR(64),
+    amount      BIGINT,
+    memo        CHAR(32),
     signature   CHAR(130)
+);
+
+CREATE TABLE verified_credits (
+    hash               CHAR(64) PRIMARY KEY,
+    nonce              BIGINT,
+    creditor           CHAR(40),
+    debtor             CHAR(40),
+    amount             BIGINT,
+    memo               CHAR(32),
+    creditor_signature CHAR(130),
+    debtor_signature   CHAR(130)
 );
 
 CREATE TABLE friendships (

@@ -8,6 +8,7 @@ import qualified Data.ByteString as B
 import           Data.List (nub)
 import           Data.Pool (withResource)
 import           Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           ListT
 import qualified Lndr.Db as Db
@@ -29,7 +30,7 @@ rejectHandler(RejectRecord sig hash) = do
         Nothing -> throwError $ err404 {errBody = "credit hash does not refer to pending record"}
         Just pr@(CreditRecord creditor debtor _ _ _ submitter _ _) -> do
             -- recover address from sig
-            let signer = EU.ecrecover (stripHexPrefix sig) $ hash
+            let signer = EU.ecrecover (stripHexPrefix sig) hash
             case signer of
                 Left err -> throwError $ err400 {errBody = "unable to recover addr from sig"}
                 Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
@@ -39,27 +40,32 @@ rejectHandler(RejectRecord sig hash) = do
 
 
 transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
-transactionsHandler Nothing = lndrWeb3 (lndrLogs Nothing Nothing)
-transactionsHandler (Just addr) = (++) <$> lndrWeb3 (lndrLogs (Just addr) Nothing)
-                                       <*> lndrWeb3 (lndrLogs Nothing (Just addr))
-
+transactionsHandler Nothing = do
+    config <- serverConfig <$> ask
+    lndrWeb3 (lndrLogs config Nothing Nothing)
+transactionsHandler (Just addr) = do
+    pool <- dbConnectionPool <$> ask
+    liftIO $ withResource pool $ Db.lookupCreditByAddress addr
 
 counterpartiesHandler :: Address -> LndrHandler [Address]
 counterpartiesHandler addr = nub . fmap takeCounterParty <$> transactionsHandler (Just addr)
-    where takeCounterParty (IssueCreditLog _ c d _ _) = if c == addr then d else c
+    where takeCounterParty (IssueCreditLog _ c d _ _ _) = if c == addr then d else c
 
 
 balanceHandler :: Address -> LndrHandler Integer
-balanceHandler addr = web3ToLndr $ queryBalance addr
+balanceHandler addr = do
+    config <- serverConfig <$> ask
+    web3ToLndr $ queryBalance config addr
 
 
 twoPartyBalanceHandler :: Address -> Address -> LndrHandler Integer
 twoPartyBalanceHandler p1 p2 = do
-    debts <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs (Just p2) (Just p1))
-    credits <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs (Just p1) (Just p2))
+    config <- serverConfig <$> ask
+    debts <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs config (Just p2) (Just p1))
+    credits <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs config (Just p1) (Just p2))
     return $ credits - debts
     where
-        extractAmount (IssueCreditLog _ _ _ amount _) = amount
+        extractAmount (IssueCreditLog _ _ _ amount _ _) = amount
 
 
 pendingHandler :: Address -> LndrHandler [CreditRecord]
@@ -77,16 +83,15 @@ borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
 
 
 submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
-submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ _ _ sig) = do
-    pool <- dbConnectionPool <$> ask
-    (nonce, hash) <- lndrWeb3 $ hashCreditRecord signedRecord
+submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig) = do
+    (ServerState pool config) <- ask
+    (nonce, hash) <- lndrWeb3 $ hashCreditRecord config signedRecord
 
-    -- TODO verify that credit record memo is under 32 chars (all validation
-    -- should happen in separate function perhaps
+    if T.length memo <= 32
+        then return ()
+        else throwError (err400 {errBody = "Memo too long. Memos must be no longer than 32 characters."})
 
-    -- TODO hash matches
-
-    -- submitter is one of creditor or debtor
+    -- verify that submitter is one of creditor or debtor
     if submitterAddress == creditor || submitterAddress == debtor
         then (if creditor /= debtor
                     then return ()
@@ -104,16 +109,17 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ 
     pendingCredit <- liftIO . withResource pool $ Db.lookupPending hash
 
     case pendingCredit of
+        -- if the submitted credit record has a matching pending record,
+        -- finalize the transaction on the blockchain
         Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do
-            -- if the submitted credit record has a matching pending record,
-            -- finalize the transaction on the blockchain
-            if creditor /= submitterAddress
-                then finalizeTransaction (signature storedRecord)
-                                         (signature signedRecord)
-                                         storedRecord
-                else finalizeTransaction (signature signedRecord)
-                                         (signature storedRecord)
-                                         storedRecord
+            let (creditorSig, debtorSig) = if creditor /= submitterAddress
+                                            then (signature storedRecord, signature signedRecord)
+                                            else (signature signedRecord, signature storedRecord)
+
+            finalizeTransaction config creditorSig debtorSig storedRecord
+
+            -- saving transaction record
+            liftIO . withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord
             -- delete pending record after transaction finalization
             void . liftIO . withResource pool $ Db.deletePending hash
 
@@ -124,4 +130,6 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ _ _ 
 
 
 nonceHandler :: Address -> Address -> LndrHandler Nonce
-nonceHandler p1 p2 = fmap Nonce . web3ToLndr . runWeb3 $ queryNonce p1 p2
+nonceHandler p1 p2 = do
+    config <- serverConfig <$> ask
+    fmap Nonce . web3ToLndr . runWeb3 $ queryNonce config p1 p2

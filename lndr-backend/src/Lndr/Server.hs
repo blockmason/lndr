@@ -9,6 +9,7 @@ module Lndr.Server
     , lndrAPI
     , LndrHandler(..)
     , freshState
+    , updateDbFromLndrLogs
     , app
     ) where
 
@@ -16,7 +17,8 @@ import           Control.Monad.Except
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import           Data.ByteString.Lazy (ByteString)
-import           Data.Pool (createPool)
+import           Data.Either (either)
+import           Data.Pool (createPool, withResource)
 import           Data.Text (Text)
 import           Data.Text.Lazy (pack)
 import           Data.Text.Lazy.Encoding (encodeUtf8)
@@ -25,8 +27,10 @@ import qualified Data.Text.Lazy.Encoding as T
 import qualified Database.PostgreSQL.Simple as DB
 import           Lndr.Db
 import           Lndr.Docs
+import           Lndr.EthInterface
 import           Lndr.Handler
 import           Lndr.Types
+import           Network.Ethereum.Web3
 import           Network.Ethereum.Web3.Address
 import           Network.HTTP.Types
 import           Network.Wai
@@ -112,5 +116,12 @@ app :: ServerState -> Application
 app state = serve lndrAPI (readerServer state)
 
 
+updateDbFromLndrLogs :: ServerState -> IO ()
+updateDbFromLndrLogs (ServerState pool config) = void $ do
+    logs <- runWeb3 $ lndrLogs config Nothing Nothing
+    withResource pool . insertCredits $ either (const []) id logs
+
+
 freshState :: IO ServerState
 freshState = ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
+                         <*> loadConfig

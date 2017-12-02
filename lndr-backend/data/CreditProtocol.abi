@@ -4,32 +4,57 @@
     "inputs": [
       {
         "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "name": "ucacs",
-    "outputs": [
-      {
-        "name": "ucacContractAddr",
         "type": "address"
       },
       {
-        "name": "totalStakedTokens",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "stakedTokensMap",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_ucacContractAddr",
+        "type": "address"
+      },
+      {
+        "name": "creditor",
+        "type": "address"
+      },
+      {
+        "name": "debtor",
+        "type": "address"
+      },
+      {
+        "name": "amount",
         "type": "uint256"
       },
       {
-        "name": "txLevel",
-        "type": "uint256"
+        "name": "sig1",
+        "type": "bytes32[3]"
       },
       {
-        "name": "lastTxTimestamp",
-        "type": "uint256"
+        "name": "sig2",
+        "type": "bytes32[3]"
       },
       {
-        "name": "denomination",
+        "name": "memo",
         "type": "bytes32"
       }
     ],
+    "name": "issueCredit",
+    "outputs": [],
     "payable": false,
     "type": "function"
   },
@@ -67,10 +92,6 @@
         "type": "address"
       },
       {
-        "name": "_ucacId",
-        "type": "bytes32"
-      },
-      {
         "name": "_denomination",
         "type": "bytes32"
       },
@@ -101,17 +122,50 @@
     "constant": true,
     "inputs": [
       {
-        "name": "_ucacId",
-        "type": "bytes32"
-      }
-    ],
-    "name": "getUcacAddr",
-    "outputs": [
-      {
         "name": "",
         "type": "address"
       }
     ],
+    "name": "ucacs",
+    "outputs": [
+      {
+        "name": "ucacContractAddr",
+        "type": "address"
+      },
+      {
+        "name": "totalStakedTokens",
+        "type": "uint256"
+      },
+      {
+        "name": "txLevel",
+        "type": "uint256"
+      },
+      {
+        "name": "lastTxTimestamp",
+        "type": "uint256"
+      },
+      {
+        "name": "denomination",
+        "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_ucacContractAddr",
+        "type": "address"
+      },
+      {
+        "name": "_numTokens",
+        "type": "uint256"
+      }
+    ],
+    "name": "stakeTokens",
+    "outputs": [],
     "payable": false,
     "type": "function"
   },
@@ -154,15 +208,11 @@
     "constant": false,
     "inputs": [
       {
-        "name": "_ucacId",
-        "type": "bytes32"
-      },
-      {
-        "name": "_numTokens",
-        "type": "uint256"
+        "name": "_ucacContractAddr",
+        "type": "address"
       }
     ],
-    "name": "unstakeTokens",
+    "name": "executeUcacTx",
     "outputs": [],
     "payable": false,
     "type": "function"
@@ -171,15 +221,11 @@
     "constant": true,
     "inputs": [
       {
-        "name": "",
-        "type": "bytes32"
-      },
-      {
-        "name": "",
+        "name": "_ucacContractAddr",
         "type": "address"
       }
     ],
-    "name": "stakedTokensMap",
+    "name": "currentTxLevel",
     "outputs": [
       {
         "name": "",
@@ -190,52 +236,24 @@
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": true,
     "inputs": [
       {
-        "name": "_ucacId",
-        "type": "bytes32"
-      }
-    ],
-    "name": "executeUcacTx",
-    "outputs": [],
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "ucac",
-        "type": "bytes32"
-      },
-      {
-        "name": "creditor",
+        "name": "",
         "type": "address"
       },
       {
-        "name": "debtor",
+        "name": "",
         "type": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "name": "sig1",
-        "type": "bytes32[3]"
-      },
-      {
-        "name": "sig2",
-        "type": "bytes32[3]"
-      },
-      {
-        "name": "memo",
-        "type": "bytes32"
       }
     ],
-    "name": "issueCredit",
-    "outputs": [],
+    "name": "balances",
+    "outputs": [
+      {
+        "name": "",
+        "type": "int256"
+      }
+    ],
     "payable": false,
     "type": "function"
   },
@@ -262,58 +280,18 @@
     "type": "function"
   },
   {
-    "constant": true,
-    "inputs": [
-      {
-        "name": "",
-        "type": "bytes32"
-      },
-      {
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "balances",
-    "outputs": [
-      {
-        "name": "",
-        "type": "int256"
-      }
-    ],
-    "payable": false,
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [
-      {
-        "name": "_ucacId",
-        "type": "bytes32"
-      }
-    ],
-    "name": "currentTxLevel",
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "type": "function"
-  },
-  {
     "constant": false,
     "inputs": [
       {
-        "name": "_ucacId",
-        "type": "bytes32"
+        "name": "_ucacContractAddr",
+        "type": "address"
       },
       {
         "name": "_numTokens",
         "type": "uint256"
       }
     ],
-    "name": "stakeTokens",
+    "name": "unstakeTokens",
     "outputs": [],
     "payable": false,
     "type": "function"
@@ -381,7 +359,7 @@
       {
         "indexed": true,
         "name": "ucac",
-        "type": "bytes32"
+        "type": "address"
       },
       {
         "indexed": true,
@@ -400,6 +378,11 @@
       },
       {
         "indexed": false,
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
         "name": "memo",
         "type": "bytes32"
       }
@@ -413,11 +396,6 @@
       {
         "indexed": true,
         "name": "ucac",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "name": "contractAddr",
         "type": "address"
       },
       {

@@ -5,6 +5,7 @@
 
 module Lndr.Types
     ( ServerState(..)
+    , ServerConfig(..)
     , NickRequest(..)
     , NickInfo(..)
     , CreditRecord(..)
@@ -15,6 +16,7 @@ module Lndr.Types
 
 import           Data.Aeson
 import           Data.Aeson.TH
+import           Data.Configurator.Types
 import           Data.Either.Combinators (mapLeft)
 import           Data.Hashable
 import           Data.Pool
@@ -43,8 +45,9 @@ data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , creditor :: Address
                                      , debtor :: Address
                                      , amount :: Integer
+                                     , nonce :: Integer
                                      , memo :: Text
-                                     } deriving Show
+                                     } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''IssueCreditLog)
 
 -- `a` is a phantom type that indicates whether a record has been signed or not
@@ -75,4 +78,12 @@ data NickInfo = NickInfo { addr :: Address
                          } deriving Show
 $(deriveJSON defaultOptions ''NickInfo)
 
-data ServerState = ServerState { dbConnectionPool :: Pool Connection }
+data ServerConfig = ServerConfig { lndrUcacAddr :: Address
+                                 , creditProtocolAddress :: Address
+                                 , issueCreditEvent :: Text
+                                 , scanStartBlock :: Integer
+                                 }
+
+data ServerState = ServerState { dbConnectionPool :: Pool Connection
+                               , serverConfig :: ServerConfig
+                               }

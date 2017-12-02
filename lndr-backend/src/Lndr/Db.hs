@@ -21,6 +21,11 @@ module Lndr.Db (
     , lookupPendingByAddress
     , deletePending
     , insertPending
+
+    -- * 'verified_credit' table functions
+    , insertCredit
+    , insertCredits
+    , lookupCreditByAddress
     ) where
 
 import           Data.ByteString.Builder (byteString)
@@ -34,6 +39,7 @@ import           Database.PostgreSQL.Simple.ToField
 import           Lndr.EthInterface
 import           Lndr.Types
 import           Network.Ethereum.Web3
+import qualified Network.Ethereum.Web3.Address as Addr
 
 -- DB configuration
 
@@ -44,17 +50,19 @@ dbConfig = defaultConnectInfo { connectUser = "aupiff"
 -- DB Typeclass instances
 
 instance ToField Address where
-    toField addr = Escape . addrToBS  $ addr
+    toField = Escape . addrToBS
 
 instance FromField Address where
     fromField f dat = textToAddress <$> fromField f dat
 
 instance FromRow CreditRecord
 
+instance FromRow IssueCreditLog
+
 -- nicknames table manipulations
 
 insertNick :: Address -> Text -> Connection -> IO Int
-insertNick addr nick conn = fmap fromIntegral $
+insertNick addr nick conn = fromIntegral <$>
     execute conn "INSERT INTO nicknames (address, nickname) VALUES (?,?)" (addr, nick)
 
 
@@ -64,7 +72,7 @@ lookupNick addr conn = listToMaybe . fmap fromOnly <$>
 
 
 lookupAddresByNick :: Text -> Connection -> IO [NickInfo]
-lookupAddresByNick nick conn = fmap ((\x -> NickInfo x nick) . fromOnly) <$>
+lookupAddresByNick nick conn = fmap ((`NickInfo` nick) . fromOnly) <$>
     (query conn "SELECT address FROM nicknames WHERE nickname = ?" (Only nick) :: IO [Only Address])
 
 -- friendships table manipulations
@@ -103,5 +111,31 @@ deletePending hash conn = fromIntegral <$>
 
 
 insertPending :: CreditRecord -> Connection -> IO Int
-insertPending (CreditRecord creditor debtor amount memo submitter nonce hash sig) conn =
-    fmap fromIntegral $ execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, submitter, nonce, hash, sig)
+insertPending creditRecord conn =
+    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord)
+
+
+insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
+insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo submitter nonce hash _) conn =
+    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig)
+
+
+insertCredits :: [IssueCreditLog] -> Connection -> IO Int
+insertCredits creditLogs conn =
+    fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING" (creditLogToCreditTuple <$> creditLogs)
+
+
+lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
+lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
+
+
+creditRecordToPendingTuple :: CreditRecord
+                           -> (Address, Address, Integer, Text, Address, Integer, Text, Text)
+creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig) =
+    (creditor, debtor, amount, memo, submitter, nonce, hash, sig)
+
+
+creditLogToCreditTuple :: IssueCreditLog
+                       -> (Address, Address, Integer, Text, Integer, Text, Text, Text)
+creditLogToCreditTuple cl@(IssueCreditLog ucac creditor debtor amount nonce memo) =
+    (creditor, debtor, amount, memo, nonce, hashCreditLog cl, "", "")

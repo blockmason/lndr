@@ -25,9 +25,11 @@ library
                      , aeson
                      , base16-bytestring
                      , bytestring
+                     , configurator
                      , cryptonite
                      , either
                      , ethereumhs-util
+                     , filepath
                      , hashable
                      , http-types
                      , listsafe

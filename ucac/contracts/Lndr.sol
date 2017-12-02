@@ -5,7 +5,7 @@ pragma solidity 0.4.15;
 // a workaround for this.
 import "credit-protocol/contracts/CreditProtocol.sol";
 
-contract FriendInDebt {
+contract Lndr {
     function allowTransaction(address creditor, address debtor, uint256 amount) public returns (bool) {
         return true;
     }

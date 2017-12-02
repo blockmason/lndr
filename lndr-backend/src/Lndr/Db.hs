@@ -27,6 +27,7 @@ module Lndr.Db (
     , insertCredits
     , lookupCreditByAddress
     , userBalance
+    , twoPartyBalance
     ) where
 
 import           Data.ByteString.Builder (byteString)
@@ -134,6 +135,13 @@ userBalance :: Address -> Connection -> IO Integer
 userBalance addr conn = do
     [Only credit] <- query conn "SELECT SUM(amount) FROM verified_credits WHERE creditor = ?" (Only addr)
     [Only debt] <- query conn "SELECT SUM(amount) FROM verified_credits WHERE debtor = ?" (Only addr)
+    return $ credit - debt
+
+
+twoPartyBalance :: Address -> Address -> Connection -> IO Integer
+twoPartyBalance addr counterparty conn = do
+    [Only credit] <- query conn "SELECT SUM(amount) FROM verified_credits WHERE creditor = ? AND debtor = ?" (addr, counterparty)
+    [Only debt] <- query conn "SELECT SUM(amount) FROM verified_credits WHERE creditor = ? AND debtor = ?" (counterparty, addr)
     return $ credit - debt
 
 

@@ -60,12 +60,8 @@ balanceHandler addr = do
 
 twoPartyBalanceHandler :: Address -> Address -> LndrHandler Integer
 twoPartyBalanceHandler p1 p2 = do
-    config <- serverConfig <$> ask
-    debts <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs config (Just p2) (Just p1))
-    credits <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs config (Just p1) (Just p2))
-    return $ credits - debts
-    where
-        extractAmount (IssueCreditLog _ _ _ amount _ _) = amount
+    pool <- dbConnectionPool <$> ask
+    liftIO . withResource pool $ Db.twoPartyBalance p1 p2
 
 
 pendingHandler :: Address -> LndrHandler [CreditRecord]

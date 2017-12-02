@@ -26,11 +26,15 @@ module Lndr.Db (
     , insertCredit
     , insertCredits
     , lookupCreditByAddress
+    , userBalance
+    , twoPartyBalance
     ) where
+
 
 import           Data.ByteString.Builder (byteString)
 import           Data.Maybe (listToMaybe)
-import           Data.Text
+import           Data.Scientific
+import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Database.PostgreSQL.Simple
@@ -127,6 +131,20 @@ insertCredits creditLogs conn =
 
 lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
 lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
+
+
+userBalance :: Address -> Connection -> IO Integer
+userBalance addr conn = do
+    [Only credit] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ?" (Only addr) :: IO [Only Scientific]
+    [Only debt] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE debtor = ?" (Only addr) :: IO [Only Scientific]
+    return . floor $ credit - debt
+
+
+twoPartyBalance :: Address -> Address -> Connection -> IO Integer
+twoPartyBalance addr counterparty conn = do
+    [Only credit] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ?" (addr, counterparty) :: IO [Only Scientific]
+    [Only debt] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ?" (counterparty, addr) :: IO [Only Scientific]
+    return . floor $ credit - debt
 
 
 creditRecordToPendingTuple :: CreditRecord

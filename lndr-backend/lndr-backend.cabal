@@ -38,6 +38,7 @@ library
                      , mtl
                      , postgresql-simple
                      , resource-pool
+                     , scientific
                      , servant
                      , servant-docs
                      , servant-server

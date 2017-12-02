@@ -47,6 +47,8 @@ transactionsHandler (Just addr) = do
     pool <- dbConnectionPool <$> ask
     liftIO $ withResource pool $ Db.lookupCreditByAddress addr
 
+
+-- TODO make a custom sql query for this
 counterpartiesHandler :: Address -> LndrHandler [Address]
 counterpartiesHandler addr = nub . fmap takeCounterParty <$> transactionsHandler (Just addr)
     where takeCounterParty (IssueCreditLog _ c d _ _ _) = if c == addr then d else c
@@ -54,24 +56,20 @@ counterpartiesHandler addr = nub . fmap takeCounterParty <$> transactionsHandler
 
 balanceHandler :: Address -> LndrHandler Integer
 balanceHandler addr = do
-    config <- serverConfig <$> ask
-    web3ToLndr $ queryBalance config addr
+    pool <- dbConnectionPool <$> ask
+    liftIO . withResource pool $ Db.userBalance addr
 
 
 twoPartyBalanceHandler :: Address -> Address -> LndrHandler Integer
 twoPartyBalanceHandler p1 p2 = do
-    config <- serverConfig <$> ask
-    debts <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs config (Just p2) (Just p1))
-    credits <- sum . fmap extractAmount <$> lndrWeb3 (lndrLogs config (Just p1) (Just p2))
-    return $ credits - debts
-    where
-        extractAmount (IssueCreditLog _ _ _ amount _ _) = amount
+    pool <- dbConnectionPool <$> ask
+    liftIO . withResource pool $ Db.twoPartyBalance p1 p2
 
 
 pendingHandler :: Address -> LndrHandler [CreditRecord]
 pendingHandler addr = do
     pool <- dbConnectionPool <$> ask
-    liftIO $ withResource pool $ Db.lookupPendingByAddress addr
+    liftIO . withResource pool $ Db.lookupPendingByAddress addr
 
 
 lendHandler :: CreditRecord -> LndrHandler NoContent

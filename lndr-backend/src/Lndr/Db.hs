@@ -26,11 +26,12 @@ module Lndr.Db (
     , insertCredit
     , insertCredits
     , lookupCreditByAddress
+    , userBalance
     ) where
 
 import           Data.ByteString.Builder (byteString)
 import           Data.Maybe (listToMaybe)
-import           Data.Text
+import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Database.PostgreSQL.Simple
@@ -127,6 +128,13 @@ insertCredits creditLogs conn =
 
 lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
 lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
+
+
+userBalance :: Address -> Connection -> IO Integer
+userBalance addr conn = do
+    [Only credit] <- query conn "SELECT SUM(amount) FROM verified_credits WHERE creditor = ?" (Only addr)
+    [Only debt] <- query conn "SELECT SUM(amount) FROM verified_credits WHERE debtor = ?" (Only addr)
+    return $ credit - debt
 
 
 creditRecordToPendingTuple :: CreditRecord

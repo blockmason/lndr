@@ -54,8 +54,8 @@ counterpartiesHandler addr = nub . fmap takeCounterParty <$> transactionsHandler
 
 balanceHandler :: Address -> LndrHandler Integer
 balanceHandler addr = do
-    config <- serverConfig <$> ask
-    web3ToLndr $ queryBalance config addr
+    pool <- dbConnectionPool <$> ask
+    liftIO . withResource pool $ Db.userBalance addr
 
 
 twoPartyBalanceHandler :: Address -> Address -> LndrHandler Integer
@@ -71,7 +71,7 @@ twoPartyBalanceHandler p1 p2 = do
 pendingHandler :: Address -> LndrHandler [CreditRecord]
 pendingHandler addr = do
     pool <- dbConnectionPool <$> ask
-    liftIO $ withResource pool $ Db.lookupPendingByAddress addr
+    liftIO . withResource pool $ Db.lookupPendingByAddress addr
 
 
 lendHandler :: CreditRecord -> LndrHandler NoContent

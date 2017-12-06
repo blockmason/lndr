@@ -2,6 +2,9 @@
 
 Server, CLI, and UCAC Solidity contracts.
 
+[![Build
+Status](https://travis-ci.org/blockmason/lndr.svg?branch=master)](https://travis-ci.org/blockmason/lndr)
+
 ## API
 
 Dev server answering requests at `http://34.202.214.156:80`

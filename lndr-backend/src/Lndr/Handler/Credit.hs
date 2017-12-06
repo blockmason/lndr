@@ -83,7 +83,8 @@ borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
 submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
 submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig) = do
     (ServerState pool config) <- ask
-    (nonce, hash) <- lndrWeb3 $ hashCreditRecord config signedRecord
+    nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
+    hash <- lndrWeb3 $ hashCreditRecord config nonce signedRecord
 
     if T.length memo <= 32
         then return ()

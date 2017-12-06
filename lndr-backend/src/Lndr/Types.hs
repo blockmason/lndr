@@ -37,7 +37,7 @@ instance ToHttpApiData Address where
 instance FromHttpApiData Address where
   parseUrlPiece = mapLeft T.pack . Addr.fromText
 
-newtype Nonce = Nonce { mkNonce :: Integer } deriving (Show, Generic)
+newtype Nonce = Nonce { unNonce :: Integer } deriving (Show, Generic)
 instance ToJSON Nonce where
     toJSON (Nonce x) = toJSON x
 

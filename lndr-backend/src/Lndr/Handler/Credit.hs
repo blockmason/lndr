@@ -10,7 +10,7 @@ import           Data.Pool (withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import           ListT
+import           ListT hiding (null)
 import qualified Lndr.Db as Db
 import           Lndr.EthInterface
 import           Lndr.Handler.Types
@@ -89,9 +89,15 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     unless (T.length memo <= 32) $
         throwError (err400 {errBody = "Memo too long. Memos must be no longer than 32 characters."})
     unless (submitterAddress == creditor || submitterAddress == debtor) $
-        throwError (err400 {errBody = "Submitter is not creditor nor debtor"})
+        throwError (err400 {errBody = "Submitter is not creditor nor debtor."})
     unless (creditor /= debtor) $
-        throwError (err400 {errBody = "creditor and debtor cannot be equal"})
+        throwError (err400 {errBody = "Creditor and debtor cannot be equal."})
+
+    existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses creditor debtor
+
+    unless (null existingPending) $
+        throwError (err400 {errBody = "A pending credit record already exists for the two users."})
+
 
     signer <- web3ToLndr . return . EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
 

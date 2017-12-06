@@ -19,6 +19,7 @@ module Lndr.Db (
     -- * 'pending_credit' table functions
     , lookupPending
     , lookupPendingByAddress
+    , lookupPendingByAddresses
     , deletePending
     , insertPending
 
@@ -108,6 +109,10 @@ lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, a
 
 lookupPendingByAddress :: Address -> Connection -> IO [CreditRecord]
 lookupPendingByAddress addr conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
+
+
+lookupPendingByAddresses :: Address -> Address -> Connection -> IO [CreditRecord]
+lookupPendingByAddresses p1 p2 conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (p1, p2, p2, p1)
 
 
 deletePending :: Text -> Connection -> IO Int

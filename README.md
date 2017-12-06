@@ -53,6 +53,8 @@ sudo apt-get install autoconf
 sudo apt-get install libtool
 
 # install postgres
+# add postgres ppa https://www.ubuntuupdates.org/ppa/postgresql?dist=trusty-pgdg
+
 
 sudo apt-get install postgresql postgresql-contrib libpq-dev
 # https://wixelhq.com/blog/how-to-install-postgresql-on-ubuntu-remote-access

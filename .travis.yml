@@ -1,0 +1,23 @@
+dist: trusty
+sudo: required
+language: haskell
+
+# caching for fast builds
+cache:
+  directories:
+  - $HOME/.ghc
+  - $HOME/.cabal
+  - $HOME/.stack
+
+before_install:
+    - wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+    - sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main" >> /etc/apt/sources.list.d/postgresql.list'
+    - sudo apt-get update -q
+    - sudo apt-get install autoconf libtool
+    - sudo apt-get install postgresql postgresql-contrib libpq-dev
+    - mkdir -p ~/.local/bin; export PATH=$HOME/.local/bin:$PATH; travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack';
+    - stack setup
+
+script:
+    - cd lndr-backend
+    - stack --no-terminal install

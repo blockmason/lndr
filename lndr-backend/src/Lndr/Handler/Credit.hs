@@ -129,5 +129,5 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
 
 nonceHandler :: Address -> Address -> LndrHandler Nonce
 nonceHandler p1 p2 = do
-    config <- serverConfig <$> ask
-    fmap Nonce . web3ToLndr . runWeb3 $ queryNonce config p1 p2
+    pool <- dbConnectionPool <$> ask
+    liftIO . withResource pool $ Db.twoPartyNonce p1 p2

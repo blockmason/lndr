@@ -28,6 +28,7 @@ module Lndr.Db (
     , lookupCreditByAddress
     , userBalance
     , twoPartyBalance
+    , twoPartyNonce
     ) where
 
 
@@ -145,6 +146,12 @@ twoPartyBalance addr counterparty conn = do
     [Only credit] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ?" (addr, counterparty) :: IO [Only Scientific]
     [Only debt] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ?" (counterparty, addr) :: IO [Only Scientific]
     return . floor $ credit - debt
+
+
+twoPartyNonce :: Address -> Address -> Connection -> IO Nonce
+twoPartyNonce addr counterparty conn = do
+    [Only nonce] <- query conn "SELECT COALESCE(MAX(nonce), 0) FROM verified_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
+    return . Nonce . floor $ nonce
 
 
 creditRecordToPendingTuple :: CreditRecord

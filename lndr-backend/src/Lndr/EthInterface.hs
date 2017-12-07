@@ -55,10 +55,16 @@ loadConfig = do config <- load [Required $ "data" </> "lndr-server.config"]
                 cpAddr <- fromJust <$> lookup config "creditProtocolAddress"
                 issueCreditEvent <- fromJust <$> lookup config "issueCreditEvent"
                 scanStartBlock <- fromJust <$> lookup config "scanStartBlock"
+                dbUser <- fromJust <$> lookup config "dbUser"
+                dbUserPassword <- fromJust <$> lookup config "dbUserPassword"
+                dbName <- fromJust <$> lookup config "dbName"
                 return $ ServerConfig (textToAddress lndrUcacAddr)
                                       (textToAddress cpAddr)
                                       issueCreditEvent
                                       scanStartBlock
+                                      dbUser
+                                      dbUserPassword
+                                      dbName
 
 
 bytesDecode :: Text -> Bytes
@@ -84,6 +90,9 @@ decomposeSig sig = (sigR, sigS, sigV)
 [abiFrom|data/CreditProtocol.abi|]
 
 
+-- WARNING: this should be unused; balance calculation should be done using db
+-- tables
+-- TODO: use this in future db/blockchain consistency checks
 queryBalance :: ServerConfig -> Address -> IO (Either Web3Error Integer)
 queryBalance config userAddress = runWeb3 . fmap adjustSigned $ balances (creditProtocolAddress config) (lndrUcacAddr config) userAddress
     -- TODO fix this issue in `hs-web3`
@@ -91,22 +100,23 @@ queryBalance config userAddress = runWeb3 . fmap adjustSigned $ balances (credit
                          | otherwise        = x
           maxNeg = 2^256
 
-
+-- WARNING: this should be unused; nonce calculation should be done using db
+-- tables
+-- TODO: use this in future db/blockchain consistency checks
 queryNonce :: Provider a => ServerConfig -> Address -> Address -> Web3 a Integer
 queryNonce config = getNonce (creditProtocolAddress config)
 
 
-hashCreditRecord :: forall b. Provider b => ServerConfig -> CreditRecord -> Web3 b (Integer, Text)
-hashCreditRecord config r@(CreditRecord creditor debtor amount _ _ _ _ _) = do
-                nonce <- queryNonce config creditor debtor
+hashCreditRecord :: forall b. Provider b => ServerConfig -> Nonce -> CreditRecord -> Web3 b Text
+hashCreditRecord config nonce r@(CreditRecord creditor debtor amount _ _ _ _ _) = do
                 let message = T.concat $
                       stripHexPrefix <$> [ Addr.toText (lndrUcacAddr config)
                                          , Addr.toText creditor
                                          , Addr.toText debtor
                                          , integerToHex amount
-                                         , integerToHex nonce
+                                         , integerToHex $ unNonce nonce
                                          ]
-                return (nonce, EU.hashText message)
+                return $ EU.hashText message
 
 
 hashCreditLog :: IssueCreditLog -> Text

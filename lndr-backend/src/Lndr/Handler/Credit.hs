@@ -10,7 +10,7 @@ import           Data.Pool (withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import           ListT
+import           ListT hiding (null)
 import qualified Lndr.Db as Db
 import           Lndr.EthInterface
 import           Lndr.Handler.Types
@@ -83,25 +83,27 @@ borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
 submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
 submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig) = do
     (ServerState pool config) <- ask
-    (nonce, hash) <- lndrWeb3 $ hashCreditRecord config signedRecord
+    nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
+    hash <- lndrWeb3 $ hashCreditRecord config nonce signedRecord
 
-    if T.length memo <= 32
-        then return ()
-        else throwError (err400 {errBody = "Memo too long. Memos must be no longer than 32 characters."})
+    unless (T.length memo <= 32) $
+        throwError (err400 {errBody = "Memo too long. Memos must be no longer than 32 characters."})
+    unless (submitterAddress == creditor || submitterAddress == debtor) $
+        throwError (err400 {errBody = "Submitter is not creditor nor debtor."})
+    unless (creditor /= debtor) $
+        throwError (err400 {errBody = "Creditor and debtor cannot be equal."})
 
-    -- verify that submitter is one of creditor or debtor
-    if submitterAddress == creditor || submitterAddress == debtor
-        then (if creditor /= debtor
-                    then return ()
-                    else throwError (err400 {errBody = "creditor and debtor cannot be equal"}))
-        else throwError (err400 {errBody = "Submitter is not creditor nor debtor"})
+    existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses creditor debtor
+
+    unless (null existingPending) $
+        throwError (err400 {errBody = "A pending credit record already exists for the two users."})
+
 
     signer <- web3ToLndr . return . EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
 
     -- submitter signed the tx
-    if textToAddress signer == submitterAddress
-        then return ()
-        else throwError (err400 {errBody = "Bad submitter sig"})
+    unless (textToAddress signer == submitterAddress) $
+        throwError (err400 {errBody = "Bad submitter sig"})
 
     -- check if hash is already registered in pending txs
     pendingCredit <- liftIO . withResource pool $ Db.lookupPending hash
@@ -129,5 +131,5 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
 
 nonceHandler :: Address -> Address -> LndrHandler Nonce
 nonceHandler p1 p2 = do
-    config <- serverConfig <$> ask
-    fmap Nonce . web3ToLndr . runWeb3 $ queryNonce config p1 p2
+    pool <- dbConnectionPool <$> ask
+    liftIO . withResource pool $ Db.twoPartyNonce p1 p2

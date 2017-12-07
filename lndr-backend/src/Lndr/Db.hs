@@ -2,11 +2,8 @@
 {-# LANGUAGE TupleSections #-}
 
 module Lndr.Db (
-    -- * DB Configuration
-      dbConfig
-
     -- * 'nicknames' table functions
-    , insertNick
+      insertNick
     , lookupNick
     , lookupAddresByNick
 
@@ -19,6 +16,7 @@ module Lndr.Db (
     -- * 'pending_credit' table functions
     , lookupPending
     , lookupPendingByAddress
+    , lookupPendingByAddresses
     , deletePending
     , insertPending
 
@@ -28,6 +26,7 @@ module Lndr.Db (
     , lookupCreditByAddress
     , userBalance
     , twoPartyBalance
+    , twoPartyNonce
     ) where
 
 
@@ -44,12 +43,6 @@ import           Lndr.EthInterface
 import           Lndr.Types
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
-
--- DB configuration
-
-dbConfig :: ConnectInfo
-dbConfig = defaultConnectInfo { connectUser = "aupiff"
-                              , connectDatabase = "lndr" }
 
 -- DB Typeclass instances
 
@@ -109,6 +102,10 @@ lookupPendingByAddress :: Address -> Connection -> IO [CreditRecord]
 lookupPendingByAddress addr conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
 
 
+lookupPendingByAddresses :: Address -> Address -> Connection -> IO [CreditRecord]
+lookupPendingByAddresses p1 p2 conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (p1, p2, p2, p1)
+
+
 deletePending :: Text -> Connection -> IO Int
 deletePending hash conn = fromIntegral <$>
     execute conn "DELETE FROM pending_credits WHERE hash = ?" (Only hash)
@@ -145,6 +142,12 @@ twoPartyBalance addr counterparty conn = do
     [Only credit] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ?" (addr, counterparty) :: IO [Only Scientific]
     [Only debt] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ?" (counterparty, addr) :: IO [Only Scientific]
     return . floor $ credit - debt
+
+
+twoPartyNonce :: Address -> Address -> Connection -> IO Nonce
+twoPartyNonce addr counterparty conn = do
+    [Only nonce] <- query conn "SELECT COALESCE(MAX(nonce), 0) FROM verified_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
+    return . Nonce . floor $ nonce
 
 
 creditRecordToPendingTuple :: CreditRecord

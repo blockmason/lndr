@@ -2,11 +2,8 @@
 {-# LANGUAGE TupleSections #-}
 
 module Lndr.Db (
-    -- * DB Configuration
-      dbConfig
-
     -- * 'nicknames' table functions
-    , insertNick
+      insertNick
     , lookupNick
     , lookupAddresByNick
 
@@ -46,12 +43,6 @@ import           Lndr.EthInterface
 import           Lndr.Types
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
-
--- DB configuration
-
-dbConfig :: ConnectInfo
-dbConfig = defaultConnectInfo { connectUser = "aupiff"
-                              , connectDatabase = "lndr" }
 
 -- DB Typeclass instances
 

@@ -123,5 +123,13 @@ updateDbFromLndrLogs (ServerState pool config) = void $ do
 
 
 freshState :: IO ServerState
-freshState = ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
-                         <*> loadConfig
+freshState = do
+    serverConfig <- loadConfig
+
+    let dbConfig = defaultConnectInfo { connectUser = dbUser serverConfig
+                                      , connectPassword = dbUserPassword serverConfig
+                                      , connectDatabase = dbName serverConfig
+                                      }
+
+    ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
+                <*> serverConfig

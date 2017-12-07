@@ -20,10 +20,9 @@ import           Data.ByteString.Lazy (ByteString)
 import           Data.Either (either)
 import           Data.Pool (createPool, withResource)
 import           Data.Text (Text)
-import           Data.Text.Lazy (pack)
+import qualified Data.Text as T
 import           Data.Text.Lazy.Encoding (encodeUtf8)
-import qualified Data.Text.Lazy as T
-import qualified Data.Text.Lazy.Encoding as T
+import qualified Data.Text.Lazy as LT
 import qualified Database.PostgreSQL.Simple as DB
 import           Lndr.Db
 import           Lndr.Docs
@@ -69,7 +68,7 @@ apiDocs = docs lndrAPI
 
 docsBS :: ByteString
 docsBS = encodeUtf8
-       . pack
+       . LT.pack
        . markdown
        $ docsWithIntros [intro] lndrAPI
   where intro = DocIntro "LNDR Server" ["Web service API"]
@@ -126,10 +125,10 @@ freshState :: IO ServerState
 freshState = do
     serverConfig <- loadConfig
 
-    let dbConfig = defaultConnectInfo { connectUser = dbUser serverConfig
-                                      , connectPassword = dbUserPassword serverConfig
-                                      , connectDatabase = dbName serverConfig
-                                      }
+    let dbConfig = DB.defaultConnectInfo { DB.connectUser = T.unpack $ dbUser serverConfig
+                                         , DB.connectPassword = T.unpack $ dbUserPassword serverConfig
+                                         , DB.connectDatabase = T.unpack $ dbName serverConfig
+                                         }
 
     ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
-                <*> serverConfig
+                <*> pure serverConfig

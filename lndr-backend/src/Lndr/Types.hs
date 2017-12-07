@@ -82,6 +82,9 @@ data ServerConfig = ServerConfig { lndrUcacAddr :: Address
                                  , creditProtocolAddress :: Address
                                  , issueCreditEvent :: Text
                                  , scanStartBlock :: Integer
+                                 , dbUser :: Text
+                                 , dbUserPassword :: Text
+                                 , dbName :: Text
                                  }
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection

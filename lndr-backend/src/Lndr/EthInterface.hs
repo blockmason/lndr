@@ -55,10 +55,16 @@ loadConfig = do config <- load [Required $ "data" </> "lndr-server.config"]
                 cpAddr <- fromJust <$> lookup config "creditProtocolAddress"
                 issueCreditEvent <- fromJust <$> lookup config "issueCreditEvent"
                 scanStartBlock <- fromJust <$> lookup config "scanStartBlock"
+                dbUser <- fromJust <$> lookup config "dbUser"
+                dbUserPassword <- fromJust <$> lookup config "dbUserPassword"
+                dbName <- fromJust <$> lookup config "dbName"
                 return $ ServerConfig (textToAddress lndrUcacAddr)
                                       (textToAddress cpAddr)
                                       issueCreditEvent
                                       scanStartBlock
+                                      dbUser
+                                      dbUserPassword
+                                      dbName
 
 
 bytesDecode :: Text -> Bytes

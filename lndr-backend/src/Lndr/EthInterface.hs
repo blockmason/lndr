@@ -89,7 +89,6 @@ decomposeSig sig = (sigR, sigS, sigV)
 -- create functions to call CreditProtocol contract
 [abiFrom|data/CreditProtocol.abi|]
 
-
 -- WARNING: this should be unused; balance calculation should be done using db
 -- tables
 -- TODO: use this in future db/blockchain consistency checks

@@ -6,6 +6,8 @@ module Lndr.CLI.Args (
       LndrCmd(..)
     , programModes
     , runMode
+    , setNick
+    , getNick
     ) where
 
 import           Data.Data

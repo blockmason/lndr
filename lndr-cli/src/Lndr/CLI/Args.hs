@@ -6,6 +6,10 @@ module Lndr.CLI.Args (
       LndrCmd(..)
     , programModes
     , runMode
+    , setNick
+    , getNick
+    , addFriend
+    , getFriends
     ) where
 
 import           Data.Data

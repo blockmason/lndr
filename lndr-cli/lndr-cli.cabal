@@ -50,3 +50,17 @@ executable lndr
                      , text
                      , web3
   default-language:    Haskell2010
+
+
+test-suite server-cli-integration
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base
+                     , lndr-cli
+                     , lndr-backend
+                     , HUnit
+                     , test-framework
+                     , test-framework-hunit
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010

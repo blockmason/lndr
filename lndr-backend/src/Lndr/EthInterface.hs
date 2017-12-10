@@ -50,7 +50,7 @@ import           System.FilePath
 -- TODO do this with error handling & check if configurator supports loading
 -- datatypes
 loadConfig :: IO ServerConfig
-loadConfig = do config <- load [Required $ "data" </> "lndr-server.config"]
+loadConfig = do config <- load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
                 lndrUcacAddr <- fromJust <$> lookup config "lndrUcacAddr"
                 cpAddr <- fromJust <$> lookup config "creditProtocolAddress"
                 issueCreditEvent <- fromJust <$> lookup config "issueCreditEvent"

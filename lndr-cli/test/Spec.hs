@@ -39,7 +39,7 @@ nickTest = do
     queriedNick <- getNick testUrl testAddress1
     assertEqual "nick is set and queryable" queriedNick testNick1
     httpCode <- setNick testUrl (NickRequest testAddress2 testNick1 "")
-    assertEqual "duplicate nick is rejected with user error" 400 httpCode
+    assertBool "duplicate nick is rejected with user error" (httpCode /= 204)
     httpCode <- setNick testUrl (NickRequest testAddress1 testNick2 "")
     assertEqual "change nick success" 204 httpCode
     queriedNick <- getNick testUrl testAddress1

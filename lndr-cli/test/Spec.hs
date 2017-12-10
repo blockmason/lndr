@@ -23,43 +23,33 @@ main = defaultMain tests
 
 
 tests :: [Test]
-tests = [ testGroup "Signing"
-            [ testCase "setting nick" setNickTest
-            , testCase "duplicate nick rejected" duplicateNickTest
-            , testCase "change nick" changeNickTest
+tests = [ testGroup "Nicks"
+            [ testCase "setting nicks and friends" nickTest
             ]
-        , testGroup "Friends"
-            [ testCase "add friend" addFriendTest ]
+        , testGroup "Credits"
+            [ testCase "lend money to friend" basicLendTest
+            ]
         ]
 
 
-setNickTest :: Assertion
-setNickTest = do
+nickTest :: Assertion
+nickTest = do
     httpCode <- setNick testUrl (NickRequest testAddress1 testNick1 "")
     assertEqual "add friend success" 204 httpCode
     queriedNick <- getNick testUrl testAddress1
     assertEqual "nick is set and queryable" queriedNick testNick1
-
-
-duplicateNickTest :: Assertion
-duplicateNickTest = do
     httpCode <- setNick testUrl (NickRequest testAddress2 testNick1 "")
     assertEqual "duplicate nick is rejected with user error" 400 httpCode
-
-
-changeNickTest :: Assertion
-changeNickTest = do
     httpCode <- setNick testUrl (NickRequest testAddress1 testNick2 "")
     assertEqual "change nick success" 204 httpCode
     queriedNick <- getNick testUrl testAddress1
     assertEqual "nick is set and queryable" queriedNick testNick2
-
-
-addFriendTest :: Assertion
-addFriendTest = do
     -- add a friend to first account
     httpCode <- addFriend testUrl testAddress1 testAddress2
     assertEqual "add friend success" 204 httpCode
     -- verify that friend has been added
     nicks <- getFriends testUrl testAddress1
     assertEqual "friend properly added" ((\(NickInfo addr _) -> addr) <$> nicks) [testAddress2]
+
+basicLendTest :: Assertion
+basicLendTest = putStrLn "yet to be implemented"

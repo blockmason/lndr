@@ -3,6 +3,7 @@
 
 module Main where
 
+import           Control.Concurrent (threadDelay)
 import           Lndr.CLI.Args
 import           Lndr.Types
 import           Test.Framework
@@ -55,6 +56,7 @@ nickTest = do
     assertEqual "add friend success" 204 httpCode
     -- verify that friend has been added
     friends <- getFriends testUrl testAddress1
+    threadDelay 1000000 -- delay one second
     assertEqual "friend properly added" [testAddress2] ((\(NickInfo addr _) -> addr) <$> friends)
 
 

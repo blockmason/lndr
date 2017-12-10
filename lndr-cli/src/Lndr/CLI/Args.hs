@@ -8,6 +8,8 @@ module Lndr.CLI.Args (
     , runMode
     , setNick
     , getNick
+    , addFriend
+    , getFriends
     ) where
 
 import           Data.Data

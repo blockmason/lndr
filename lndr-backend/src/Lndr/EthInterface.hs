@@ -27,7 +27,7 @@ import           Data.Default
 import           Data.Either (rights)
 import           Data.Either.Combinators (fromRight, mapLeft)
 import           Data.List.Safe ((!!))
-import           Data.Maybe (fromJust)
+import           Data.Maybe (fromMaybe)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -52,15 +52,15 @@ import           System.FilePath
 -- datatypes
 loadConfig :: IO ServerConfig
 loadConfig = do config <- load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
-                lndrUcacAddr <- fromJust <$> lookup config "lndrUcacAddr"
-                cpAddr <- fromJust <$> lookup config "creditProtocolAddress"
-                issueCreditEvent <- fromJust <$> lookup config "issueCreditEvent"
-                scanStartBlock <- fromJust <$> lookup config "scanStartBlock"
-                dbUser <- fromJust <$> lookup config "dbUser"
-                dbUserPassword <- fromJust <$> lookup config "dbUserPassword"
-                dbName <- fromJust <$> lookup config "dbName"
-                executionAddress <- fromJust <$> lookup config "executionAddress"
-                gasPrice <- fromJust <$> lookup config "gasPrice"
+                lndrUcacAddr <- fromMaybe (error "lndrUcacAddr") <$> lookup config "lndrUcacAddr"
+                cpAddr <- fromMaybe (error "cpAddr") <$> lookup config "creditProtocolAddress"
+                issueCreditEvent <- fromMaybe (error "issueCreditEvent") <$> lookup config "issueCreditEvent"
+                scanStartBlock <- fromMaybe (error "scanStartBlock") <$> lookup config "scanStartBlock"
+                dbUser <- fromMaybe (error "dbUser") <$> lookup config "dbUser"
+                dbUserPassword <- fromMaybe (error "dbUserPassword") <$> lookup config "dbUserPassword"
+                dbName <- fromMaybe (error "dbName") <$> lookup config "dbName"
+                executionAddress <- fromMaybe (error "executionAddress") <$> lookup config "executionAddress"
+                gasPrice <- fromMaybe (error "gasPrice") <$> lookup config "gasPrice"
                 return $ ServerConfig (textToAddress lndrUcacAddr)
                                       (textToAddress cpAddr)
                                       issueCreditEvent

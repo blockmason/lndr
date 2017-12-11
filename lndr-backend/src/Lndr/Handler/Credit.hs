@@ -93,12 +93,6 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     unless (creditor /= debtor) $
         throwError (err400 {errBody = "Creditor and debtor cannot be equal."})
 
-    existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses creditor debtor
-
-    unless (null existingPending) $
-        throwError (err400 {errBody = "A pending credit record already exists for the two users."})
-
-
     signer <- web3ToLndr . return . EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
 
     -- submitter signed the tx
@@ -124,7 +118,11 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             void . liftIO . withResource pool $ Db.deletePending hash
 
         -- if no matching transaction is found, create pending transaction
-        Nothing -> void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash })
+        Nothing -> do
+            existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses creditor debtor
+            unless (null existingPending) $
+                throwError (err400 {errBody = "A pending credit record already exists for the two users."})
+            void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash })
 
     return NoContent
 

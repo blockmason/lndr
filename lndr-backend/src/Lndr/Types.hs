@@ -78,13 +78,15 @@ data NickInfo = NickInfo { addr :: Address
                          } deriving Show
 $(deriveJSON defaultOptions ''NickInfo)
 
-data ServerConfig = ServerConfig { lndrUcacAddr :: Address
-                                 , creditProtocolAddress :: Address
-                                 , issueCreditEvent :: Text
-                                 , scanStartBlock :: Integer
-                                 , dbUser :: Text
-                                 , dbUserPassword :: Text
-                                 , dbName :: Text
+data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
+                                 , creditProtocolAddress :: !Address
+                                 , issueCreditEvent :: !Text
+                                 , scanStartBlock :: !Integer
+                                 , dbUser :: !Text
+                                 , dbUserPassword :: !Text
+                                 , dbName :: !Text
+                                 , executionAddress :: !Address
+                                 , gasPrice :: !Integer
                                  }
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection

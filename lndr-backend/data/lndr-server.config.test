@@ -1,7 +1,9 @@
 lndrUcacAddr = "0x7899b83071d9704af0b132859a04bb1698a3acaf"
 creditProtocolAddress = "0xd5ec73eac35fc9dd6c3f440bce314779fed09f60"
 issueCreditEvent = "0xcbc85a9af1e8adce13cbeff2e71299b0f3243d7ef1eaec93a9a281e939aceb7b"
-scanStartBlock = 4660200
+scanStartBlock = 0
 dbUser = "test"
 dbUserPassword = "test"
 dbName = "lndrtest"
+executionAddress = "0x198e13017d2333712bd942d8b028610b95c363da"
+gasPrice = 200000000

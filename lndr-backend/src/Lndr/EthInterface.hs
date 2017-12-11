@@ -23,6 +23,7 @@ import qualified Data.ByteString.Base16 as BS16
 import           Data.Configurator
 import           Data.Configurator.Types
 import           Data.Data
+import           Data.Default
 import           Data.Either (rights)
 import           Data.Either.Combinators (fromRight, mapLeft)
 import           Data.List.Safe ((!!))
@@ -58,6 +59,8 @@ loadConfig = do config <- load [Required $ "lndr-backend" </> "data" </> "lndr-s
                 dbUser <- fromJust <$> lookup config "dbUser"
                 dbUserPassword <- fromJust <$> lookup config "dbUserPassword"
                 dbName <- fromJust <$> lookup config "dbName"
+                executionAddress <- fromJust <$> lookup config "executionAddress"
+                gasPrice <- fromJust <$> lookup config "gasPrice"
                 return $ ServerConfig (textToAddress lndrUcacAddr)
                                       (textToAddress cpAddr)
                                       issueCreditEvent
@@ -65,6 +68,8 @@ loadConfig = do config <- load [Required $ "lndr-backend" </> "data" </> "lndr-s
                                       dbUser
                                       dbUserPassword
                                       dbName
+                                      (textToAddress executionAddress)
+                                      gasPrice
 
 
 bytesDecode :: Text -> Bytes
@@ -93,17 +98,20 @@ decomposeSig sig = (sigR, sigS, sigV)
 -- tables
 -- TODO: use this in future db/blockchain consistency checks
 queryBalance :: ServerConfig -> Address -> IO (Either Web3Error Integer)
-queryBalance config userAddress = runWeb3 . fmap adjustSigned $ balances (creditProtocolAddress config) (lndrUcacAddr config) userAddress
+queryBalance config userAddress = runWeb3 . fmap adjustSigned $ balances callVal (lndrUcacAddr config) userAddress
     -- TODO fix this issue in `hs-web3`
     where adjustSigned x | x > div maxNeg 2 = x - maxNeg
                          | otherwise        = x
           maxNeg = 2^256
+          callVal = def { callTo = creditProtocolAddress config }
 
 -- WARNING: this should be unused; nonce calculation should be done using db
 -- tables
 -- TODO: use this in future db/blockchain consistency checks
 queryNonce :: Provider a => ServerConfig -> Address -> Address -> Web3 a Integer
-queryNonce config = getNonce (creditProtocolAddress config)
+queryNonce config = getNonce callVal
+    where callVal = def { callTo = creditProtocolAddress config }
+
 
 
 hashCreditRecord :: forall b. Provider b => ServerConfig -> Nonce -> CreditRecord -> Web3 b Text
@@ -137,13 +145,17 @@ finalizeTransaction config sig1 sig2 r@(CreditRecord creditor debtor amount memo
           s2@(sig2r, sig2s, sig2v) = decomposeSig sig2
           encodedMemo :: BytesN 32
           encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
-      runWeb3 $ issueCredit (creditProtocolAddress config) (0 :: Ether)
+      runWeb3 $ issueCredit callVal
                             (lndrUcacAddr config)
                             creditor debtor amount
                             [ sig1r, sig1s, sig1v ]
                             [ sig2r, sig2s, sig2v ]
                             encodedMemo
-
+    where callVal = def { callFrom = Just $ executionAddress config
+                        , callTo = creditProtocolAddress config
+                        , callGasPrice = Just . Quantity $ gasPrice config
+                        , callValue = Just . Quantity $ 0
+                        }
 
 lndrLogs :: Provider a => ServerConfig -> Maybe Address -> Maybe Address
          -> Web3 a [IssueCreditLog]

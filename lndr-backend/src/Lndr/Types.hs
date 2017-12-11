@@ -85,6 +85,8 @@ data ServerConfig = ServerConfig { lndrUcacAddr :: Address
                                  , dbUser :: Text
                                  , dbUserPassword :: Text
                                  , dbName :: Text
+                                 , executionAddress :: Address
+                                 , gasPrice :: Integer
                                  }
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection

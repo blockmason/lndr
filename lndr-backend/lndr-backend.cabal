@@ -27,6 +27,7 @@ library
                      , bytestring
                      , configurator
                      , cryptonite
+                     , data-default
                      , either
                      , ethereumhs-util
                      , filepath

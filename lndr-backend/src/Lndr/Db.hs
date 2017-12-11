@@ -146,7 +146,7 @@ twoPartyBalance addr counterparty conn = do
 
 twoPartyNonce :: Address -> Address -> Connection -> IO Nonce
 twoPartyNonce addr counterparty conn = do
-    [Only nonce] <- query conn "SELECT COALESCE(MAX(nonce), 0) FROM verified_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
+    [Only nonce] <- query conn "SELECT COALESCE(MAX(nonce) + 1, 0) FROM verified_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
     return . Nonce . floor $ nonce
 
 

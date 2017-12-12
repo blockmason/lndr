@@ -23,6 +23,7 @@ module Lndr.Db (
     -- * 'verified_credit' table functions
     , insertCredit
     , insertCredits
+    , allCredits
     , lookupCreditByAddress
     , userBalance
     , twoPartyBalance
@@ -124,6 +125,10 @@ insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo sub
 insertCredits :: [IssueCreditLog] -> Connection -> IO Int
 insertCredits creditLogs conn =
     fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING" (creditLogToCreditTuple <$> creditLogs)
+
+
+allCredits :: Connection -> IO [IssueCreditLog]
+allCredits conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits" ()
 
 
 lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]

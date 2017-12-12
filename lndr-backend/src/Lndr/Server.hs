@@ -19,13 +19,14 @@ import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import           Data.ByteString.Lazy (ByteString)
 import           Data.Either (either)
+import           Data.List ((\\))
 import           Data.Pool (createPool, withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import qualified Data.Text.Lazy as LT
 import qualified Database.PostgreSQL.Simple as DB
-import           Lndr.Db
+import qualified Lndr.Db as Db
 import           Lndr.Docs
 import           Lndr.EthInterface
 import           Lndr.Handler
@@ -124,7 +125,16 @@ updateDbFromLndrLogs :: ServerState -> IO ()
 updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
     config <- takeMVar configMVar
     logs <- runWeb3 $ lndrLogs config Nothing Nothing
-    withResource pool . insertCredits $ either (const []) id logs
+    withResource pool . Db.insertCredits $ either (const []) id logs
+
+
+unsubmittedTransactions :: ServerState -> IO [IssueCreditLog]
+unsubmittedTransactions (ServerState pool configMVar) = do
+    config <- takeMVar configMVar
+    blockchainCreditsE <- runWeb3 $ lndrLogs config Nothing Nothing
+    let blockchainCredits = either (const []) id blockchainCreditsE
+    dbCredits <- withResource pool Db.allCredits
+    return $ dbCredits \\ blockchainCredits
 
 
 freshState :: IO ServerState

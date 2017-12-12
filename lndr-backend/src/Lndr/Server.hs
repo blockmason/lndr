@@ -57,6 +57,7 @@ type LndrAPI =
    :<|> "counterparties" :> Capture "user" Address :> Get '[JSON] [Address]
    :<|> "balance" :> Capture "user" Address :> Get '[JSON] Integer
    :<|> "balance" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Integer
+   :<|> "gas_price" :> Get '[JSON] Integer
    :<|> "docs" :> Raw
 
 
@@ -89,6 +90,7 @@ server = transactionsHandler
     :<|> counterpartiesHandler
     :<|> balanceHandler
     :<|> twoPartyBalanceHandler
+    :<|> gasPriceHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS

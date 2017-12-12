@@ -16,6 +16,7 @@ library
                      , Lndr.Db
                      , Lndr.EthInterface
                      , Lndr.Handler
+                     , Lndr.Handler.Admin
                      , Lndr.Handler.Credit
                      , Lndr.Handler.Friend
                      , Lndr.Handler.Types

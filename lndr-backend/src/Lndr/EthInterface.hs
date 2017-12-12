@@ -48,28 +48,27 @@ import           Prelude hiding (lookup, (!!))
 import           System.FilePath
 
 
--- TODO do this with error handling & check if configurator supports loading
--- datatypes
 loadConfig :: IO ServerConfig
-loadConfig = do config <- load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
-                lndrUcacAddr <- fromMaybe (error "lndrUcacAddr") <$> lookup config "lndrUcacAddr"
-                cpAddr <- fromMaybe (error "cpAddr") <$> lookup config "creditProtocolAddress"
-                issueCreditEvent <- fromMaybe (error "issueCreditEvent") <$> lookup config "issueCreditEvent"
-                scanStartBlock <- fromMaybe (error "scanStartBlock") <$> lookup config "scanStartBlock"
-                dbUser <- fromMaybe (error "dbUser") <$> lookup config "dbUser"
-                dbUserPassword <- fromMaybe (error "dbUserPassword") <$> lookup config "dbUserPassword"
-                dbName <- fromMaybe (error "dbName") <$> lookup config "dbName"
-                executionAddress <- fromMaybe (error "executionAddress") <$> lookup config "executionAddress"
-                gasPrice <- fromMaybe (error "gasPrice") <$> lookup config "gasPrice"
-                return $ ServerConfig (textToAddress lndrUcacAddr)
-                                      (textToAddress cpAddr)
-                                      issueCreditEvent
-                                      scanStartBlock
-                                      dbUser
-                                      dbUserPassword
-                                      dbName
-                                      (textToAddress executionAddress)
-                                      gasPrice
+loadConfig = do
+    config <- load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
+    lndrUcacAddr <- fromMaybe (error "lndrUcacAddr") <$> lookup config "lndrUcacAddr"
+    cpAddr <- fromMaybe (error "cpAddr") <$> lookup config "creditProtocolAddress"
+    issueCreditEvent <- fromMaybe (error "issueCreditEvent") <$> lookup config "issueCreditEvent"
+    scanStartBlock <- fromMaybe (error "scanStartBlock") <$> lookup config "scanStartBlock"
+    dbUser <- fromMaybe (error "dbUser") <$> lookup config "dbUser"
+    dbUserPassword <- fromMaybe (error "dbUserPassword") <$> lookup config "dbUserPassword"
+    dbName <- fromMaybe (error "dbName") <$> lookup config "dbName"
+    executionAddress <- fromMaybe (error "executionAddress") <$> lookup config "executionAddress"
+    gasPrice <- fromMaybe (error "gasPrice") <$> lookup config "gasPrice"
+    return $ ServerConfig (textToAddress lndrUcacAddr)
+                          (textToAddress cpAddr)
+                          issueCreditEvent
+                          scanStartBlock
+                          dbUser
+                          dbUserPassword
+                          dbName
+                          (textToAddress executionAddress)
+                          gasPrice
 
 
 bytesDecode :: Text -> Bytes
@@ -91,27 +90,9 @@ decomposeSig sig = (sigR, sigS, sigV)
           sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
           sigV = BytesN . bytesDecode . alignR . T.take 2 . T.drop 128 $ strippedSig
 
--- create functions to call CreditProtocol contract
+
+-- Create functions to call CreditProtocol contract. Currently, only `issueCredit` is used.
 [abiFrom|data/CreditProtocol.abi|]
-
--- WARNING: this should be unused; balance calculation should be done using db
--- tables
--- TODO: use this in future db/blockchain consistency checks
-queryBalance :: ServerConfig -> Address -> IO (Either Web3Error Integer)
-queryBalance config userAddress = runWeb3 . fmap adjustSigned $ balances callVal (lndrUcacAddr config) userAddress
-    -- TODO fix this issue in `hs-web3`
-    where adjustSigned x | x > div maxNeg 2 = x - maxNeg
-                         | otherwise        = x
-          maxNeg = 2^256
-          callVal = def { callTo = creditProtocolAddress config }
-
--- WARNING: this should be unused; nonce calculation should be done using db
--- tables
--- TODO: use this in future db/blockchain consistency checks
-queryNonce :: Provider a => ServerConfig -> Address -> Address -> Web3 a Integer
-queryNonce config = getNonce callVal
-    where callVal = def { callTo = creditProtocolAddress config }
-
 
 
 hashCreditRecord :: forall b. Provider b => ServerConfig -> Nonce -> CreditRecord -> Web3 b Text
@@ -174,13 +155,21 @@ interpretUcacLog change = do
     ucacAddr <- bytes32ToAddress <=< (!! 1) $ changeTopics change
     creditorAddr <- bytes32ToAddress <=< (!! 2) $ changeTopics change
     debtorAddr <- bytes32ToAddress <=< (!! 3) $ changeTopics change
+    let amount = hexToInteger . takeNthByte32 0 $ changeData change
+        nonce = hexToInteger . takeNthByte32 1 $ changeData change
+        memo = T.decodeUtf8 . fst . BS16.decode . T.encodeUtf8 . takeNthByte32 2 $ changeData change
     pure $ IssueCreditLog ucacAddr
                           creditorAddr
                           debtorAddr
-                          -- TODO clean this up
-                          (hexToInteger . T.take 64 . stripHexPrefix $ changeData change)
-                          (hexToInteger . T.take 64 . T.drop 64 . stripHexPrefix $ changeData change)
-                          (T.decodeUtf8 . fst . BS16.decode . T.encodeUtf8 . T.take 64 . T.drop 128 . stripHexPrefix $ changeData change)
+                          amount
+                          nonce
+                          memo
+
+
+takeNthByte32 :: Int -> Text -> Text
+takeNthByte32 n = T.take byte32CharLength . T.drop (n * byte32CharLength) . stripHexPrefix
+    where byte32CharLength = 64
+
 
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the
 -- 40-char hex representation of an address
@@ -192,7 +181,6 @@ addressToBytes32 :: Address -> Text
 addressToBytes32 = T.append "0x" . alignR . Addr.toText
 
 
--- TODO handle the error better
 textToAddress :: Text -> Address
 textToAddress = fromRight (error "bad address") . Addr.fromText
 
@@ -220,5 +208,10 @@ align v = (v <> zeros, zeros <> v)
   where zerosLen = 64 - (T.length v `mod` 64)
         zeros = T.replicate zerosLen "0"
 
+
+alignL :: Text -> Text
 alignL = fst . align
+
+
+alignR :: Text -> Text
 alignR = snd . align

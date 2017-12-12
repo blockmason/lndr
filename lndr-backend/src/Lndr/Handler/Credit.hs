@@ -25,18 +25,16 @@ rejectHandler :: RejectRecord -> LndrHandler NoContent
 rejectHandler(RejectRecord sig hash) = do
     pool <- dbConnectionPool <$> ask
     pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
-    -- TODO this is easily de-cascaded
-    case pendingRecordM of
-        Nothing -> throwError $ err404 {errBody = "credit hash does not refer to pending record"}
-        Just pr@(CreditRecord creditor debtor _ _ _ submitter _ _) -> do
-            -- recover address from sig
-            let signer = EU.ecrecover (stripHexPrefix sig) hash
-            case signer of
-                Left err -> throwError $ err400 {errBody = "unable to recover addr from sig"}
-                Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
-                                    then do liftIO . withResource pool $ Db.deletePending hash
-                                            return NoContent
-                                    else throwError $ err400 {errBody = "bad rejection sig"}
+    let hashNotFound = throwError $ err404 {errBody = "credit hash does not refer to pending record"}
+    (CreditRecord creditor debtor _ _ _ submitter _ _) <- maybe hashNotFound pure pendingRecordM
+    -- recover address from sig
+    let signer = EU.ecrecover (stripHexPrefix sig) hash
+    case signer of
+        Left err -> throwError $ err400 {errBody = "unable to recover addr from sig"}
+        Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
+                            then do liftIO . withResource pool $ Db.deletePending hash
+                                    return NoContent
+                            else throwError $ err400 {errBody = "bad rejection sig"}
 
 
 transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]

@@ -174,13 +174,21 @@ interpretUcacLog change = do
     ucacAddr <- bytes32ToAddress <=< (!! 1) $ changeTopics change
     creditorAddr <- bytes32ToAddress <=< (!! 2) $ changeTopics change
     debtorAddr <- bytes32ToAddress <=< (!! 3) $ changeTopics change
+    let amount = hexToInteger . takeNthByte32 0 $ changeData change
+        nonce = hexToInteger . takeNthByte32 1 $ changeData change
+        memo = T.decodeUtf8 . fst . BS16.decode . T.encodeUtf8 . takeNthByte32 2 $ changeData change
     pure $ IssueCreditLog ucacAddr
                           creditorAddr
                           debtorAddr
-                          -- TODO clean this up
-                          (hexToInteger . T.take 64 . stripHexPrefix $ changeData change)
-                          (hexToInteger . T.take 64 . T.drop 64 . stripHexPrefix $ changeData change)
-                          (T.decodeUtf8 . fst . BS16.decode . T.encodeUtf8 . T.take 64 . T.drop 128 . stripHexPrefix $ changeData change)
+                          amount
+                          nonce
+                          memo
+
+
+takeNthByte32 :: Int -> Text -> Text
+takeNthByte32 n = T.take byte32CharLength . T.drop (n * byte32CharLength) . stripHexPrefix
+    where byte32CharLength = 64
+
 
 -- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the
 -- 40-char hex representation of an address
@@ -192,7 +200,6 @@ addressToBytes32 :: Address -> Text
 addressToBytes32 = T.append "0x" . alignR . Addr.toText
 
 
--- TODO handle the error better
 textToAddress :: Text -> Address
 textToAddress = fromRight (error "bad address") . Addr.fromText
 

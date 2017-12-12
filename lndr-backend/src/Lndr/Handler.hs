@@ -25,6 +25,7 @@ module Lndr.Handler (
 
       -- * Admin Handlers
     , gasPriceHandler
+    , setGasPriceHandler
     ) where
 
 import           Lndr.Handler.Admin

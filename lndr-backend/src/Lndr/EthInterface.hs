@@ -90,27 +90,9 @@ decomposeSig sig = (sigR, sigS, sigV)
           sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
           sigV = BytesN . bytesDecode . alignR . T.take 2 . T.drop 128 $ strippedSig
 
--- create functions to call CreditProtocol contract
+
+-- Create functions to call CreditProtocol contract. Currently, only `issueCredit` is used.
 [abiFrom|data/CreditProtocol.abi|]
-
--- WARNING: this should be unused; balance calculation should be done using db
--- tables
--- TODO: use this in future db/blockchain consistency checks
-queryBalance :: ServerConfig -> Address -> IO (Either Web3Error Integer)
-queryBalance config userAddress = runWeb3 . fmap adjustSigned $ balances callVal (lndrUcacAddr config) userAddress
-    -- TODO fix this issue in `hs-web3`
-    where adjustSigned x | x > div maxNeg 2 = x - maxNeg
-                         | otherwise        = x
-          maxNeg = 2^256
-          callVal = def { callTo = creditProtocolAddress config }
-
--- WARNING: this should be unused; nonce calculation should be done using db
--- tables
--- TODO: use this in future db/blockchain consistency checks
-queryNonce :: Provider a => ServerConfig -> Address -> Address -> Web3 a Integer
-queryNonce config = getNonce callVal
-    where callVal = def { callTo = creditProtocolAddress config }
-
 
 
 hashCreditRecord :: forall b. Provider b => ServerConfig -> Nonce -> CreditRecord -> Web3 b Text
@@ -226,5 +208,10 @@ align v = (v <> zeros, zeros <> v)
   where zerosLen = 64 - (T.length v `mod` 64)
         zeros = T.replicate zerosLen "0"
 
+
+alignL :: Text -> Text
 alignL = fst . align
+
+
+alignR :: Text -> Text
 alignR = snd . align

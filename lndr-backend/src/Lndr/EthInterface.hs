@@ -48,28 +48,27 @@ import           Prelude hiding (lookup, (!!))
 import           System.FilePath
 
 
--- TODO do this with error handling & check if configurator supports loading
--- datatypes
 loadConfig :: IO ServerConfig
-loadConfig = do config <- load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
-                lndrUcacAddr <- fromMaybe (error "lndrUcacAddr") <$> lookup config "lndrUcacAddr"
-                cpAddr <- fromMaybe (error "cpAddr") <$> lookup config "creditProtocolAddress"
-                issueCreditEvent <- fromMaybe (error "issueCreditEvent") <$> lookup config "issueCreditEvent"
-                scanStartBlock <- fromMaybe (error "scanStartBlock") <$> lookup config "scanStartBlock"
-                dbUser <- fromMaybe (error "dbUser") <$> lookup config "dbUser"
-                dbUserPassword <- fromMaybe (error "dbUserPassword") <$> lookup config "dbUserPassword"
-                dbName <- fromMaybe (error "dbName") <$> lookup config "dbName"
-                executionAddress <- fromMaybe (error "executionAddress") <$> lookup config "executionAddress"
-                gasPrice <- fromMaybe (error "gasPrice") <$> lookup config "gasPrice"
-                return $ ServerConfig (textToAddress lndrUcacAddr)
-                                      (textToAddress cpAddr)
-                                      issueCreditEvent
-                                      scanStartBlock
-                                      dbUser
-                                      dbUserPassword
-                                      dbName
-                                      (textToAddress executionAddress)
-                                      gasPrice
+loadConfig = do
+    config <- load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
+    lndrUcacAddr <- fromMaybe (error "lndrUcacAddr") <$> lookup config "lndrUcacAddr"
+    cpAddr <- fromMaybe (error "cpAddr") <$> lookup config "creditProtocolAddress"
+    issueCreditEvent <- fromMaybe (error "issueCreditEvent") <$> lookup config "issueCreditEvent"
+    scanStartBlock <- fromMaybe (error "scanStartBlock") <$> lookup config "scanStartBlock"
+    dbUser <- fromMaybe (error "dbUser") <$> lookup config "dbUser"
+    dbUserPassword <- fromMaybe (error "dbUserPassword") <$> lookup config "dbUserPassword"
+    dbName <- fromMaybe (error "dbName") <$> lookup config "dbName"
+    executionAddress <- fromMaybe (error "executionAddress") <$> lookup config "executionAddress"
+    gasPrice <- fromMaybe (error "gasPrice") <$> lookup config "gasPrice"
+    return $ ServerConfig (textToAddress lndrUcacAddr)
+                          (textToAddress cpAddr)
+                          issueCreditEvent
+                          scanStartBlock
+                          dbUser
+                          dbUserPassword
+                          dbName
+                          (textToAddress executionAddress)
+                          gasPrice
 
 
 bytesDecode :: Text -> Bytes

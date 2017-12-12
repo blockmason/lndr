@@ -13,6 +13,7 @@ module Lndr.Server
     , app
     ) where
 
+import           Control.Concurrent.MVar
 import           Control.Monad.Except
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
@@ -118,7 +119,8 @@ app state = serve lndrAPI (readerServer state)
 
 
 updateDbFromLndrLogs :: ServerState -> IO ()
-updateDbFromLndrLogs (ServerState pool config) = void $ do
+updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
+    config <- takeMVar configMVar
     logs <- runWeb3 $ lndrLogs config Nothing Nothing
     withResource pool . insertCredits $ either (const []) id logs
 
@@ -126,11 +128,10 @@ updateDbFromLndrLogs (ServerState pool config) = void $ do
 freshState :: IO ServerState
 freshState = do
     serverConfig <- loadConfig
-
     let dbConfig = DB.defaultConnectInfo { DB.connectUser = T.unpack $ dbUser serverConfig
                                          , DB.connectPassword = T.unpack $ dbUserPassword serverConfig
                                          , DB.connectDatabase = T.unpack $ dbName serverConfig
                                          }
 
     ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
-                <*> pure serverConfig
+                <*> newMVar serverConfig

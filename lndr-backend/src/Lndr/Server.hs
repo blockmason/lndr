@@ -134,7 +134,20 @@ unsubmittedTransactions (ServerState pool configMVar) = do
     blockchainCreditsE <- runWeb3 $ lndrLogs config Nothing Nothing
     let blockchainCredits = either (const []) id blockchainCreditsE
     dbCredits <- withResource pool Db.allCredits
-    return $ dbCredits \\ blockchainCredits
+    return $ (setUcac (lndrUcacAddr config) <$> dbCredits) \\ blockchainCredits
+
+
+resubmitTransactions :: ServerState -> IO ()
+resubmitTransactions state@(ServerState pool configMVar) = do
+    txs <- unsubmittedTransactions state
+    config <- takeMVar configMVar
+    mapM_ (resubmit config) txs
+    where
+        resubmit config creditLog = do
+            let creditHash = hashCreditLog creditLog
+            crM <- withResource pool $ Db.lookupCreditByHash creditHash
+            case crM of
+                Just (cr, sig1, sig2) -> void $ finalizeTransaction config sig1 sig2 cr
 
 
 freshState :: IO ServerState

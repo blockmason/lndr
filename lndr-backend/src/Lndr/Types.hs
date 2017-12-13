@@ -9,7 +9,7 @@ module Lndr.Types
     , NickRequest(..)
     , NickInfo(..)
     , CreditRecord(..)
-    , IssueCreditLog(IssueCreditLog)
+    , IssueCreditLog(IssueCreditLog, ucac)
     , RejectRecord(RejectRecord)
     , Nonce(..)
     ) where

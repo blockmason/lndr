@@ -25,6 +25,7 @@ module Lndr.Db (
     , insertCredits
     , allCredits
     , lookupCreditByAddress
+    , lookupCreditByHash
     , userBalance
     , twoPartyBalance
     , twoPartyNonce
@@ -127,13 +128,25 @@ insertCredits creditLogs conn =
     fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING" (creditLogToCreditTuple <$> creditLogs)
 
 
+-- TODO fix this creditor, creditor repetition
 allCredits :: Connection -> IO [IssueCreditLog]
 allCredits conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits" ()
 
-
+-- TODO fix this creditor, creditor repetition
 lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
 lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
 
+
+-- TODO fix this creditor, creditor repetition
+lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text))
+lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
+    where process (creditor, debtor, amount, nonce, memo, sig1, sig2) = ( CreditRecord creditor debtor
+                                                                                       amount memo
+                                                                                       creditor nonce hash sig1
+                                                                        , sig1
+                                                                        , sig2
+                                                                        )
+-- lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE hash = ?" (Only hash)
 
 userBalance :: Address -> Connection -> IO Integer
 userBalance addr conn = do

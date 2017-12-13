@@ -106,7 +106,10 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
                                             then (signature storedRecord, signature signedRecord)
                                             else (signature signedRecord, signature storedRecord)
 
-            finalizeTransaction config creditorSig debtorSig storedRecord
+            -- update gas price to latest safelow value
+            updatedConfig <- safelowUpdate config configTVar
+
+            finalizeTransaction updatedConfig creditorSig debtorSig storedRecord
 
             -- saving transaction record
             liftIO . withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord

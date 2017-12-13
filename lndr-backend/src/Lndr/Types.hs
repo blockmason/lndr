@@ -12,6 +12,7 @@ module Lndr.Types
     , IssueCreditLog(IssueCreditLog, ucac)
     , RejectRecord(RejectRecord)
     , Nonce(..)
+    , GasStationResponse(..)
     ) where
 
 import           Control.Concurrent.STM.TVar
@@ -92,3 +93,8 @@ data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
 data ServerState = ServerState { dbConnectionPool :: Pool Connection
                                , serverConfig :: TVar ServerConfig
                                }
+
+data GasStationResponse = GasStationResponse { safeLow :: Double
+                                             , safeLowWait :: Double
+                                             } deriving Show
+$(deriveJSON defaultOptions ''GasStationResponse)

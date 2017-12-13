@@ -148,6 +148,7 @@ resubmitTransactions state@(ServerState pool configMVar) = do
             crM <- withResource pool $ Db.lookupCreditByHash creditHash
             case crM of
                 Just (cr, sig1, sig2) -> void $ finalizeTransaction config sig1 sig2 cr
+                Nothing               -> pure ()
 
 
 freshState :: IO ServerState

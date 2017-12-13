@@ -5,6 +5,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -fno-cse #-}
@@ -115,11 +116,14 @@ hashCreditLog (IssueCreditLog ucac creditor debtor amount nonce _) =
 safelowUpdate :: ServerConfig -> TVar ServerConfig -> IO ServerConfig
 safelowUpdate config configTVar = do
     req <- HTTP.parseRequest "https://ethgasstation.info/json/ethgasAPI.json"
-    gasStationResponse <- HTTP.getResponseBody <$> HTTP.httpJSON req
-    let lastestSafeLow = ceiling $ safeLowScaling * safeLow gasStationResponse
-        updatedConfg = config { gasPrice = lastestSafeLow }
-    liftIO . atomically . modifyTVar configTVar $ const updatedConfg
-    return updatedConfg
+    gasStationResponseE <- try (HTTP.getResponseBody <$> HTTP.httpJSON req)
+    case gasStationResponseE of
+        Right gasStationResponse -> do
+            let lastestSafeLow = ceiling $ safeLowScaling * safeLow gasStationResponse
+                updatedConfg = config { gasPrice = lastestSafeLow }
+            liftIO . atomically . modifyTVar configTVar $ const updatedConfg
+            return updatedConfg
+        Left (_ :: HTTP.HttpException) -> return config
     where
         safeLowScaling = 100000000 -- eth gas station returns prices in DeciGigaWei
 

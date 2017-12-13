@@ -30,6 +30,9 @@ tests = [ testGroup "Nicks"
         , testGroup "Credits"
             [ testCase "lend money to friend" basicLendTest
             ]
+        , testGroup "Admin"
+            [ testCase "get and set gas price" basicGasTest
+            ]
         ]
 
 
@@ -63,3 +66,16 @@ nickTest = do
 
 basicLendTest :: Assertion
 basicLendTest = putStrLn "yet to be implemented"
+
+
+basicGasTest :: Assertion
+basicGasTest = do
+    price <- getGasPrice testUrl
+
+    -- double gas price
+    httpCode <- setGasPrice testUrl testAddress1 (price * 2)
+    assertEqual "add friend success" 204 httpCode
+
+    -- check that gas price has been doubled
+    newPrice <- getGasPrice testUrl
+    assertEqual "gas price doubled" newPrice (price * 2)

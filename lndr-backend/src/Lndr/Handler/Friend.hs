@@ -3,13 +3,10 @@
 module Lndr.Handler.Friend where
 
 import           Control.Monad.Reader
-import           Data.List ((\\), nub)
-import           Data.Maybe (fromMaybe)
 import           Data.Pool (withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Lndr.Db as Db
-import           ListT (toList)
 import           Lndr.Handler.Types
 import           Lndr.Types
 import           Network.Ethereum.Web3

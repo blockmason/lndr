@@ -23,26 +23,24 @@ module Lndr.Db (
     -- * 'verified_credit' table functions
     , insertCredit
     , insertCredits
+    , allCredits
     , lookupCreditByAddress
+    , lookupCreditByHash
     , userBalance
     , twoPartyBalance
     , twoPartyNonce
     ) where
 
 
-import           Data.ByteString.Builder (byteString)
 import           Data.Maybe (listToMaybe)
 import           Data.Scientific
 import           Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import           Database.PostgreSQL.Simple
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.ToField
 import           Lndr.EthInterface
 import           Lndr.Types
 import           Network.Ethereum.Web3
-import qualified Network.Ethereum.Web3.Address as Addr
 
 -- DB Typeclass instances
 
@@ -76,7 +74,7 @@ lookupAddresByNick nick conn = fmap ((`NickInfo` nick) . fromOnly) <$>
 
 addFriends :: Address -> [Address] -> Connection -> IO Int
 addFriends addr addresses conn = fromIntegral <$>
-    executeMany conn "INSERT INTO friendships (origin, friend) VALUES (?,?)" ((addr,) <$> addresses)
+    executeMany conn "INSERT INTO friendships (origin, friend) VALUES (?,?) ON CONFLICT ON CONSTRAINT friendships_origin_friend_key DO NOTHING" ((addr,) <$> addresses)
 
 
 removeFriends :: Address -> [Address] -> Connection -> IO Int
@@ -117,7 +115,7 @@ insertPending creditRecord conn =
 
 
 insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
-insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo submitter nonce hash _) conn =
+insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _) conn =
     fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig)
 
 
@@ -126,9 +124,25 @@ insertCredits creditLogs conn =
     fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING" (creditLogToCreditTuple <$> creditLogs)
 
 
+-- TODO fix this creditor, creditor repetition
+allCredits :: Connection -> IO [IssueCreditLog]
+allCredits conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits" ()
+
+-- TODO fix this creditor, creditor repetition
 lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
 lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
 
+
+-- TODO fix this creditor, creditor repetition
+lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text))
+lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
+    where process (creditor, debtor, amount, nonce, memo, sig1, sig2) = ( CreditRecord creditor debtor
+                                                                                       amount memo
+                                                                                       creditor nonce hash sig1
+                                                                        , sig1
+                                                                        , sig2
+                                                                        )
+-- lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE hash = ?" (Only hash)
 
 userBalance :: Address -> Connection -> IO Integer
 userBalance addr conn = do
@@ -158,5 +172,5 @@ creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter n
 
 creditLogToCreditTuple :: IssueCreditLog
                        -> (Address, Address, Integer, Text, Integer, Text, Text, Text)
-creditLogToCreditTuple cl@(IssueCreditLog ucac creditor debtor amount nonce memo) =
+creditLogToCreditTuple cl@(IssueCreditLog _ creditor debtor amount nonce memo) =
     (creditor, debtor, amount, memo, nonce, hashCreditLog cl, "", "")

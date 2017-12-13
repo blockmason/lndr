@@ -7,16 +7,11 @@
 
 module Lndr.Docs where
 
-import           Data.Proxy
 import           Data.Text (Text)
 import           Lndr.Types
-import           Lndr.EthInterface
 import           Network.Ethereum.Web3.Address
-import           Network.HTTP.Types
-import           Network.Wai
 import           Servant.API
 import           Servant.Docs
-import           Servant.Server
 
 creditHash :: Text
 creditHash = "0x7e2e9ff3a5fc148cf76261755c4c666630bfc3a28d02733cfbe721fc965aca28"

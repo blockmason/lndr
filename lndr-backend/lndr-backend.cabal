@@ -16,6 +16,7 @@ library
                      , Lndr.Db
                      , Lndr.EthInterface
                      , Lndr.Handler
+                     , Lndr.Handler.Admin
                      , Lndr.Handler.Credit
                      , Lndr.Handler.Friend
                      , Lndr.Handler.Types
@@ -43,6 +44,7 @@ library
                      , servant
                      , servant-docs
                      , servant-server
+                     , stm
                      , text
                      , time
                      , transformers

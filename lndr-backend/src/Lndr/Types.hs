@@ -9,14 +9,14 @@ module Lndr.Types
     , NickRequest(..)
     , NickInfo(..)
     , CreditRecord(..)
-    , IssueCreditLog(IssueCreditLog)
+    , IssueCreditLog(IssueCreditLog, ucac)
     , RejectRecord(RejectRecord)
     , Nonce(..)
     ) where
 
+import           Control.Concurrent.STM.TVar
 import           Data.Aeson
 import           Data.Aeson.TH
-import           Data.Configurator.Types
 import           Data.Either.Combinators (mapLeft)
 import           Data.Hashable
 import           Data.Pool
@@ -47,7 +47,7 @@ data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , amount :: Integer
                                      , nonce :: Integer
                                      , memo :: Text
-                                     } deriving (Show, Generic)
+                                     } deriving (Show, Eq, Generic)
 $(deriveJSON defaultOptions ''IssueCreditLog)
 
 -- `a` is a phantom type that indicates whether a record has been signed or not
@@ -90,5 +90,5 @@ data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  }
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection
-                               , serverConfig :: ServerConfig
+                               , serverConfig :: TVar ServerConfig
                                }

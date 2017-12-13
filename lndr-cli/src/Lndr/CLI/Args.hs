@@ -6,8 +6,10 @@ module Lndr.CLI.Args (
       LndrCmd(..)
     , programModes
     , runMode
-    , setNick
     , getNick
+    , setNick
+    , getGasPrice
+    , setGasPrice
     , addFriend
     , getFriends
     ) where
@@ -44,6 +46,8 @@ data LndrCmd = Transactions
              | GetNonce { friend :: Text }
              | AddFriend { friend :: Text }
              | RemoveFriend { friend :: Text }
+             | GasPrice
+             | SetGasPrice { price :: Integer }
              | Info
              deriving (Show, Data, Typeable)
 
@@ -64,6 +68,8 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
                      , GetNonce "0x198e13017d2333712bd942d8b028610b95c363da"
                      , AddFriend "0x198e13017d2333712bd942d8b028610b95c363da"
                      , RemoveFriend "0x198e13017d2333712bd942d8b028610b95c363da"
+                     , GasPrice
+                     , SetGasPrice 2000000
                      , Info &= help "prints config, nick, and friends"
                      ] &= help "Lend and borrow money" &= program "lndr" &= summary "lndr v0.1"
 
@@ -107,6 +113,12 @@ runMode (Config url sk _) (AddFriend friend) =
 runMode (Config url sk _) (RemoveFriend friend) =
     print =<< removeFriend (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)
 
+runMode (Config url sk _) GasPrice = print =<< getGasPrice (LT.unpack url)
+
+runMode (Config url sk _) (SetGasPrice price) =
+    print =<< setGasPrice (LT.unpack url) (textToAddress $ userFromSK sk) price
+
+
 runMode (Config url sk _) (GetNonce friend) =
     print =<< getNonce (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)
 
@@ -115,6 +127,21 @@ runMode (Config url sk _) Info =
 
 
 userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
+
+setGasPrice :: String -> Address -> Integer -> IO Int
+setGasPrice url addr price = do
+    initReq <- HTTP.parseRequest $ url ++ "/gas_price"
+    let req = HTTP.setRequestBodyJSON price $
+                HTTP.setRequestMethod "PUT" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+
+getGasPrice :: String -> IO Integer
+getGasPrice url = do
+    req <- HTTP.parseRequest $ url ++ "/gas_price"
+    resp <- HTTP.getResponseBody <$> HTTP.httpJSONEither req
+    return $ case resp of
+        Left a -> -1
+        Right b -> b
 
 
 setNick :: String -> NickRequest -> IO Int

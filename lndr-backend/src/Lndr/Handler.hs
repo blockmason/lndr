@@ -22,9 +22,13 @@ module Lndr.Handler (
     , friendHandler
     , addFriendsHandler
     , removeFriendsHandler
+
+      -- * Admin Handlers
+    , gasPriceHandler
+    , setGasPriceHandler
     ) where
 
-
+import           Lndr.Handler.Admin
 import           Lndr.Handler.Friend
 import           Lndr.Handler.Credit
 import           Lndr.Handler.Types

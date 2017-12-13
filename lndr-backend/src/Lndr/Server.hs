@@ -5,7 +5,7 @@
 
 module Lndr.Server
     ( ServerState
-    , LndrAPI(..)
+    , LndrAPI
     , lndrAPI
     , LndrHandler(..)
     , freshState
@@ -13,24 +13,24 @@ module Lndr.Server
     , app
     ) where
 
+import           Control.Concurrent.STM
 import           Control.Monad.Except
-import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import           Data.ByteString.Lazy (ByteString)
 import           Data.Either (either)
+import           Data.List ((\\))
 import           Data.Pool (createPool, withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import qualified Data.Text.Lazy as LT
 import qualified Database.PostgreSQL.Simple as DB
-import           Lndr.Db
+import qualified Lndr.Db as Db
 import           Lndr.Docs
 import           Lndr.EthInterface
 import           Lndr.Handler
 import           Lndr.Types
 import           Network.Ethereum.Web3
-import           Network.Ethereum.Web3.Address
 import           Network.HTTP.Types
 import           Network.Wai
 import           Servant
@@ -57,14 +57,14 @@ type LndrAPI =
    :<|> "counterparties" :> Capture "user" Address :> Get '[JSON] [Address]
    :<|> "balance" :> Capture "user" Address :> Get '[JSON] Integer
    :<|> "balance" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Integer
+   :<|> "gas_price" :> Get '[JSON] Integer
+   :<|> "gas_price" :> ReqBody '[JSON] Integer :> PutNoContent '[JSON] NoContent
    :<|> "docs" :> Raw
 
 
 lndrAPI :: Proxy LndrAPI
 lndrAPI = Proxy
 
-apiDocs :: API
-apiDocs = docs lndrAPI
 
 docsBS :: ByteString
 docsBS = encodeUtf8
@@ -72,6 +72,7 @@ docsBS = encodeUtf8
        . markdown
        $ docsWithIntros [intro] lndrAPI
   where intro = DocIntro "LNDR Server" ["Web service API"]
+
 
 server :: ServerT LndrAPI LndrHandler
 server = transactionsHandler
@@ -89,6 +90,8 @@ server = transactionsHandler
     :<|> counterpartiesHandler
     :<|> balanceHandler
     :<|> twoPartyBalanceHandler
+    :<|> gasPriceHandler
+    :<|> setGasPriceHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS
@@ -116,19 +119,42 @@ app state = serve lndrAPI (readerServer state)
 
 
 updateDbFromLndrLogs :: ServerState -> IO ()
-updateDbFromLndrLogs (ServerState pool config) = void $ do
+updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
+    config <- atomically $ readTVar configMVar
     logs <- runWeb3 $ lndrLogs config Nothing Nothing
-    withResource pool . insertCredits $ either (const []) id logs
+    withResource pool . Db.insertCredits $ either (const []) id logs
+
+
+unsubmittedTransactions :: ServerState -> IO [IssueCreditLog]
+unsubmittedTransactions (ServerState pool configMVar) = do
+    config <- atomically $ readTVar configMVar
+    blockchainCreditsE <- runWeb3 $ lndrLogs config Nothing Nothing
+    let blockchainCredits = either (const []) id blockchainCreditsE
+    dbCredits <- withResource pool Db.allCredits
+    return $ (setUcac (lndrUcacAddr config) <$> dbCredits) \\ blockchainCredits
+
+
+resubmitTransactions :: ServerState -> IO ()
+resubmitTransactions state@(ServerState pool configMVar) = do
+    txs <- unsubmittedTransactions state
+    config <- atomically $ readTVar configMVar
+    mapM_ (resubmit config) txs
+    where
+        resubmit config creditLog = do
+            let creditHash = hashCreditLog creditLog
+            crM <- withResource pool $ Db.lookupCreditByHash creditHash
+            case crM of
+                Just (cr, sig1, sig2) -> void $ finalizeTransaction config sig1 sig2 cr
+                Nothing               -> pure ()
 
 
 freshState :: IO ServerState
 freshState = do
     serverConfig <- loadConfig
-
     let dbConfig = DB.defaultConnectInfo { DB.connectUser = T.unpack $ dbUser serverConfig
                                          , DB.connectPassword = T.unpack $ dbUserPassword serverConfig
                                          , DB.connectDatabase = T.unpack $ dbName serverConfig
                                          }
 
     ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
-                <*> pure serverConfig
+                <*> newTVarIO serverConfig

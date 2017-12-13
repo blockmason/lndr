@@ -60,6 +60,7 @@ type LndrAPI =
    :<|> "balance" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Integer
    :<|> "gas_price" :> Get '[JSON] Integer
    :<|> "gas_price" :> ReqBody '[JSON] Integer :> PutNoContent '[JSON] NoContent
+   :<|> "unsubmitted" :> Get '[JSON] [IssueCreditLog]
    :<|> "docs" :> Raw
 
 
@@ -94,6 +95,7 @@ server = transactionsHandler
     :<|> twoPartyBalanceHandler
     :<|> gasPriceHandler
     :<|> setGasPriceHandler
+    :<|> unsubmittedHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS

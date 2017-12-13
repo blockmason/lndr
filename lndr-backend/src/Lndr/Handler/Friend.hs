@@ -36,7 +36,7 @@ nickSearchHandler nick = do
 nickTakenHandler :: Text -> LndrHandler Bool
 nickTakenHandler nick = do
     pool <- dbConnectionPool <$> ask
-    liftIO . fmap null . withResource pool . Db.lookupAddresByNick $ T.toLower nick
+    liftIO . fmap (not . null) . withResource pool . Db.lookupAddresByNick $ T.toLower nick
 
 
 friendHandler :: Address -> LndrHandler [NickInfo]

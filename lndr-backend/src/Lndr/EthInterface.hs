@@ -116,10 +116,12 @@ safelowUpdate :: ServerConfig -> TVar ServerConfig -> IO ServerConfig
 safelowUpdate config configTVar = do
     req <- HTTP.parseRequest "https://ethgasstation.info/json/ethgasAPI.json"
     gasStationResponse <- HTTP.getResponseBody <$> HTTP.httpJSON req
-    let lastestSafeLow = ceiling $ 100000000 * safeLow gasStationResponse
+    let lastestSafeLow = ceiling $ safeLowScaling * safeLow gasStationResponse
         updatedConfg = config { gasPrice = lastestSafeLow }
     liftIO . atomically . modifyTVar configTVar $ const updatedConfg
     return updatedConfg
+    where
+        safeLowScaling = 100000000 -- eth gas station returns prices in DeciGigaWei
 
 
 finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord

@@ -1,18 +1,5 @@
 # lndr-backend
 
-## TODO
-
-- logging
-- better error handling
-    + validate all input data
-- configuration file to eliminate hard-coded values
-- friends lists
-
-- between tx submission to blockchain & inclusion in a block,
-  users can create a pending tx that will never be deleted
-    + this logic will change soon, so don't worry about this now,
-      though similar problems will present themselves in the future
-
 ## LNDR Server
 
 Web service API
@@ -330,6 +317,87 @@ Clients must supply the following data
 
 ```javascript
 [{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"},{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}]
+```
+
+## GET /gas_price
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Response:
+
+- Status code 200
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+19
+```
+
+-
+
+```javascript
+19
+```
+
+## PUT /gas_price
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Request:
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+- Example (): `application/json;charset=utf-8`
+
+```javascript
+19
+```
+
+- Example (): `application/json`
+
+```javascript
+19
+```
+
+#### Response:
+
+- Status code 204
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+
+```
+
+-
+
+```javascript
+
 ```
 
 ## POST /lend
@@ -731,6 +799,53 @@ Clients must supply the following data
 [{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"},{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}]
 ```
 
+## GET /taken_nick/:nick
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Captures:
+
+- *nick*: the nickname to be associated with a particular address
+
+#### Response:
+
+- Status code 200
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+false
+```
+
+-
+
+```javascript
+false
+```
+
+-
+
+```javascript
+true
+```
+
+-
+
+```javascript
+true
+```
+
 ## GET /transactions
 
 #### Authentication
@@ -772,17 +887,17 @@ Clients must supply the following data
 -
 
 ```javascript
-[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"memo":"simple memo"}]
+[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]
 ```
 
 -
 
 ```javascript
-[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"memo":"simple memo"}]
+[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]
 ```
 
 -
 
 ```javascript
-[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"memo":"simple memo"},{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"memo":"simple memo"}]
+[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"},{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]
 ```

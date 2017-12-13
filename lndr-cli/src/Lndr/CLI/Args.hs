@@ -8,6 +8,8 @@ module Lndr.CLI.Args (
     , runMode
     , getNick
     , setNick
+    , searchNick
+    , takenNick
     , getGasPrice
     , setGasPrice
     , addFriend
@@ -163,6 +165,12 @@ getNick url userAddr = do
 searchNick :: String -> Text -> IO [NickInfo]
 searchNick url nick = do
     req <- HTTP.parseRequest $ url ++ "/search_nick/" ++ T.unpack nick
+    HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
+takenNick :: String -> Text -> IO Bool
+takenNick url nick = do
+    req <- HTTP.parseRequest $ url ++ "/taken_nick/" ++ T.unpack nick
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 

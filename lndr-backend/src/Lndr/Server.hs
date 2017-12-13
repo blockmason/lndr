@@ -5,7 +5,7 @@
 
 module Lndr.Server
     ( ServerState
-    , LndrAPI(..)
+    , LndrAPI
     , lndrAPI
     , LndrHandler(..)
     , freshState
@@ -15,7 +15,6 @@ module Lndr.Server
 
 import           Control.Concurrent.MVar
 import           Control.Monad.Except
-import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import           Data.ByteString.Lazy (ByteString)
 import           Data.Either (either)
@@ -32,7 +31,6 @@ import           Lndr.EthInterface
 import           Lndr.Handler
 import           Lndr.Types
 import           Network.Ethereum.Web3
-import           Network.Ethereum.Web3.Address
 import           Network.HTTP.Types
 import           Network.Wai
 import           Servant
@@ -67,8 +65,6 @@ type LndrAPI =
 lndrAPI :: Proxy LndrAPI
 lndrAPI = Proxy
 
-apiDocs :: API
-apiDocs = docs lndrAPI
 
 docsBS :: ByteString
 docsBS = encodeUtf8
@@ -76,6 +72,7 @@ docsBS = encodeUtf8
        . markdown
        $ docsWithIntros [intro] lndrAPI
   where intro = DocIntro "LNDR Server" ["Web service API"]
+
 
 server :: ServerT LndrAPI LndrHandler
 server = transactionsHandler

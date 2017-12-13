@@ -17,7 +17,6 @@ module Lndr.Types
 import           Control.Concurrent.MVar
 import           Data.Aeson
 import           Data.Aeson.TH
-import           Data.Configurator.Types
 import           Data.Either.Combinators (mapLeft)
 import           Data.Hashable
 import           Data.Pool

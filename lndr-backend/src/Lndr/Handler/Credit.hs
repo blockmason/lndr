@@ -5,13 +5,9 @@ module Lndr.Handler.Credit where
 import           Control.Concurrent.MVar
 import           Control.Monad.Reader
 import           Control.Monad.Except
-import qualified Data.ByteString as B
 import           Data.List (nub)
 import           Data.Pool (withResource)
-import           Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import           ListT hiding (null)
 import qualified Lndr.Db as Db
 import           Lndr.EthInterface
 import           Lndr.Handler.Types
@@ -19,23 +15,22 @@ import           Lndr.Types
 import qualified Network.Ethereum.Util as EU
 import           Network.Ethereum.Web3
 import           Servant
-import           Servant.API
 
 
 rejectHandler :: RejectRecord -> LndrHandler NoContent
 rejectHandler(RejectRecord sig hash) = do
     pool <- dbConnectionPool <$> ask
     pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
-    let hashNotFound = throwError $ err404 {errBody = "credit hash does not refer to pending record"}
-    (CreditRecord creditor debtor _ _ _ submitter _ _) <- maybe hashNotFound pure pendingRecordM
+    let hashNotFound = throwError $ err404 { errBody = "credit hash does not refer to pending record" }
+    (CreditRecord creditor debtor _ _ _ _ _ _) <- maybe hashNotFound pure pendingRecordM
     -- recover address from sig
     let signer = EU.ecrecover (stripHexPrefix sig) hash
     case signer of
-        Left err -> throwError $ err400 {errBody = "unable to recover addr from sig"}
+        Left _ -> throwError $ err400 { errBody = "unable to recover addr from sig" }
         Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
                             then do liftIO . withResource pool $ Db.deletePending hash
                                     return NoContent
-                            else throwError $ err400 {errBody = "bad rejection sig"}
+                            else throwError $ err400 { errBody = "bad rejection sig" }
 
 
 transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]

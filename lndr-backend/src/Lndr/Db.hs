@@ -32,19 +32,15 @@ module Lndr.Db (
     ) where
 
 
-import           Data.ByteString.Builder (byteString)
 import           Data.Maybe (listToMaybe)
 import           Data.Scientific
 import           Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import           Database.PostgreSQL.Simple
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.ToField
 import           Lndr.EthInterface
 import           Lndr.Types
 import           Network.Ethereum.Web3
-import qualified Network.Ethereum.Web3.Address as Addr
 
 -- DB Typeclass instances
 
@@ -119,7 +115,7 @@ insertPending creditRecord conn =
 
 
 insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
-insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo submitter nonce hash _) conn =
+insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _) conn =
     fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig)
 
 
@@ -176,5 +172,5 @@ creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter n
 
 creditLogToCreditTuple :: IssueCreditLog
                        -> (Address, Address, Integer, Text, Integer, Text, Text, Text)
-creditLogToCreditTuple cl@(IssueCreditLog ucac creditor debtor amount nonce memo) =
+creditLogToCreditTuple cl@(IssueCreditLog _ creditor debtor amount nonce memo) =
     (creditor, debtor, amount, memo, nonce, hashCreditLog cl, "", "")

@@ -6,8 +6,10 @@ module Lndr.CLI.Args (
       LndrCmd(..)
     , programModes
     , runMode
-    , setNick
     , getNick
+    , setNick
+    , getGasPrice
+    , setGasPrice
     , addFriend
     , getFriends
     ) where

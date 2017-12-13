@@ -132,7 +132,7 @@ setGasPrice :: String -> Address -> Integer -> IO Int
 setGasPrice url addr price = do
     initReq <- HTTP.parseRequest $ url ++ "/gas_price"
     let req = HTTP.setRequestBodyJSON price $
-                HTTP.setRequestMethod "POST" initReq
+                HTTP.setRequestMethod "PUT" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 
 getGasPrice :: String -> IO Integer

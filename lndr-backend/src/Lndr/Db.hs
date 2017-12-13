@@ -74,7 +74,7 @@ lookupAddresByNick nick conn = fmap ((`NickInfo` nick) . fromOnly) <$>
 
 addFriends :: Address -> [Address] -> Connection -> IO Int
 addFriends addr addresses conn = fromIntegral <$>
-    executeMany conn "INSERT INTO friendships (origin, friend) VALUES (?,?)" ((addr,) <$> addresses)
+    executeMany conn "INSERT INTO friendships (origin, friend) VALUES (?,?) ON CONFLICT ON CONSTRAINT friendships_origin_friend_key DO NOTHING" ((addr,) <$> addresses)
 
 
 removeFriends :: Address -> [Address] -> Connection -> IO Int

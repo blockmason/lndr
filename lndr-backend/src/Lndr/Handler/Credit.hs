@@ -115,9 +115,15 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
+            -- check if a pending transaction already exists between the two users
             existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses creditor debtor
             unless (null existingPending) $
                 throwError (err400 {errBody = "A pending credit record already exists for the two users."})
+
+            -- ensuring that creditor is on debtor's friends list and vice-versa
+            void . liftIO . withResource pool $ Db.addFriends creditor [debtor]
+            void . liftIO . withResource pool $ Db.addFriends debtor [creditor]
+
             void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash })
 
     return NoContent

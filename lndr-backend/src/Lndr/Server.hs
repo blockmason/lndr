@@ -13,7 +13,7 @@ module Lndr.Server
     , app
     ) where
 
-import           Control.Concurrent.MVar
+import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Data.ByteString.Lazy (ByteString)
@@ -120,14 +120,14 @@ app state = serve lndrAPI (readerServer state)
 
 updateDbFromLndrLogs :: ServerState -> IO ()
 updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
-    config <- takeMVar configMVar
+    config <- atomically $ readTVar configMVar
     logs <- runWeb3 $ lndrLogs config Nothing Nothing
     withResource pool . Db.insertCredits $ either (const []) id logs
 
 
 unsubmittedTransactions :: ServerState -> IO [IssueCreditLog]
 unsubmittedTransactions (ServerState pool configMVar) = do
-    config <- takeMVar configMVar
+    config <- atomically $ readTVar configMVar
     blockchainCreditsE <- runWeb3 $ lndrLogs config Nothing Nothing
     let blockchainCredits = either (const []) id blockchainCreditsE
     dbCredits <- withResource pool Db.allCredits
@@ -137,7 +137,7 @@ unsubmittedTransactions (ServerState pool configMVar) = do
 resubmitTransactions :: ServerState -> IO ()
 resubmitTransactions state@(ServerState pool configMVar) = do
     txs <- unsubmittedTransactions state
-    config <- takeMVar configMVar
+    config <- atomically $ readTVar configMVar
     mapM_ (resubmit config) txs
     where
         resubmit config creditLog = do
@@ -157,4 +157,4 @@ freshState = do
                                          }
 
     ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
-                <*> newMVar serverConfig
+                <*> newTVarIO serverConfig

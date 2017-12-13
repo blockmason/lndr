@@ -2,7 +2,7 @@
 
 module Lndr.Handler.Credit where
 
-import           Control.Concurrent.MVar
+import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Except
 import           Data.List (nub)
@@ -35,8 +35,8 @@ rejectHandler(RejectRecord sig hash) = do
 
 transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
 transactionsHandler Nothing = do
-    configMVar <- serverConfig <$> ask
-    config <- liftIO $ takeMVar configMVar
+    configTVar <- serverConfig <$> ask
+    config <- liftIO . atomically $ readTVar configTVar
     lndrWeb3 (lndrLogs config Nothing Nothing)
 transactionsHandler (Just addr) = do
     pool <- dbConnectionPool <$> ask
@@ -77,8 +77,8 @@ borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
 
 submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
 submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig) = do
-    (ServerState pool configMVar) <- ask
-    config <- liftIO $ takeMVar configMVar
+    (ServerState pool configTVar) <- ask
+    config <- liftIO . atomically $ readTVar configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
     hash <- lndrWeb3 $ hashCreditRecord config nonce signedRecord
 

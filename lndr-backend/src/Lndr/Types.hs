@@ -14,7 +14,7 @@ module Lndr.Types
     , Nonce(..)
     ) where
 
-import           Control.Concurrent.MVar
+import           Control.Concurrent.STM.TVar
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Either.Combinators (mapLeft)
@@ -90,5 +90,5 @@ data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  }
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection
-                               , serverConfig :: MVar ServerConfig
+                               , serverConfig :: TVar ServerConfig
                                }

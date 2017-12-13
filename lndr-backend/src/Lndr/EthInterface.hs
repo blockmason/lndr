@@ -11,6 +11,8 @@
 
 module Lndr.EthInterface where
 
+import           Control.Monad.IO.Class
+import           Control.Concurrent.STM
 import           Control.Exception
 import           Control.Monad
 import qualified Data.ByteArray as BA
@@ -110,12 +112,14 @@ hashCreditLog (IssueCreditLog ucac creditor debtor amount nonce _) =
                 in EU.hashText message
 
 
-safelowUpdate :: ServerConfig -> IO ServerConfig
-safelowUpdate config = do
+safelowUpdate :: ServerConfig -> TVar ServerConfig -> IO ServerConfig
+safelowUpdate config configTVar = do
     req <- HTTP.parseRequest "https://ethgasstation.info/json/ethgasAPI.json"
     gasStationResponse <- HTTP.getResponseBody <$> HTTP.httpJSON req
     let lastestSafeLow = ceiling $ 100000000 * safeLow gasStationResponse
-    return $ config { gasPrice = lastestSafeLow }
+        updatedConfg = config { gasPrice = lastestSafeLow }
+    liftIO . atomically . modifyTVar configTVar $ const updatedConfg
+    return updatedConfg
 
 
 finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord

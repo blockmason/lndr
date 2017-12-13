@@ -107,7 +107,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
                                             else (signature signedRecord, signature storedRecord)
 
             -- update gas price to latest safelow value
-            updatedConfig <- safelowUpdate config
+            updatedConfig <- safelowUpdate config configTVar
 
             finalizeTransaction updatedConfig creditorSig debtorSig storedRecord
 

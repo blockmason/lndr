@@ -86,6 +86,10 @@ instance ToCapture (Capture "nick" Text) where
   toCapture _ =
     DocCapture "nick" "the nickname to be associated with a particular address"
 
+instance ToCapture (Capture "id" Integer) where
+  toCapture _ =
+    DocCapture "id" "the amount by which to identify a credit record among candidates for resubmission"
+
 instance ToParam (QueryParam "user" Address) where
   toParam _ =
     DocQueryParam "user"

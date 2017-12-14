@@ -18,7 +18,6 @@ import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Data.ByteString.Lazy (ByteString)
 import           Data.Either (either)
-import           Data.List ((\\))
 import           Data.Pool (createPool, withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -60,6 +59,8 @@ type LndrAPI =
    :<|> "balance" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Integer
    :<|> "gas_price" :> Get '[JSON] Integer
    :<|> "gas_price" :> ReqBody '[JSON] Integer :> PutNoContent '[JSON] NoContent
+   :<|> "unsubmitted" :> Get '[JSON] [IssueCreditLog]
+   :<|> "resubmit" :> Capture "id" Integer :> PostNoContent '[JSON] NoContent
    :<|> "docs" :> Raw
 
 
@@ -94,6 +95,8 @@ server = transactionsHandler
     :<|> twoPartyBalanceHandler
     :<|> gasPriceHandler
     :<|> setGasPriceHandler
+    :<|> unsubmittedHandler
+    :<|> resubmitHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS
@@ -125,29 +128,6 @@ updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
     config <- atomically $ readTVar configMVar
     logs <- runWeb3 $ lndrLogs config Nothing Nothing
     withResource pool . Db.insertCredits $ either (const []) id logs
-
-
-unsubmittedTransactions :: ServerState -> IO [IssueCreditLog]
-unsubmittedTransactions (ServerState pool configMVar) = do
-    config <- atomically $ readTVar configMVar
-    blockchainCreditsE <- runWeb3 $ lndrLogs config Nothing Nothing
-    let blockchainCredits = either (const []) id blockchainCreditsE
-    dbCredits <- withResource pool Db.allCredits
-    return $ (setUcac (lndrUcacAddr config) <$> dbCredits) \\ blockchainCredits
-
-
-resubmitTransactions :: ServerState -> IO ()
-resubmitTransactions state@(ServerState pool configMVar) = do
-    txs <- unsubmittedTransactions state
-    config <- atomically $ readTVar configMVar
-    mapM_ (resubmit config) txs
-    where
-        resubmit config creditLog = do
-            let creditHash = hashCreditLog creditLog
-            crM <- withResource pool $ Db.lookupCreditByHash creditHash
-            case crM of
-                Just (cr, sig1, sig2) -> void $ finalizeTransaction config sig1 sig2 cr
-                Nothing               -> pure ()
 
 
 freshState :: IO ServerState

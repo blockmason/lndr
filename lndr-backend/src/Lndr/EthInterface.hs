@@ -54,6 +54,7 @@ loadConfig = do
     dbName <- fromMaybe (error "dbName") <$> lookup config "dbName"
     executionAddress <- fromMaybe (error "executionAddress") <$> lookup config "executionAddress"
     gasPrice <- fromMaybe (error "gasPrice") <$> lookup config "gasPrice"
+    maxGas <- fromMaybe (error "maxGas") <$> lookup config "maxGas"
     return $ ServerConfig (textToAddress lndrUcacAddr)
                           (textToAddress cpAddr)
                           issueCreditEvent
@@ -63,6 +64,7 @@ loadConfig = do
                           dbName
                           (textToAddress executionAddress)
                           gasPrice
+                          maxGas
 
 
 bytesDecode :: Text -> Bytes
@@ -119,13 +121,14 @@ safelowUpdate config configTVar = do
     gasStationResponseE <- try (HTTP.getResponseBody <$> HTTP.httpJSON req)
     case gasStationResponseE of
         Right gasStationResponse -> do
-            let lastestSafeLow = ceiling $ safeLowScaling * safeLow gasStationResponse
+            let lastestSafeLow = ceiling $ margin * safeLowScaling * safeLow gasStationResponse
                 updatedConfg = config { gasPrice = lastestSafeLow }
             liftIO . atomically . modifyTVar configTVar $ const updatedConfg
             return updatedConfg
         Left (_ :: HTTP.HttpException) -> return config
     where
         safeLowScaling = 100000000 -- eth gas station returns prices in DeciGigaWei
+        margin = 1.3 -- multiplier for  additional assurance that tx will make it into blockchain
 
 
 finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord
@@ -145,6 +148,7 @@ finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _
                         , callTo = creditProtocolAddress config
                         , callGasPrice = Just . Quantity $ gasPrice config
                         , callValue = Just . Quantity $ 0
+                        , callGas = Just . Quantity $ maxGas config
                         }
 
 lndrLogs :: Provider a => ServerConfig -> Maybe Address -> Maybe Address

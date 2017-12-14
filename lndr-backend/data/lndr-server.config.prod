@@ -7,3 +7,4 @@ dbUserPassword = "MUST-BE-SET"
 dbName = "lndr"
 executionAddress = "0xce9c2ed2209d2358c131cc99569233a5d508770b"
 gasPrice = 200000000
+maxGas = 250000

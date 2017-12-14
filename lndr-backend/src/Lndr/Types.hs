@@ -8,8 +8,8 @@ module Lndr.Types
     , ServerConfig(..)
     , NickRequest(..)
     , NickInfo(..)
-    , CreditRecord(..)
-    , IssueCreditLog(IssueCreditLog, ucac)
+    , CreditRecord(CreditRecord, hash, creditor, debtor, signature, nonce)
+    , IssueCreditLog(IssueCreditLog, ucac, amount)
     , RejectRecord(RejectRecord)
     , Nonce(..)
     , GasStationResponse(..)
@@ -88,6 +88,7 @@ data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  , dbName :: !Text
                                  , executionAddress :: !Address
                                  , gasPrice :: !Integer
+                                 , maxGas :: !Integer
                                  }
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection

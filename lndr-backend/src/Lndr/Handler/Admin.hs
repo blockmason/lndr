@@ -2,8 +2,13 @@ module Lndr.Handler.Admin where
 
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
+import           Data.List ((\\), find)
+import           Data.Pool (withResource)
+import qualified Lndr.Db as Db
 import           Lndr.Handler.Types
+import           Lndr.EthInterface
 import           Lndr.Types
+import           Network.Ethereum.Web3
 import           Servant.API
 
 
@@ -19,3 +24,30 @@ setGasPriceHandler newGasPrice = do
     configTVar <- serverConfig <$> ask
     liftIO . atomically $ modifyTVar configTVar (\x -> x { gasPrice = newGasPrice })
     return NoContent
+
+
+unsubmittedHandler :: LndrHandler [IssueCreditLog]
+unsubmittedHandler = do
+    (ServerState pool configTVar) <- ask
+    config <- liftIO . atomically $ readTVar configTVar
+    blockchainCreditsE <- liftIO . runWeb3 $ lndrLogs config Nothing Nothing
+    let blockchainCredits = either (const []) id blockchainCreditsE
+    dbCredits <- liftIO $ withResource pool Db.allCredits
+    return $ (setUcac (lndrUcacAddr config) <$> dbCredits) \\ blockchainCredits
+
+
+resubmitHandler :: Integer -> LndrHandler NoContent
+resubmitHandler txAmount = do
+    (ServerState pool configTVar) <- ask
+    txs <- unsubmittedHandler
+    let creditToResubmitM = find (\x -> amount x == txAmount) txs
+    case creditToResubmitM of
+        Just creditLog -> do
+            config <- liftIO . atomically $ readTVar configTVar
+            let creditHash = hashCreditLog creditLog
+            crM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
+            case crM of
+                Just (cr, sig1, sig2) -> void . liftIO $ finalizeTransaction config sig1 sig2 cr
+                Nothing               -> pure ()
+        Nothing -> pure ()
+    pure NoContent

@@ -36,6 +36,7 @@ module Lndr.Db (
 import           Data.Maybe (listToMaybe)
 import           Data.Scientific
 import           Data.Text (Text)
+import qualified Data.Text as T
 import           Database.PostgreSQL.Simple
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.ToField
@@ -69,7 +70,7 @@ lookupNick addr conn = listToMaybe . fmap fromOnly <$>
 
 lookupAddresByNick :: Text -> Connection -> IO [NickInfo]
 lookupAddresByNick nick conn = fmap ((`NickInfo` nick) . fromOnly) <$>
-    (query conn "SELECT address FROM nicknames WHERE nickname LIKE ?% LIMIT 10" (Only nick) :: IO [Only Address])
+    (query conn "SELECT address FROM nicknames WHERE nickname LIKE ? LIMIT 10" (Only $ T.append nick "%") :: IO [Only Address])
 
 -- friendships table manipulations
 

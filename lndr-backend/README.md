@@ -746,6 +746,41 @@ Clients must supply the following data
 
 ```
 
+## POST /resubmit/:hash
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Captures:
+
+- *hash*: the hash by which to identify a credit record among candidates for resubmission
+
+#### Response:
+
+- Status code 204
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+
+```
+
+-
+
+```javascript
+
+```
+
 ## GET /search_nick/:nick
 
 #### Authentication
@@ -860,6 +895,55 @@ Clients must supply the following data
 - user
      - **Values**: *0x11edd217a875063583dd1b638d16810c5d34d54b, 0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb*
      - **Description**: address of user whose records to display
+
+
+#### Response:
+
+- Status code 200
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+[]
+```
+
+-
+
+```javascript
+[]
+```
+
+-
+
+```javascript
+[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]
+```
+
+-
+
+```javascript
+[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]
+```
+
+-
+
+```javascript
+[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"},{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]
+```
+
+## GET /unsubmitted
+
+#### Authentication
+
+
+
+Clients must supply the following data
 
 
 #### Response:

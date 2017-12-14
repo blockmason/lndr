@@ -4,6 +4,7 @@ import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Data.List ((\\), find)
 import           Data.Pool (withResource)
+import           Data.Text (Text)
 import qualified Lndr.Db as Db
 import           Lndr.Handler.Types
 import           Lndr.EthInterface
@@ -36,11 +37,11 @@ unsubmittedHandler = do
     return $ (setUcac (lndrUcacAddr config) <$> dbCredits) \\ blockchainCredits
 
 
-resubmitHandler :: Integer -> LndrHandler NoContent
-resubmitHandler txAmount = do
+resubmitHandler :: Text -> LndrHandler NoContent
+resubmitHandler txHash = do
     (ServerState pool configTVar) <- ask
     txs <- unsubmittedHandler
-    let creditToResubmitM = find (\x -> amount x == txAmount) txs
+    let creditToResubmitM = find ((== txHash) . hashCreditLog) txs
     case creditToResubmitM of
         Just creditLog -> do
             config <- liftIO . atomically $ readTVar configTVar

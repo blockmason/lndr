@@ -25,6 +25,7 @@ module Lndr.Db (
     , insertCredits
     , allCredits
     , lookupCreditByAddress
+    , counterpartiesByAddress
     , lookupCreditByHash
     , userBalance
     , twoPartyBalance
@@ -131,6 +132,11 @@ allCredits conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, 
 -- TODO fix this creditor, creditor repetition
 lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
 lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
+
+
+counterpartiesByAddress :: Address -> Connection -> IO [Address]
+counterpartiesByAddress addr conn = fmap fromOnly <$>
+    query conn "SELECT creditor FROM verified_credits WHERE debtor = ? UNION SELECT debtor FROM verified_credits WHERE creditor = ?" (addr, addr)
 
 
 -- TODO fix this creditor, creditor repetition

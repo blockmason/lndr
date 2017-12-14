@@ -91,8 +91,8 @@ decomposeSig sig = (sigR, sigS, sigV)
 [abiFrom|data/CreditProtocol.abi|]
 
 
-hashCreditRecord :: forall b. Provider b => ServerConfig -> Nonce -> CreditRecord -> Web3 b Text
-hashCreditRecord config nonce (CreditRecord creditor debtor amount _ _ _ _ _) = do
+hashCreditRecord :: ServerConfig -> Nonce -> CreditRecord -> Text
+hashCreditRecord config nonce (CreditRecord creditor debtor amount _ _ _ _ _) =
                 let message = T.concat $
                       stripHexPrefix <$> [ Addr.toText (lndrUcacAddr config)
                                          , Addr.toText creditor
@@ -100,7 +100,7 @@ hashCreditRecord config nonce (CreditRecord creditor debtor amount _ _ _ _ _) = 
                                          , integerToHex amount
                                          , integerToHex $ unNonce nonce
                                          ]
-                return $ EU.hashText message
+                in EU.hashText message
 
 
 hashCreditLog :: IssueCreditLog -> Text

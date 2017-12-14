@@ -80,7 +80,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
-    hash <- lndrWeb3 $ hashCreditRecord config nonce signedRecord
+    let hash = hashCreditRecord config nonce signedRecord
 
     unless (T.length memo <= 32) $
         throwError (err400 {errBody = "Memo too long. Memos must be no longer than 32 characters."})

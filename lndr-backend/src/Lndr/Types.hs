@@ -88,6 +88,7 @@ data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  , dbName :: !Text
                                  , executionAddress :: !Address
                                  , gasPrice :: !Integer
+                                 , maxGas :: !Integer
                                  }
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection

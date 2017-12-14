@@ -69,7 +69,7 @@ lookupNick addr conn = listToMaybe . fmap fromOnly <$>
 
 lookupAddresByNick :: Text -> Connection -> IO [NickInfo]
 lookupAddresByNick nick conn = fmap ((`NickInfo` nick) . fromOnly) <$>
-    (query conn "SELECT address FROM nicknames WHERE nickname % ?" (Only nick) :: IO [Only Address])
+    (query conn "SELECT address FROM nicknames WHERE nickname LIKE ?% LIMIT 10" (Only nick) :: IO [Only Address])
 
 -- friendships table manipulations
 

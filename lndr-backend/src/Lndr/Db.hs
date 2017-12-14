@@ -152,9 +152,8 @@ lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELE
 
 userBalance :: Address -> Connection -> IO Integer
 userBalance addr conn = do
-    [Only credit] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ?" (Only addr) :: IO [Only Scientific]
-    [Only debt] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE debtor = ?" (Only addr) :: IO [Only Scientific]
-    return . floor $ credit - debt
+    [Only balance] <- query conn "SELECT (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ?) - (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE debtor = ?)" (addr, addr) :: IO [Only Scientific]
+    return . floor $ balance
 
 
 twoPartyBalance :: Address -> Address -> Connection -> IO Integer

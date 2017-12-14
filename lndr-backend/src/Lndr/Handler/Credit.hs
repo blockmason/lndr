@@ -5,7 +5,6 @@ module Lndr.Handler.Credit where
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Except
-import           Data.List (nub)
 import           Data.Pool (withResource)
 import qualified Data.Text as T
 import qualified Lndr.Db as Db
@@ -43,10 +42,10 @@ transactionsHandler (Just addr) = do
     liftIO $ withResource pool $ Db.lookupCreditByAddress addr
 
 
--- TODO make a custom sql query for this
 counterpartiesHandler :: Address -> LndrHandler [Address]
-counterpartiesHandler addr = nub . fmap takeCounterParty <$> transactionsHandler (Just addr)
-    where takeCounterParty (IssueCreditLog _ c d _ _ _) = if c == addr then d else c
+counterpartiesHandler addr = do
+    pool <- dbConnectionPool <$> ask
+    liftIO $ withResource pool $ Db.counterpartiesByAddress addr
 
 
 balanceHandler :: Address -> LndrHandler Integer

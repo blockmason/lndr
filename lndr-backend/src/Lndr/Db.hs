@@ -25,6 +25,7 @@ module Lndr.Db (
     , insertCredits
     , allCredits
     , lookupCreditByAddress
+    , counterpartiesByAddress
     , lookupCreditByHash
     , userBalance
     , twoPartyBalance
@@ -133,6 +134,11 @@ lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
 lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
 
 
+counterpartiesByAddress :: Address -> Connection -> IO [Address]
+counterpartiesByAddress addr conn = fmap fromOnly <$>
+    query conn "SELECT creditor FROM verified_credits WHERE debtor = ? UNION SELECT debtor FROM verified_credits WHERE creditor = ?" (addr, addr)
+
+
 -- TODO fix this creditor, creditor repetition
 lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text))
 lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
@@ -142,20 +148,18 @@ lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELE
                                                                         , sig1
                                                                         , sig2
                                                                         )
--- lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE hash = ?" (Only hash)
+
 
 userBalance :: Address -> Connection -> IO Integer
 userBalance addr conn = do
-    [Only credit] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ?" (Only addr) :: IO [Only Scientific]
-    [Only debt] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE debtor = ?" (Only addr) :: IO [Only Scientific]
-    return . floor $ credit - debt
+    [Only balance] <- query conn "SELECT (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ?) - (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE debtor = ?)" (addr, addr) :: IO [Only Scientific]
+    return . floor $ balance
 
 
 twoPartyBalance :: Address -> Address -> Connection -> IO Integer
 twoPartyBalance addr counterparty conn = do
-    [Only credit] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ?" (addr, counterparty) :: IO [Only Scientific]
-    [Only debt] <- query conn "SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ?" (counterparty, addr) :: IO [Only Scientific]
-    return . floor $ credit - debt
+    [Only balance] <- query conn "SELECT (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ?) - (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
+    return . floor $ balance
 
 
 twoPartyNonce :: Address -> Address -> Connection -> IO Nonce

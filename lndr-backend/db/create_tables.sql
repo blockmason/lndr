@@ -31,3 +31,5 @@ CREATE TABLE nicknames (
     address     CHAR(40) PRIMARY KEY,
     nickname    TEXT UNIQUE
 );
+
+CREATE EXTENSION pg_trgm;

@@ -16,6 +16,7 @@ testUrl = "http://localhost:80"
 testAddress1 = "198e13017d2333712bd942d8b028610b95c363da"
 testAddress2 = "1ba7167373f13d28cc112f373bac8d5a07a47af9"
 
+testSearch = "test"
 testNick1 = "test1"
 testNick2 = "test2"
 
@@ -59,6 +60,13 @@ nickTest = do
     -- check that user1's nick was successfully changed
     queriedNick <- getNick testUrl testAddress1
     assertEqual "nick is set and queryable" queriedNick testNick2
+
+    -- set user2's nick
+    httpCode <- setNick testUrl (NickRequest testAddress2 testNick1 "")
+    assertEqual "previously used nickname is settable" 204 httpCode
+
+    fuzzySearchResults <- searchNick testUrl testSearch
+    assertEqual "search returns both results" 2 $ length fuzzySearchResults
 
     -- user1 adds user2 as a friend
     httpCode <- addFriend testUrl testAddress1 testAddress2

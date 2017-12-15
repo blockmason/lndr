@@ -29,6 +29,7 @@ module Lndr.Handler (
     , setGasPriceHandler
     , unsubmittedHandler
     , resubmitHandler
+    , registerPushHandler
     ) where
 
 import           Lndr.Handler.Admin

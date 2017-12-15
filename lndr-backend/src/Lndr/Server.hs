@@ -61,6 +61,9 @@ type LndrAPI =
    :<|> "gas_price" :> ReqBody '[JSON] Integer :> PutNoContent '[JSON] NoContent
    :<|> "unsubmitted" :> Get '[JSON] [IssueCreditLog]
    :<|> "resubmit" :> Capture "hash" Text :> PostNoContent '[JSON] NoContent
+   :<|> "register_push" :> Capture "user" Address
+                        :> ReqBody '[JSON] PushRequest
+                        :> PostNoContent '[JSON] NoContent
    :<|> "docs" :> Raw
 
 
@@ -97,6 +100,7 @@ server = transactionsHandler
     :<|> setGasPriceHandler
     :<|> unsubmittedHandler
     :<|> resubmitHandler
+    :<|> registerPushHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS

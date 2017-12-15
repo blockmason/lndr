@@ -52,3 +52,10 @@ resubmitHandler txHash = do
                 Nothing               -> pure ()
         Nothing -> pure ()
     pure NoContent
+
+registerPushHandler :: Address -> PushRequest -> LndrHandler NoContent
+registerPushHandler addr (PushRequest channelID platform) = do
+    -- TODO verify signature
+    pool <- dbConnectionPool <$> ask
+    liftIO . withResource pool $ Db.insertPushDatum addr channelID platform
+    return NoContent

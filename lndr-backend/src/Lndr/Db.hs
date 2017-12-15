@@ -30,6 +30,9 @@ module Lndr.Db (
     , userBalance
     , twoPartyBalance
     , twoPartyNonce
+
+    -- * 'push_data' table functions
+    , insertPushDatum
     ) where
 
 
@@ -167,6 +170,11 @@ twoPartyNonce :: Address -> Address -> Connection -> IO Nonce
 twoPartyNonce addr counterparty conn = do
     [Only nonce] <- query conn "SELECT COALESCE(MAX(nonce) + 1, 0) FROM verified_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
     return . Nonce . floor $ nonce
+
+
+insertPushDatum :: Address -> Text -> Text -> Connection -> IO Int
+insertPushDatum addr channelID platform conn = fromIntegral <$>
+    execute conn "INSERT INTO push_data (address, channelID, platform) VALUES (?,?,?) ON CONFLICT (address) DO UPDATE SET channel = EXCLUDED.channel" (addr, channelID, platform)
 
 
 creditRecordToPendingTuple :: CreditRecord

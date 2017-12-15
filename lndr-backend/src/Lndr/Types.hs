@@ -8,6 +8,7 @@ module Lndr.Types
     , ServerConfig(..)
     , NickRequest(..)
     , NickInfo(..)
+    , PushRequest(..)
     , CreditRecord(CreditRecord, hash, creditor, debtor, submitter, signature, nonce)
     , IssueCreditLog(IssueCreditLog, ucac, amount)
     , RejectRecord(RejectRecord)
@@ -78,6 +79,12 @@ data NickInfo = NickInfo { addr :: Address
                          , nick :: Text
                          } deriving Show
 $(deriveJSON defaultOptions ''NickInfo)
+
+data PushRequest = PushRequest { channelID :: Text
+                               , platform :: Text
+                               }
+$(deriveJSON defaultOptions ''PushRequest)
+
 
 data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  , creditProtocolAddress :: !Address

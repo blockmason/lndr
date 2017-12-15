@@ -174,7 +174,7 @@ twoPartyNonce addr counterparty conn = do
 
 insertPushDatum :: Address -> Text -> Text -> Connection -> IO Int
 insertPushDatum addr channelID platform conn = fromIntegral <$>
-    execute conn "INSERT INTO push_data (address, channelID, platform) VALUES (?,?,?) ON CONFLICT (address) DO UPDATE SET channel = EXCLUDED.channel" (addr, channelID, platform)
+    execute conn "INSERT INTO push_data (address, channel_id, platform) VALUES (?,?,?) ON CONFLICT (address) DO UPDATE SET (channel_id, platform) = (EXCLUDED.channel_id, EXCLUDED.platform)" (addr, channelID, platform)
 
 
 creditRecordToPendingTuple :: CreditRecord

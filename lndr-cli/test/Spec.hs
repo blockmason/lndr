@@ -12,6 +12,8 @@ import           Test.Framework
 import           Test.Framework.Providers.HUnit
 import           Test.HUnit hiding (Test)
 
+-- TODO get rid of this once version enpoint point works
+ucacAddr = "0x7899b83071d9704af0b132859a04bb1698a3acaf"
 
 testUrl = "http://localhost:80"
 testPrivkey1 = "7231a774a538fce22a329729b03087de4cb4a1119494db1c10eae3bb491823e7"
@@ -85,7 +87,7 @@ basicLendTest :: Assertion
 basicLendTest = do
     -- user1 submits pending credit to user2
     httpCode <-
-        submitCredit testUrl testPrivkey1
+        submitCredit testUrl ucacAddr testPrivkey1
                      (CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" "")
     assertEqual "lend success" 204 httpCode
 

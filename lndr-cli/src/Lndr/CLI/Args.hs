@@ -17,6 +17,8 @@ module Lndr.CLI.Args (
     , userFromSK
     , checkPending
     , submitCredit
+    , rejectCredit
+    , getTransactions
     ) where
 
 import           Data.Data
@@ -81,9 +83,9 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
 
 runMode :: Config -> LndrCmd -> IO ()
 runMode (Config url sk _) Transactions = do
-    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/transactions?user=" ++ T.unpack (userFromSK sk)
-    resp <- HTTP.httpJSON initReq
-    Pr.pPrintNoColor (HTTP.getResponseBody resp :: [IssueCreditLog])
+    logs <- getTransactions (LT.unpack url) (textToAddress $ userFromSK sk)
+    Pr.pPrintNoColor logs
+
 runMode (Config url sk _) Pending = do
     creditRecords <- checkPending (LT.unpack url) (textToAddress $ userFromSK sk)
     Pr.pPrintNoColor creditRecords
@@ -135,6 +137,12 @@ runMode (Config url sk _) Info =
 
 
 userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
+
+getTransactions :: String -> Address -> IO [IssueCreditLog]
+getTransactions url address = do
+    initReq <- HTTP.parseRequest $ url ++ "/transactions?user=" ++ show address
+    HTTP.getResponseBody <$> HTTP.httpJSON initReq
+
 
 setGasPrice :: String -> Address -> Integer -> IO Int
 setGasPrice url addr price = do

@@ -8,7 +8,7 @@ module Lndr.Types
     , ServerConfig(..)
     , NickRequest(..)
     , NickInfo(..)
-    , CreditRecord(CreditRecord, hash, creditor, debtor, signature, nonce)
+    , CreditRecord(CreditRecord, hash, creditor, debtor, submitter, signature, nonce)
     , IssueCreditLog(IssueCreditLog, ucac, amount)
     , RejectRecord(RejectRecord)
     , Nonce(..)

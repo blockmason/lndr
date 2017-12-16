@@ -86,7 +86,7 @@ nickTest = do
 basicLendTest :: Assertion
 basicLendTest = do
     let testCredit = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" ""
-        creditHash = hashCreditRecord ucacAddr 0 testCredit
+        creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
     -- user1 submits pending credit to user2
     httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit
     assertEqual "lend success" 204 httpCode
@@ -119,9 +119,8 @@ basicLendTest = do
     creditRecords1 <- checkPending testUrl testAddress1
     assertEqual "zero pending records found for user1" 0 (length creditRecords1)
 
-    -- verifiedRecords1 <- checkPending testUrl testAddress1
-    -- assertEqual "one pending record found for user1" 1 (length verifiedRecords1)
-
+    verifiedRecords1 <- getTransactions testUrl testAddress1
+    assertEqual "one pending record found for user1" 1 (length verifiedRecords1)
 
 
 basicGasTest :: Assertion

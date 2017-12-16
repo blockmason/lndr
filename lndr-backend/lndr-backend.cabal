@@ -29,6 +29,7 @@ library
                      , configurator
                      , cryptonite
                      , data-default
+                     , directory
                      , either
                      , ethereumhs-util
                      , filepath

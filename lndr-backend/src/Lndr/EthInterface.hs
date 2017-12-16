@@ -42,7 +42,7 @@ import qualified Network.HTTP.Simple as HTTP
 import           Numeric (readHex, showHex)
 import           Prelude hiding (lookup, (!!))
 import           System.FilePath
-
+import           System.Directory
 
 instance Configured Address where
     convert (String x) = Just $ textToAddress x
@@ -50,6 +50,10 @@ instance Configured Address where
 
 loadConfig :: IO ServerConfig
 loadConfig = do
+    cwd <- getCurrentDirectory
+    print cwd
+    contents <- getDirectoryContents cwd
+    print contents
     config <- getMap =<< load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
     let loadEntry x = fromMaybe (error $ T.unpack x) $ convert =<< H.lookup x config
     return $ ServerConfig (loadEntry "lndrUcacAddr")

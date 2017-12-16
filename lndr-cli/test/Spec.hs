@@ -6,7 +6,7 @@ module Main where
 import           Control.Concurrent (threadDelay)
 import qualified Data.Text.Lazy as LT
 import           Lndr.CLI.Args
-import           Lndr.EthInterface (textToAddress)
+import           Lndr.EthInterface (textToAddress, hashCreditRecord)
 import           Lndr.Types
 import           Test.Framework
 import           Test.Framework.Providers.HUnit
@@ -88,8 +88,7 @@ basicLendTest = do
     let testCredit = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" ""
         creditHash = hashCreditRecord ucacAddr 0 testCredit
     -- user1 submits pending credit to user2
-    httpCode <-
-        submitCredit testUrl ucacAddr testPrivkey1 testCredit
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit
     assertEqual "lend success" 204 httpCode
 
     -- user1 checks pending transactions
@@ -109,8 +108,20 @@ basicLendTest = do
     assertEqual "zero pending records found for user2" 0 (length creditRecords2)
 
     -- user1 attempts same credit again
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit
+    assertEqual "lend success" 204 httpCode
 
-    -- user2 accepts
+    -- user2 accepts user1's pending credit
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey2 (testCredit { submitter = testAddress2 })
+    assertEqual "borrow success" 204 httpCode
+
+    -- user1's checks that he has pending credits and one verified credit
+    creditRecords1 <- checkPending testUrl testAddress1
+    assertEqual "zero pending records found for user1" 0 (length creditRecords1)
+
+    -- verifiedRecords1 <- checkPending testUrl testAddress1
+    -- assertEqual "one pending record found for user1" 1 (length verifiedRecords1)
+
 
 
 basicGasTest :: Assertion

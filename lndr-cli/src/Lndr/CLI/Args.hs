@@ -93,7 +93,8 @@ runMode (Config url sk _) RejectPending = do
     records <- HTTP.getResponseBody <$> HTTP.httpJSON req :: IO [CreditRecord]
     Pr.pPrintNoColor records
     index <- (read :: String -> Int) <$> getLine
-    rejectCredit (LT.unpack url) (LT.toStrict sk) (hash $ records !! index)
+    httpCode <- rejectCredit (LT.unpack url) (LT.toStrict sk) (hash $ records !! index)
+    print httpCode
 
 runMode (Config url sk ucacAddr) (Lend friend amount memo) = do
     httpCode <- submitCredit (LT.unpack url) (textToAddress $ LT.toStrict ucacAddr) (LT.toStrict sk) $
@@ -255,7 +256,7 @@ submitCredit url ucacAddr secretKey unsignedCredit@(CreditRecord creditor debtor
     return $ HTTP.getResponseStatusCode resp
 
 
-rejectCredit :: String -> Text -> Text -> IO ()
+rejectCredit :: String -> Text -> Text -> IO Int
 rejectCredit url secretKey hash = do
     initReq <- HTTP.parseRequest $ url ++ "/reject"
     let (Right sig) = ecsign hash secretKey
@@ -263,4 +264,4 @@ rejectCredit url secretKey hash = do
         req = HTTP.setRequestBodyJSON rejectRecord $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
-    Pr.pPrintNoColor (HTTP.getResponseStatusCode resp)
+    return $ HTTP.getResponseStatusCode resp

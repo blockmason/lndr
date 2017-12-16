@@ -14,6 +14,9 @@ module Lndr.CLI.Args (
     , setGasPrice
     , addFriend
     , getFriends
+    , userFromSK
+    , checkPending
+    , submitCredit
     ) where
 
 import           Data.Data
@@ -82,9 +85,8 @@ runMode (Config url sk _) Transactions = do
     resp <- HTTP.httpJSON initReq
     Pr.pPrintNoColor (HTTP.getResponseBody resp :: [IssueCreditLog])
 runMode (Config url sk _) Pending = do
-    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/pending/" ++ T.unpack (userFromSK sk)
-    resp <- HTTP.httpJSON initReq
-    Pr.pPrintNoColor (HTTP.getResponseBody resp :: [CreditRecord])
+    creditRecords <- checkPending (LT.unpack url) (textToAddress $ userFromSK sk)
+    Pr.pPrintNoColor creditRecords
 
 runMode (Config url sk _) RejectPending = do
     req <- HTTP.parseRequest $ LT.unpack url ++ "/pending/" ++ T.unpack (userFromSK sk)
@@ -93,12 +95,15 @@ runMode (Config url sk _) RejectPending = do
     index <- (read :: String -> Int) <$> getLine
     rejectCredit (LT.unpack url) (LT.toStrict sk) (hash $ records !! index)
 
-runMode (Config url sk _) (Lend friend amount memo) =
-    submitCredit (LT.unpack url) (LT.toStrict sk) $
+runMode (Config url sk _) (Lend friend amount memo) = do
+    httpCode <- submitCredit (LT.unpack url) (LT.toStrict sk) $
         CreditRecord (textToAddress $ userFromSK sk) (textToAddress friend) amount memo (textToAddress $ userFromSK sk) 0 "" ""
-runMode (Config url sk _) (Borrow friend amount memo) =
-    submitCredit (LT.unpack url) (LT.toStrict sk) $
+    print httpCode
+
+runMode (Config url sk _) (Borrow friend amount memo) = do
+    httpCode <- submitCredit (LT.unpack url) (LT.toStrict sk) $
         CreditRecord (textToAddress friend) (textToAddress $ userFromSK sk) amount memo (textToAddress $ userFromSK sk) 0 "" ""
+    print httpCode
 
 -- Friend-related Modes
 runMode (Config url sk _) (Nick nick) =
@@ -230,8 +235,14 @@ signCredit secretKey ucacAddr r@(CreditRecord c d a m _ nonce _ _) = r { signatu
           (Right sig) = ecsign hashedMessage secretKey
 
 
+checkPending :: String -> Address -> IO [CreditRecord]
+checkPending url userAddress = do
+    initReq <- HTTP.parseRequest $ url ++ "/pending/" ++ show userAddress
+    HTTP.getResponseBody <$> HTTP.httpJSON initReq
+
+
 -- TODO Don't take a credit record
-submitCredit :: String -> Text -> CreditRecord -> IO ()
+submitCredit :: String -> Text -> CreditRecord -> IO Int
 submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ _ _) = do
     ucacAddr <- lndrUcacAddr <$> loadConfig
     nonce <- getNonce url debtor creditor
@@ -242,7 +253,7 @@ submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ 
     let req = HTTP.setRequestBodyJSON signedCredit $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
-    Pr.pPrintNoColor (HTTP.getResponseStatusCode resp)
+    return $ HTTP.getResponseStatusCode resp
 
 
 rejectCredit :: String -> Text -> Text -> IO ()

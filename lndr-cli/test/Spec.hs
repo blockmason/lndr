@@ -93,9 +93,9 @@ basicLendTest = do
     creditRecords1 <- checkPending testUrl testAddress1
     assertEqual "one pending record found for user1" 1 (length creditRecords1)
 
+    -- user2 checks pending transactions
     creditRecords2 <- checkPending testUrl testAddress2
     assertEqual "one pending record found for user2" 1 (length creditRecords2)
-
 
 
 basicGasTest :: Assertion

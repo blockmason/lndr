@@ -41,9 +41,11 @@ before_install:
     - psql lndrtest -f lndr-backend/db/create_tables.sql
     - stack install --test --no-run-tests
     - cp lndr-backend/data/lndr-server.config.test lndr-backend/data/lndr-server.config
+    - PATH=/home/travis/.local/bin:$PATH
 
 script:
-    - sudo /home/travis/.local/bin/lndr-server &
+    - pwd
+    - sudo lndr-server &
     - stack test lndr-cli
 
 after_script:

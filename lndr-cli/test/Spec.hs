@@ -39,6 +39,9 @@ tests = [ testGroup "Nicks"
         , testGroup "Admin"
             [ testCase "get and set gas price" basicGasTest
             ]
+        , testGroup "Notifications"
+            [ testCase "registerChannel" basicNotificationsTest
+            ]
         ]
 
 
@@ -134,3 +137,6 @@ basicGasTest = do
     -- check that gas price has been doubled
     newPrice <- getGasPrice testUrl
     assertEqual "gas price doubled" newPrice (price * 2)
+
+basicNotificationsTest :: Assertion
+basicNotificationsTest = undefined

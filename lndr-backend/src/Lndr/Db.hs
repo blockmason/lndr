@@ -60,6 +60,8 @@ instance FromRow CreditRecord
 
 instance FromRow IssueCreditLog
 
+instance FromRow NickInfo
+
 -- nicknames table manipulations
 
 insertNick :: Address -> Text -> Connection -> IO Int
@@ -73,14 +75,14 @@ lookupNick addr conn = listToMaybe . fmap fromOnly <$>
 
 
 -- TODO update this to return a maybe
-lookupAddressByNick :: Text -> Connection -> IO [NickInfo]
-lookupAddressByNick nick conn = fmap (uncurry NickInfo) <$>
-    (query conn "SELECT address, nickname FROM nicknames WHERE nickname = ?" (Only nick) :: IO [(Address, Text)])
+lookupAddressByNick :: Text -> Connection -> IO (Maybe NickInfo)
+lookupAddressByNick nick conn = listToMaybe <$>
+    (query conn "SELECT address, nickname FROM nicknames WHERE nickname = ?" (Only nick) :: IO [NickInfo])
 
 
 lookupAddressesByFuzzyNick :: Text -> Connection -> IO [NickInfo]
-lookupAddressesByFuzzyNick nick conn = fmap (uncurry NickInfo) <$>
-    (query conn "SELECT address, nickname FROM nicknames WHERE nickname LIKE ? LIMIT 10" (Only $ T.append nick "%") :: IO [(Address, Text)])
+lookupAddressesByFuzzyNick nick conn =
+    query conn "SELECT address, nickname FROM nicknames WHERE nickname LIKE ? LIMIT 10" (Only $ T.append nick "%") :: IO [NickInfo]
 
 
 -- friendships table manipulations
@@ -100,8 +102,8 @@ lookupFriends addr conn = fmap fromOnly <$>
     (query conn "SELECT friend FROM friendships WHERE origin = ?" (Only addr) :: IO [Only Address])
 
 lookupFriendsWithNick :: Address -> Connection -> IO [NickInfo]
-lookupFriendsWithNick addr conn = fmap (uncurry NickInfo) <$>
-    (query conn "SELECT friend, nickname FROM friendships, nicknames WHERE origin = ? AND address = friend" (Only addr) :: IO [(Address, Text)])
+lookupFriendsWithNick addr conn =
+    query conn "SELECT friend, nickname FROM friendships, nicknames WHERE origin = ? AND address = friend" (Only addr) :: IO [NickInfo]
 
 -- pending_credits table manipulations
 

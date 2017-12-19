@@ -77,7 +77,7 @@ $(deriveJSON defaultOptions ''NickRequest)
 
 data NickInfo = NickInfo { addr :: Address
                          , nick :: Text
-                         } deriving Show
+                         } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''NickInfo)
 
 data PushRequest = PushRequest { channelID :: Text

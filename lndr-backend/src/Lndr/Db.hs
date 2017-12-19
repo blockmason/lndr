@@ -5,7 +5,8 @@ module Lndr.Db (
     -- * 'nicknames' table functions
       insertNick
     , lookupNick
-    , lookupAddresByNick
+    , lookupAddressByNick
+    , lookupAddressesByFuzzyNick
 
     -- * 'friendships' table functions
     , addFriends
@@ -71,9 +72,16 @@ lookupNick addr conn = listToMaybe . fmap fromOnly <$>
     (query conn "SELECT nickname FROM nicknames WHERE address = ?" (Only addr) :: IO [Only Text])
 
 
-lookupAddresByNick :: Text -> Connection -> IO [NickInfo]
-lookupAddresByNick nick conn = fmap (uncurry NickInfo) <$>
-    (query conn "SELECT (address, nickname) FROM nicknames WHERE nickname LIKE ? LIMIT 10" (Only $ T.append nick "%") :: IO [(Address, Text)])
+-- TODO update this to return a maybe
+lookupAddressByNick :: Text -> Connection -> IO [NickInfo]
+lookupAddressByNick nick conn = fmap (uncurry NickInfo) <$>
+    (query conn "SELECT address, nickname FROM nicknames WHERE nickname = ?" (Only nick) :: IO [(Address, Text)])
+
+
+lookupAddressesByFuzzyNick :: Text -> Connection -> IO [NickInfo]
+lookupAddressesByFuzzyNick nick conn = fmap (uncurry NickInfo) <$>
+    (query conn "SELECT address, nickname FROM nicknames WHERE nickname LIKE ? LIMIT 10" (Only $ T.append nick "%") :: IO [(Address, Text)])
+
 
 -- friendships table manipulations
 

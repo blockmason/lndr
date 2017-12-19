@@ -4,21 +4,26 @@
 module Main where
 
 import           Control.Concurrent (threadDelay)
+import qualified Data.Text.Lazy as LT
 import           Lndr.CLI.Args
+import           Lndr.EthInterface (textToAddress, hashCreditRecord)
 import           Lndr.Types
 import           Test.Framework
 import           Test.Framework.Providers.HUnit
 import           Test.HUnit hiding (Test)
 
+-- TODO get rid of this once version enpoint point works
+ucacAddr = "0x7899b83071d9704af0b132859a04bb1698a3acaf"
 
 testUrl = "http://localhost:80"
-
-testAddress1 = "198e13017d2333712bd942d8b028610b95c363da"
-testAddress2 = "1ba7167373f13d28cc112f373bac8d5a07a47af9"
-
+testPrivkey1 = "7231a774a538fce22a329729b03087de4cb4a1119494db1c10eae3bb491823e7"
+testPrivkey2 = "f581608ccd4dcd78e341e464b86f268b77ee2673acc705023e64eeb5a4e31490"
+testAddress1 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey1
+testAddress2 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey2
 testSearch = "test"
 testNick1 = "test1"
 testNick2 = "test2"
+
 
 main :: IO ()
 main = defaultMain tests
@@ -79,7 +84,43 @@ nickTest = do
 
 
 basicLendTest :: Assertion
-basicLendTest = putStrLn "yet to be implemented"
+basicLendTest = do
+    let testCredit = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" ""
+        creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
+    -- user1 submits pending credit to user2
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit
+    assertEqual "lend success" 204 httpCode
+
+    -- user1 checks pending transactions
+    creditRecords1 <- checkPending testUrl testAddress1
+    assertEqual "one pending record found for user1" 1 (length creditRecords1)
+
+    -- user2 checks pending transactions
+    creditRecords2 <- checkPending testUrl testAddress2
+    assertEqual "one pending record found for user2" 1 (length creditRecords2)
+
+    -- user2 rejects pending transaction
+    httpCode <- rejectCredit testUrl testPrivkey1 creditHash
+    assertEqual "reject success" 204 httpCode
+
+    -- user2 has 0 pending records post-rejection
+    creditRecords2 <- checkPending testUrl testAddress2
+    assertEqual "zero pending records found for user2" 0 (length creditRecords2)
+
+    -- user1 attempts same credit again
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit
+    assertEqual "lend success" 204 httpCode
+
+    -- user2 accepts user1's pending credit
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey2 (testCredit { submitter = testAddress2 })
+    assertEqual "borrow success" 204 httpCode
+
+    -- user1's checks that he has pending credits and one verified credit
+    creditRecords1 <- checkPending testUrl testAddress1
+    assertEqual "zero pending records found for user1" 0 (length creditRecords1)
+
+    verifiedRecords1 <- getTransactions testUrl testAddress1
+    assertEqual "one pending record found for user1" 1 (length verifiedRecords1)
 
 
 basicGasTest :: Assertion

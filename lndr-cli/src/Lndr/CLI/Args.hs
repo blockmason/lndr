@@ -14,6 +14,11 @@ module Lndr.CLI.Args (
     , setGasPrice
     , addFriend
     , getFriends
+    , userFromSK
+    , checkPending
+    , submitCredit
+    , rejectCredit
+    , getTransactions
     ) where
 
 import           Data.Data
@@ -78,27 +83,30 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
 
 runMode :: Config -> LndrCmd -> IO ()
 runMode (Config url sk _) Transactions = do
-    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/transactions?user=" ++ T.unpack (userFromSK sk)
-    resp <- HTTP.httpJSON initReq
-    Pr.pPrintNoColor (HTTP.getResponseBody resp :: [IssueCreditLog])
+    logs <- getTransactions (LT.unpack url) (textToAddress $ userFromSK sk)
+    Pr.pPrintNoColor logs
+
 runMode (Config url sk _) Pending = do
-    initReq <- HTTP.parseRequest $ LT.unpack url ++ "/pending/" ++ T.unpack (userFromSK sk)
-    resp <- HTTP.httpJSON initReq
-    Pr.pPrintNoColor (HTTP.getResponseBody resp :: [CreditRecord])
+    creditRecords <- checkPending (LT.unpack url) (textToAddress $ userFromSK sk)
+    Pr.pPrintNoColor creditRecords
 
 runMode (Config url sk _) RejectPending = do
     req <- HTTP.parseRequest $ LT.unpack url ++ "/pending/" ++ T.unpack (userFromSK sk)
     records <- HTTP.getResponseBody <$> HTTP.httpJSON req :: IO [CreditRecord]
     Pr.pPrintNoColor records
     index <- (read :: String -> Int) <$> getLine
-    rejectCredit (LT.unpack url) (LT.toStrict sk) (hash $ records !! index)
+    httpCode <- rejectCredit (LT.unpack url) (LT.toStrict sk) (hash $ records !! index)
+    print httpCode
 
-runMode (Config url sk _) (Lend friend amount memo) =
-    submitCredit (LT.unpack url) (LT.toStrict sk) $
+runMode (Config url sk ucacAddr) (Lend friend amount memo) = do
+    httpCode <- submitCredit (LT.unpack url) (textToAddress $ LT.toStrict ucacAddr) (LT.toStrict sk) $
         CreditRecord (textToAddress $ userFromSK sk) (textToAddress friend) amount memo (textToAddress $ userFromSK sk) 0 "" ""
-runMode (Config url sk _) (Borrow friend amount memo) =
-    submitCredit (LT.unpack url) (LT.toStrict sk) $
+    print httpCode
+
+runMode (Config url sk ucacAddr) (Borrow friend amount memo) = do
+    httpCode <- submitCredit (LT.unpack url) (textToAddress $ LT.toStrict ucacAddr) (LT.toStrict sk) $
         CreditRecord (textToAddress friend) (textToAddress $ userFromSK sk) amount memo (textToAddress $ userFromSK sk) 0 "" ""
+    print httpCode
 
 -- Friend-related Modes
 runMode (Config url sk _) (Nick nick) =
@@ -129,6 +137,12 @@ runMode (Config url sk _) Info =
 
 
 userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
+
+getTransactions :: String -> Address -> IO [IssueCreditLog]
+getTransactions url address = do
+    initReq <- HTTP.parseRequest $ url ++ "/transactions?user=" ++ show address
+    HTTP.getResponseBody <$> HTTP.httpJSON initReq
+
 
 setGasPrice :: String -> Address -> Integer -> IO Int
 setGasPrice url addr price = do
@@ -230,10 +244,15 @@ signCredit secretKey ucacAddr r@(CreditRecord c d a m _ nonce _ _) = r { signatu
           (Right sig) = ecsign hashedMessage secretKey
 
 
+checkPending :: String -> Address -> IO [CreditRecord]
+checkPending url userAddress = do
+    initReq <- HTTP.parseRequest $ url ++ "/pending/" ++ show userAddress
+    HTTP.getResponseBody <$> HTTP.httpJSON initReq
+
+
 -- TODO Don't take a credit record
-submitCredit :: String -> Text -> CreditRecord -> IO ()
-submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ _ _) = do
-    ucacAddr <- lndrUcacAddr <$> loadConfig
+submitCredit :: String -> Address -> Text -> CreditRecord -> IO Int
+submitCredit url ucacAddr secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ _ _) = do
     nonce <- getNonce url debtor creditor
     initReq <- if textToAddress (userFromSK (LT.fromStrict secretKey)) == creditor
                    then HTTP.parseRequest $ url ++ "/lend"
@@ -242,10 +261,10 @@ submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ 
     let req = HTTP.setRequestBodyJSON signedCredit $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
-    Pr.pPrintNoColor (HTTP.getResponseStatusCode resp)
+    return $ HTTP.getResponseStatusCode resp
 
 
-rejectCredit :: String -> Text -> Text -> IO ()
+rejectCredit :: String -> Text -> Text -> IO Int
 rejectCredit url secretKey hash = do
     initReq <- HTTP.parseRequest $ url ++ "/reject"
     let (Right sig) = ecsign hash secretKey
@@ -253,4 +272,4 @@ rejectCredit url secretKey hash = do
         req = HTTP.setRequestBodyJSON rejectRecord $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
-    Pr.pPrintNoColor (HTTP.getResponseStatusCode resp)
+    return $ HTTP.getResponseStatusCode resp

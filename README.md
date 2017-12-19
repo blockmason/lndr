@@ -43,51 +43,6 @@ on your `PATH`.
 
 ## UCAC contract
 
-`0x869a8f2c3D22Be392618Ed06C8F548D1D5b5aeD6`
-[FriendInDebt.sol README](ucac/README.md)
+LNDR Contract Address: `0x869a8f2c3D22Be392618Ed06C8F548D1D5b5aeD6`
 
-## deploy process
-
-On AWS ubuntu server. Deploy will be automated soon.
-
-```
-# install stack
-curl -sSL https://get.haskellstack.org/ | sh
-
-# clone lndr repo
-git clone http://github.com/blockmason/lndr.git
-
-# install geth
-sudo apt-get install software-properties-common
-sudo add-apt-repository -y ppa:ethereum/ethereum
-sudo apt-get update
-sudo apt-get install ethereum
-sudo apt-get install autoconf
-sudo apt-get install libtool
-
-# install postgres
-# add postgres ppa https://www.ubuntuupdates.org/ppa/postgresql?dist=trusty-pgdg
-
-
-sudo apt-get install postgresql postgresql-contrib libpq-dev
-# https://wixelhq.com/blog/how-to-install-postgresql-on-ubuntu-remote-access
-
-# start a local blockchain in the background
-cd lndr/ucac
-sudo apt-get install npm
-sudo npm install -g truffle
-npm install
-./gethtest.sh &
-
-# install ghc and lndr-server application
-cd lndr
-stack setup
-stack build
-```
-
-on a server using EBS, keep in mind that `stack`'s root can be set via an
-environment variable:
-
-```
-export STACK_ROOT=/data/.stack
-```
+[Lndr.sol README](ucac/README.md)

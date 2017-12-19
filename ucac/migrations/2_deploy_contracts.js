@@ -5,7 +5,7 @@ const CPToken = artifacts.require('tce-contracts/contracts/CPToken.sol');
 const Lndr = artifacts.require('./Lndr.sol');
 
 module.exports = function(deployer, network, accounts) {
-    if (network == "gethtest") {
+    if (network == "gethtest" || network == "testrpc") {
         const usd = web3.fromAscii("USD");
         const mintAmount = web3.toBigNumber(web3.toWei(20000))
         var cpTokenContract;

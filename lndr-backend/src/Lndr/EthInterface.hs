@@ -20,9 +20,11 @@ import qualified Data.ByteArray as BA
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base16 as BS16
 import           Data.Configurator
+import           Data.Configurator.Types
 import           Data.Default
 import           Data.Either (rights)
 import           Data.Either.Combinators (fromRight, mapLeft)
+import qualified Data.HashMap.Strict           as H (empty, lookup)
 import           Data.List.Safe ((!!))
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid ((<>))
@@ -31,7 +33,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Lndr.Types
 import qualified Network.Ethereum.Util as EU
-import           Network.Ethereum.Web3
+import           Network.Ethereum.Web3 hiding (convert)
 import qualified Network.Ethereum.Web3.Address as Addr
 import qualified Network.Ethereum.Web3.Eth as Eth
 import           Network.Ethereum.Web3.TH
@@ -41,30 +43,24 @@ import           Numeric (readHex, showHex)
 import           Prelude hiding (lookup, (!!))
 import           System.FilePath
 
+instance Configured Address where
+    convert (String x) = Just $ textToAddress x
+    convert _ = Nothing
 
 loadConfig :: IO ServerConfig
 loadConfig = do
-    config <- load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
-    lndrUcacAddr <- fromMaybe (error "lndrUcacAddr") <$> lookup config "lndrUcacAddr"
-    cpAddr <- fromMaybe (error "cpAddr") <$> lookup config "creditProtocolAddress"
-    issueCreditEvent <- fromMaybe (error "issueCreditEvent") <$> lookup config "issueCreditEvent"
-    scanStartBlock <- fromMaybe (error "scanStartBlock") <$> lookup config "scanStartBlock"
-    dbUser <- fromMaybe (error "dbUser") <$> lookup config "dbUser"
-    dbUserPassword <- fromMaybe (error "dbUserPassword") <$> lookup config "dbUserPassword"
-    dbName <- fromMaybe (error "dbName") <$> lookup config "dbName"
-    executionAddress <- fromMaybe (error "executionAddress") <$> lookup config "executionAddress"
-    gasPrice <- fromMaybe (error "gasPrice") <$> lookup config "gasPrice"
-    maxGas <- fromMaybe (error "maxGas") <$> lookup config "maxGas"
-    return $ ServerConfig (textToAddress lndrUcacAddr)
-                          (textToAddress cpAddr)
-                          issueCreditEvent
-                          scanStartBlock
-                          dbUser
-                          dbUserPassword
-                          dbName
-                          (textToAddress executionAddress)
-                          gasPrice
-                          maxGas
+    config <- getMap =<< load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
+    let loadEntry x = fromMaybe (error $ T.unpack x) $ convert =<< H.lookup x config
+    return $ ServerConfig (loadEntry "lndrUcacAddr")
+                          (loadEntry "creditProtocolAddress")
+                          (loadEntry "issueCreditEvent")
+                          (loadEntry "scanStartBlock")
+                          (loadEntry "dbUser")
+                          (loadEntry "dbUserPassword")
+                          (loadEntry "dbName")
+                          (loadEntry "executionAddress")
+                          (loadEntry "gasPrice")
+                          (loadEntry "maxGas")
 
 
 bytesDecode :: Text -> Bytes
@@ -91,10 +87,10 @@ decomposeSig sig = (sigR, sigS, sigV)
 [abiFrom|data/CreditProtocol.abi|]
 
 
-hashCreditRecord :: ServerConfig -> Nonce -> CreditRecord -> Text
-hashCreditRecord config nonce (CreditRecord creditor debtor amount _ _ _ _ _) =
+hashCreditRecord :: Address -> Nonce -> CreditRecord -> Text
+hashCreditRecord ucacAddr nonce (CreditRecord creditor debtor amount _ _ _ _ _) =
                 let message = T.concat $
-                      stripHexPrefix <$> [ Addr.toText (lndrUcacAddr config)
+                      stripHexPrefix <$> [ Addr.toText ucacAddr
                                          , Addr.toText creditor
                                          , Addr.toText debtor
                                          , integerToHex amount

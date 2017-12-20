@@ -95,15 +95,19 @@ data NotificationAction = NewPendingCredit
                         | PendingCreditRejection
 $(deriveJSON defaultOptions ''NotificationAction)
 
+data DevicePlatform = Ios
+                    | Android
+$(deriveJSON defaultOptions ''DevicePlatform)
+
 data Notification = Notification { channelID :: Text
-                                 , platform :: Text
+                                 , platform :: DevicePlatform
                                  , message :: Text
                                  , action :: NotificationAction
                                  }
 
 instance ToJSON Notification where
     toJSON (Notification channelID platform message action) =
-        object [ "audience" .= object [ T.append platform "_channel" .= channelID ]
+        object [ "audience" .= object [ deviceChannel platform .= channelID ]
                , "notification" .=
                     object [ "alert" .= message
                            , "actions" .=
@@ -113,6 +117,8 @@ instance ToJSON Notification where
                            ]
                , "device_types" .= [ platform ]
                ]
+        where deviceChannel Ios = "ios_channel"
+              deviceChannel Android = "android_channel"
 
 data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  , creditProtocolAddress :: !Address

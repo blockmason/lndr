@@ -18,8 +18,12 @@ ucacAddr = "0x7899b83071d9704af0b132859a04bb1698a3acaf"
 testUrl = "http://localhost:80"
 testPrivkey1 = "7231a774a538fce22a329729b03087de4cb4a1119494db1c10eae3bb491823e7"
 testPrivkey2 = "f581608ccd4dcd78e341e464b86f268b77ee2673acc705023e64eeb5a4e31490"
+testPrivkey3 = "b217205550c6011141e3580142ac43d7d41d217102f30e816eb36b70727e292e"
+testPrivkey4 = "024f55d169862624eec05be973a38f52ad252b3bcc0f0ed1927defa4ab4ea098"
 testAddress1 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey1
 testAddress2 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey2
+testAddress3 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey3
+testAddress4 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey4
 testSearch = "test"
 testNick1 = "test1"
 testNick2 = "test2"
@@ -51,38 +55,44 @@ nickTest = do
     nickTaken <- takenNick testUrl testNick1
     assertBool "after db reset all nicks are available" (not nickTaken)
     -- set nick for user1
-    httpCode <- setNick testUrl (NickRequest testAddress1 testNick1 "")
+    httpCode <- setNick testUrl (NickRequest testAddress3 testNick1 "")
     assertEqual "add friend success" 204 httpCode
     -- check that test nick is no longer available
     nickTaken <- takenNick testUrl testNick1
     assertBool "nicks already in db are not available" nickTaken
     -- check that nick for user1 properly set
-    queriedNick <- getNick testUrl testAddress1
+    queriedNick <- getNick testUrl testAddress3
     assertEqual "nick is set and queryable" queriedNick testNick1
     -- fail to set identical nick for user2
-    httpCode <- setNick testUrl (NickRequest testAddress2 testNick1 "")
+    httpCode <- setNick testUrl (NickRequest testAddress4 testNick1 "")
     assertBool "duplicate nick is rejected with user error" (httpCode /= 204)
     -- change user1 nick
-    httpCode <- setNick testUrl (NickRequest testAddress1 testNick2 "")
+    httpCode <- setNick testUrl (NickRequest testAddress3 testNick2 "")
     assertEqual "change nick success" 204 httpCode
     -- check that user1's nick was successfully changed
-    queriedNick <- getNick testUrl testAddress1
+    queriedNick <- getNick testUrl testAddress3
     assertEqual "nick is set and queryable" queriedNick testNick2
 
     -- set user2's nick
-    httpCode <- setNick testUrl (NickRequest testAddress2 testNick1 "")
+    httpCode <- setNick testUrl (NickRequest testAddress4 testNick1 "")
     assertEqual "previously used nickname is settable" 204 httpCode
 
     fuzzySearchResults <- searchNick testUrl testSearch
     assertEqual "search returns both results" 2 $ length fuzzySearchResults
 
     -- user1 adds user2 as a friend
-    httpCode <- addFriend testUrl testAddress1 testAddress2
+    httpCode <- addFriend testUrl testAddress3 testAddress4
     assertEqual "add friend success" 204 httpCode
     -- verify that friend has been added
-    friends <- getFriends testUrl testAddress1
-    print friends
-    assertEqual "friend properly added" [testAddress2] ((\(NickInfo addr _) -> addr) <$> friends)
+    friends <- getFriends testUrl testAddress3
+    assertEqual "friend properly added" [NickInfo testAddress4 testNick1] friends
+
+    -- user3 removes user4 from friends
+    removeFriend testUrl testAddress3 testAddress4
+
+    -- verify that friend has been removed
+    friends <- getFriends testUrl testAddress3
+    assertEqual "friend properly removed" [] friends
 
 
 basicLendTest :: Assertion

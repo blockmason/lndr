@@ -139,4 +139,8 @@ basicGasTest = do
     assertEqual "gas price doubled" newPrice (price * 2)
 
 basicNotificationsTest :: Assertion
-basicNotificationsTest = undefined
+basicNotificationsTest = do
+    initReq <- HTTP.parseRequest $ url ++ "/register_push/" ++ show testAddress1
+    let req = HTTP.setRequestBodyJSON (PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios") $ HTTP.setRequestMethod "POST" initReq
+    httpCode <- HTTP.getResponseStatusCode <$> HTTP.httpJSON req
+    assertEqual "register channel success" 204 httpCode

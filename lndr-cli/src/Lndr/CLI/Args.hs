@@ -6,19 +6,34 @@ module Lndr.CLI.Args (
       LndrCmd(..)
     , programModes
     , runMode
+    , userFromSK
+
+    -- * nick-related requests
     , getNick
     , setNick
     , searchNick
     , takenNick
+
+    -- * gas-related requests
     , getGasPrice
     , setGasPrice
+
+    -- * friend-related requests
     , addFriend
     , getFriends
-    , userFromSK
+    , removeFriend
+
+    -- * credit-related requests
     , checkPending
     , submitCredit
     , rejectCredit
+    , getBalance
+    , getTwoPartyBalance
+    , getCounterparties
     , getTransactions
+
+    -- * notifications-related requests
+    , registerChannel
     ) where
 
 import           Data.Data
@@ -56,6 +71,7 @@ data LndrCmd = Transactions
              | GasPrice
              | SetGasPrice { price :: Integer }
              | Info
+             | Unsubmitted
              deriving (Show, Data, Typeable)
 
 
@@ -77,6 +93,7 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
                      , RemoveFriend "0x198e13017d2333712bd942d8b028610b95c363da"
                      , GasPrice
                      , SetGasPrice 2000000
+                     , Unsubmitted &= help "prints txs that are in lndr db but not yet on the blockchain"
                      , Info &= help "prints config, nick, and friends"
                      ] &= help "Lend and borrow money" &= program "lndr" &= summary "lndr v0.1"
 
@@ -135,12 +152,28 @@ runMode (Config url sk _) (GetNonce friend) =
 runMode (Config url sk _) Info =
     print =<< getInfo (LT.unpack url) (userFromSK sk)
 
+runMode (Config url sk _) Unsubmitted =
+    print =<< getUnsubmitted (LT.unpack url)
 
 userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
+
+
+getUnsubmitted :: String -> IO [(Text, IssueCreditLog)]
+getUnsubmitted url = do
+    initReq <- HTTP.parseRequest $ url ++ "/unsubmitted"
+    logs <- HTTP.getResponseBody <$> HTTP.httpJSON initReq
+    return $ fmap (\x -> (hashCreditLog x, x)) logs
+
 
 getTransactions :: String -> Address -> IO [IssueCreditLog]
 getTransactions url address = do
     initReq <- HTTP.parseRequest $ url ++ "/transactions?user=" ++ show address
+    HTTP.getResponseBody <$> HTTP.httpJSON initReq
+
+
+getCounterparties :: String -> Address -> IO [Address]
+getCounterparties url address = do
+    initReq <- HTTP.parseRequest $ url ++ "/counterparties/" ++ show address
     HTTP.getResponseBody <$> HTTP.httpJSON initReq
 
 
@@ -216,6 +249,13 @@ getBalance url userAddr = do
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
+getTwoPartyBalance :: String -> Address -> Address -> IO Integer
+getTwoPartyBalance url userAddr counterPartyAddr = do
+    let fullUrl = url ++ "/balance/" ++ show userAddr ++ "/" ++ show counterPartyAddr
+    req <- HTTP.parseRequest fullUrl
+    HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
 getInfo :: String -> Text -> IO (Address, Text, Integer, [NickInfo])
 getInfo url userAddr = do
     nick <- getNick url address
@@ -273,3 +313,10 @@ rejectCredit url secretKey hash = do
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp
+
+
+registerChannel :: String -> Address -> PushRequest -> IO Int
+registerChannel url addr pushReq = do
+    initReq <- HTTP.parseRequest $ url ++ "/register_push/" ++ show addr
+    let req = HTTP.setRequestBodyJSON pushReq $ HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req

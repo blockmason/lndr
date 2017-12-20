@@ -8,6 +8,7 @@ module Lndr.Types
     , ServerConfig(..)
     , NickRequest(..)
     , NickInfo(..)
+    , PushRequest(..)
     , CreditRecord(CreditRecord, hash, creditor, debtor, submitter, signature, nonce)
     , IssueCreditLog(IssueCreditLog, ucac, amount)
     , RejectRecord(RejectRecord)
@@ -48,8 +49,12 @@ data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , amount :: Integer
                                      , nonce :: Integer
                                      , memo :: Text
-                                     } deriving (Show, Eq, Generic)
+                                     } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''IssueCreditLog)
+
+instance Eq IssueCreditLog where
+    (==) (IssueCreditLog u1 c1 d1 a1 n1 _) (IssueCreditLog u2 c2 d2 a2 n2 _) =
+            u1 == u2 && c1 == c2 && d1 == d2 && a1 == a2 && n1 == n2
 
 -- `a` is a phantom type that indicates whether a record has been signed or not
 data CreditRecord = CreditRecord { creditor :: Address
@@ -76,8 +81,14 @@ $(deriveJSON defaultOptions ''NickRequest)
 
 data NickInfo = NickInfo { addr :: Address
                          , nick :: Text
-                         } deriving Show
+                         } deriving (Show, Eq, Generic)
 $(deriveJSON defaultOptions ''NickInfo)
+
+data PushRequest = PushRequest { channelID :: Text
+                               , platform :: Text
+                               }
+$(deriveJSON defaultOptions ''PushRequest)
+
 
 data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  , creditProtocolAddress :: !Address

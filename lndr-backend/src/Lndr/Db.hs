@@ -5,7 +5,8 @@ module Lndr.Db (
     -- * 'nicknames' table functions
       insertNick
     , lookupNick
-    , lookupAddresByNick
+    , lookupAddressByNick
+    , lookupAddressesByFuzzyNick
 
     -- * 'friendships' table functions
     , addFriends
@@ -30,6 +31,9 @@ module Lndr.Db (
     , userBalance
     , twoPartyBalance
     , twoPartyNonce
+
+    -- * 'push_data' table functions
+    , insertPushDatum
     ) where
 
 
@@ -56,6 +60,8 @@ instance FromRow CreditRecord
 
 instance FromRow IssueCreditLog
 
+instance FromRow NickInfo
+
 -- nicknames table manipulations
 
 insertNick :: Address -> Text -> Connection -> IO Int
@@ -68,9 +74,16 @@ lookupNick addr conn = listToMaybe . fmap fromOnly <$>
     (query conn "SELECT nickname FROM nicknames WHERE address = ?" (Only addr) :: IO [Only Text])
 
 
-lookupAddresByNick :: Text -> Connection -> IO [NickInfo]
-lookupAddresByNick nick conn = fmap ((`NickInfo` nick) . fromOnly) <$>
-    (query conn "SELECT address FROM nicknames WHERE nickname LIKE ? LIMIT 10" (Only $ T.append nick "%") :: IO [Only Address])
+-- TODO update this to return a maybe
+lookupAddressByNick :: Text -> Connection -> IO (Maybe NickInfo)
+lookupAddressByNick nick conn = listToMaybe <$>
+    (query conn "SELECT address, nickname FROM nicknames WHERE nickname = ?" (Only nick) :: IO [NickInfo])
+
+
+lookupAddressesByFuzzyNick :: Text -> Connection -> IO [NickInfo]
+lookupAddressesByFuzzyNick nick conn =
+    query conn "SELECT address, nickname FROM nicknames WHERE nickname LIKE ? LIMIT 10" (Only $ T.append nick "%") :: IO [NickInfo]
+
 
 -- friendships table manipulations
 
@@ -89,8 +102,8 @@ lookupFriends addr conn = fmap fromOnly <$>
     (query conn "SELECT friend FROM friendships WHERE origin = ?" (Only addr) :: IO [Only Address])
 
 lookupFriendsWithNick :: Address -> Connection -> IO [NickInfo]
-lookupFriendsWithNick addr conn = fmap (uncurry NickInfo) <$>
-    (query conn "SELECT friend, nickname FROM friendships, nicknames WHERE origin = ? AND address = friend" (Only addr) :: IO [(Address, Text)])
+lookupFriendsWithNick addr conn =
+    query conn "SELECT friend, nickname FROM friendships, nicknames WHERE origin = ? AND address = friend" (Only addr) :: IO [NickInfo]
 
 -- pending_credits table manipulations
 
@@ -167,6 +180,11 @@ twoPartyNonce :: Address -> Address -> Connection -> IO Nonce
 twoPartyNonce addr counterparty conn = do
     [Only nonce] <- query conn "SELECT COALESCE(MAX(nonce) + 1, 0) FROM verified_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
     return . Nonce . floor $ nonce
+
+
+insertPushDatum :: Address -> Text -> Text -> Connection -> IO Int
+insertPushDatum addr channelID platform conn = fromIntegral <$>
+    execute conn "INSERT INTO push_data (address, channel_id, platform) VALUES (?,?,?) ON CONFLICT (address) DO UPDATE SET (channel_id, platform) = (EXCLUDED.channel_id, EXCLUDED.platform)" (addr, channelID, platform)
 
 
 creditRecordToPendingTuple :: CreditRecord

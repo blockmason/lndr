@@ -30,13 +30,13 @@ nickLookupHandler addr = do
 nickSearchHandler :: Text -> LndrHandler [NickInfo]
 nickSearchHandler nick = do
     pool <- dbConnectionPool <$> ask
-    liftIO . withResource pool . Db.lookupAddresByNick $ T.toLower nick
+    liftIO . withResource pool . Db.lookupAddressesByFuzzyNick $ T.toLower nick
 
 
 nickTakenHandler :: Text -> LndrHandler Bool
 nickTakenHandler nick = do
     pool <- dbConnectionPool <$> ask
-    liftIO . fmap (not . null) . withResource pool . Db.lookupAddresByNick $ T.toLower nick
+    liftIO . fmap (not . null) . withResource pool . Db.lookupAddressByNick $ T.toLower nick
 
 
 friendHandler :: Address -> LndrHandler [NickInfo]

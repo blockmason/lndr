@@ -19,6 +19,7 @@ module Lndr.CLI.Args (
     , submitCredit
     , rejectCredit
     , getTransactions
+    , registerChannel
     ) where
 
 import           Data.Data

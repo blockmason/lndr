@@ -140,5 +140,5 @@ basicGasTest = do
 
 basicNotificationsTest :: Assertion
 basicNotificationsTest = do
-    registerChannel testUrl estAddress1 (PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios")
+    httpCode <- registerChannel testUrl testAddress1 (PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios")
     assertEqual "register channel success" 204 httpCode

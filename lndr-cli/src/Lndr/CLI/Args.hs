@@ -21,6 +21,7 @@ module Lndr.CLI.Args (
     -- * friend-related requests
     , addFriend
     , getFriends
+    , removeFriend
 
     -- * credit-related requests
     , checkPending

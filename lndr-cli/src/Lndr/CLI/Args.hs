@@ -6,19 +6,29 @@ module Lndr.CLI.Args (
       LndrCmd(..)
     , programModes
     , runMode
+    , userFromSK
+
+    -- * nick-related requests
     , getNick
     , setNick
     , searchNick
     , takenNick
+
+    -- * gas-related requests
     , getGasPrice
     , setGasPrice
+
+    -- * friend-related requests
     , addFriend
     , getFriends
-    , userFromSK
+
+    -- * credit-related requests
     , checkPending
     , submitCredit
     , rejectCredit
     , getTransactions
+
+    -- * notifications-related requests
     , registerChannel
     ) where
 

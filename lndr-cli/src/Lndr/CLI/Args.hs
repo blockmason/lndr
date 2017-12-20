@@ -27,6 +27,9 @@ module Lndr.CLI.Args (
     , checkPending
     , submitCredit
     , rejectCredit
+    , getBalance
+    , getTwoPartyBalance
+    , getCounterparties
     , getTransactions
 
     -- * notifications-related requests
@@ -168,6 +171,12 @@ getTransactions url address = do
     HTTP.getResponseBody <$> HTTP.httpJSON initReq
 
 
+getCounterparties :: String -> Address -> IO [Address]
+getCounterparties url address = do
+    initReq <- HTTP.parseRequest $ url ++ "/counterparties/" ++ show address
+    HTTP.getResponseBody <$> HTTP.httpJSON initReq
+
+
 setGasPrice :: String -> Address -> Integer -> IO Int
 setGasPrice url addr price = do
     initReq <- HTTP.parseRequest $ url ++ "/gas_price"
@@ -237,6 +246,13 @@ getFriends url userAddr = do
 getBalance :: String -> Address -> IO Integer
 getBalance url userAddr = do
     req <- HTTP.parseRequest $ url ++ "/balance/" ++ show userAddr
+    HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
+getTwoPartyBalance :: String -> Address -> Address -> IO Integer
+getTwoPartyBalance url userAddr counterPartyAddr = do
+    let fullUrl = url ++ "/balance/" ++ show userAddr ++ "/" ++ show counterPartyAddr
+    req <- HTTP.parseRequest fullUrl
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 

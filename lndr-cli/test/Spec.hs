@@ -132,7 +132,17 @@ basicLendTest = do
     assertEqual "zero pending records found for user1" 0 (length creditRecords1)
 
     verifiedRecords1 <- getTransactions testUrl testAddress1
-    assertEqual "one pending record found for user1" 1 (length verifiedRecords1)
+    assertEqual "one verified record found for user1" 1 (length verifiedRecords1)
+
+    balance <- getBalance testUrl testAddress1
+    assertEqual "user1's total balance is 100" 100 balance
+
+    twoPartyBalance <- getTwoPartyBalance testUrl testAddress1 testAddress2
+    assertEqual "user1's two-party balance is 100" 100 twoPartyBalance
+
+    -- user1's counterparties list is [user2]
+    counterparties <- getCounterparties testUrl testAddress1
+    assertEqual "user1's counterparties properly calculated" [testAddress2] counterparties
 
 
 basicGasTest :: Assertion

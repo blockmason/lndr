@@ -15,6 +15,8 @@ module Lndr.Types
     , RejectRecord(RejectRecord)
     , Nonce(..)
     , GasStationResponse(..)
+    , Notification(..)
+    , DevicePlatform(..)
     ) where
 
 import           Control.Concurrent.STM.TVar
@@ -97,7 +99,10 @@ $(deriveJSON defaultOptions ''NotificationAction)
 
 data DevicePlatform = Ios
                     | Android
-$(deriveJSON defaultOptions ''DevicePlatform)
+
+instance ToJSON DevicePlatform where
+   toJSON Ios = String "ios"
+   toJSON Android = String "android"
 
 data Notification = Notification { channelID :: Text
                                  , platform :: DevicePlatform

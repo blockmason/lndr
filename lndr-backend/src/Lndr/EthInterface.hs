@@ -111,6 +111,21 @@ hashCreditLog (IssueCreditLog ucac creditor debtor amount nonce _) =
                 in EU.hashText message
 
 
+
+-- Authorization: Basic <master authorization string>
+-- THUS: applyBasicAuth :: ByteString -> ByteString -> Request -> Request
+-- Content-Type: application/json
+-- setRequestBodyJSON Notification req
+-- Accept: application/vnd.urbanairship+json; version=3;
+-- THUS: addRequestHeader hAccept "application/vnd.urbanairship+json; version=3;"
+sendNotification :: Notification -> IO Int
+sendNotification notification = do
+    initReq <- HTTP.parseRequest "https://go.urbanairship.com/api/push"
+    -- add basic auth
+    let req = HTTP.setRequestBodyJSON notification $ HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+
+
 safelowUpdate :: ServerConfig -> TVar ServerConfig -> IO ServerConfig
 safelowUpdate config configTVar = do
     req <- HTTP.parseRequest "https://ethgasstation.info/json/ethgasAPI.json"

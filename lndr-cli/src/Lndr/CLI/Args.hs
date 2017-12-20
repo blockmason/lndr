@@ -273,3 +273,10 @@ rejectCredit url secretKey hash = do
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp
+
+
+registerChannel :: String -> Address -> PushRequest -> IO Int
+registerChannel url addr pushReq = do
+    initReq <- HTTP.parseRequest $ url ++ "/register_push/" ++ show addr
+    let req = HTTP.setRequestBodyJSON pushReq $ HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req

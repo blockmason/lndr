@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Lndr.Types
@@ -89,6 +90,29 @@ data PushRequest = PushRequest { channelID :: Text
                                }
 $(deriveJSON defaultOptions ''PushRequest)
 
+data NotificationAction = NewPendingCredit
+                        | CreditConfirmation
+                        | PendingCreditRejection
+$(deriveJSON defaultOptions ''NotificationAction)
+
+data Notification = Notification { channelID :: Text
+                                 , platform :: Text
+                                 , message :: Text
+                                 , action :: NotificationAction
+                                 }
+
+instance ToJSON Notification where
+    toJSON (Notification channelID platform message action) =
+        object [ "audience" .= object [ T.append platform "_channel" .= channelID ]
+               , "notification" .=
+                    object [ "alert" .= message
+                           , "actions" .=
+                                 object [ "app_defined" .=
+                                             object [ "LNDR_ACTIONS" .= [ action ] ]
+                                        ]
+                           ]
+               , "device_types" .= [ platform ]
+               ]
 
 data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  , creditProtocolAddress :: !Address

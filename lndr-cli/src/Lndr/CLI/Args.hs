@@ -67,6 +67,7 @@ data LndrCmd = Transactions
              | GasPrice
              | SetGasPrice { price :: Integer }
              | Info
+             | Unsubmitted
              deriving (Show, Data, Typeable)
 
 
@@ -88,6 +89,7 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
                      , RemoveFriend "0x198e13017d2333712bd942d8b028610b95c363da"
                      , GasPrice
                      , SetGasPrice 2000000
+                     , Unsubmitted &= help "prints txs that are in lndr db but not yet on the blockchain"
                      , Info &= help "prints config, nick, and friends"
                      ] &= help "Lend and borrow money" &= program "lndr" &= summary "lndr v0.1"
 
@@ -146,8 +148,18 @@ runMode (Config url sk _) (GetNonce friend) =
 runMode (Config url sk _) Info =
     print =<< getInfo (LT.unpack url) (userFromSK sk)
 
+runMode (Config url sk _) Unsubmitted =
+    print =<< getUnsubmitted (LT.unpack url)
 
 userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
+
+
+getUnsubmitted :: String -> IO [(Text, IssueCreditLog)]
+getUnsubmitted url = do
+    initReq <- HTTP.parseRequest $ url ++ "/unsubmitted"
+    logs <- HTTP.getResponseBody <$> HTTP.httpJSON initReq
+    return $ fmap (\x -> (hashCreditLog x, x)) logs
+
 
 getTransactions :: String -> Address -> IO [IssueCreditLog]
 getTransactions url address = do

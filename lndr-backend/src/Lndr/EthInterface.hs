@@ -32,6 +32,7 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Lndr.Types
+import           Lndr.Util
 import qualified Network.Ethereum.Util as EU
 import           Network.Ethereum.Web3 hiding (convert)
 import qualified Network.Ethereum.Web3.Address as Addr
@@ -67,52 +68,8 @@ loadConfig = do
                           (loadEntry "urbanAirshipSecret")
 
 
-bytesDecode :: Text -> Bytes
-bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
-
-
-textToBytesN32 :: Text -> BytesN 32
-textToBytesN32 = BytesN . bytesDecode . T.take 64 . T.drop 2
-
-
-addrToBS :: Address -> B.ByteString
-addrToBS = T.encodeUtf8 . Addr.toText
-
-
-decomposeSig :: Text -> (BytesN 32, BytesN 32, BytesN 32)
-decomposeSig sig = (sigR, sigS, sigV)
-    where strippedSig = stripHexPrefix sig
-          sigR = BytesN . bytesDecode $ T.take 64 strippedSig
-          sigS = BytesN . bytesDecode . T.take 64 . T.drop 64 $ strippedSig
-          sigV = BytesN . bytesDecode . alignR . T.take 2 . T.drop 128 $ strippedSig
-
-
 -- Create functions to call CreditProtocol contract. Currently, only `issueCredit` is used.
 [abiFrom|data/CreditProtocol.abi|]
-
-
-hashCreditRecord :: Address -> Nonce -> CreditRecord -> Text
-hashCreditRecord ucacAddr nonce (CreditRecord creditor debtor amount _ _ _ _ _) =
-                let message = T.concat $
-                      stripHexPrefix <$> [ Addr.toText ucacAddr
-                                         , Addr.toText creditor
-                                         , Addr.toText debtor
-                                         , integerToHex amount
-                                         , integerToHex $ unNonce nonce
-                                         ]
-                in EU.hashText message
-
-
-hashCreditLog :: IssueCreditLog -> Text
-hashCreditLog (IssueCreditLog ucac creditor debtor amount nonce _) =
-                let message = T.concat $
-                      stripHexPrefix <$> [ Addr.toText ucac
-                                         , Addr.toText creditor
-                                         , Addr.toText debtor
-                                         , integerToHex amount
-                                         , integerToHex nonce
-                                         ]
-                in EU.hashText message
 
 
 sendNotification :: ServerConfig -> Notification -> IO Int
@@ -140,7 +97,6 @@ safelowUpdate config configTVar = do
     where
         safeLowScaling = 100000000 -- eth gas station returns prices in DeciGigaWei
         margin = 1.3 -- multiplier for  additional assurance that tx will make it into blockchain
-
 
 finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord
                     -> IO (Either Web3Error TxHash)
@@ -188,58 +144,3 @@ interpretUcacLog change = do
                           amount
                           nonce
                           memo
-
-
-takeNthByte32 :: Int -> Text -> Text
-takeNthByte32 n = T.take byte32CharLength . T.drop (n * byte32CharLength) . stripHexPrefix
-    where byte32CharLength = 64
-
-
--- transforms the standard ('0x' + 64-char) bytes32 rendering of a log field into the
--- 40-char hex representation of an address
-bytes32ToAddress :: Text -> Either SomeException Address
-bytes32ToAddress = mapLeft (toException . TypeError) . Addr.fromText . T.drop 26
-
-
-addressToBytes32 :: Address -> Text
-addressToBytes32 = T.append "0x" . alignR . Addr.toText
-
-
-textToAddress :: Text -> Address
-textToAddress = fromRight (error "bad address") . Addr.fromText
-
-
-hexToInteger :: Text -> Integer
-hexToInteger = fst . head . readHex . T.unpack . stripHexPrefix
-
-
-stripHexPrefix :: Text -> Text
-stripHexPrefix x | T.isPrefixOf "0x" x = T.drop 2 x
-                 | otherwise = x
-
-
-integerToHex :: Integer -> Text
-integerToHex x = T.append "0x" strRep
-    where strRep = alignR . T.pack $ showHex x ""
-
-
-integerToHex' :: Integer -> Text
-integerToHex' x = T.append "0x" . T.pack $ showHex x ""
-
-
-align :: Text -> (Text, Text)
-align v = (v <> zeros, zeros <> v)
-  where zerosLen = 64 - (T.length v `mod` 64)
-        zeros = T.replicate zerosLen "0"
-
-
-alignL :: Text -> Text
-alignL = fst . align
-
-
-alignR :: Text -> Text
-alignR = snd . align
-
-
-setUcac :: Address -> IssueCreditLog -> IssueCreditLog
-setUcac lndrUcac creditlog =  creditlog { ucac = lndrUcac }

@@ -47,6 +47,7 @@ import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.ToField
 import           Lndr.EthInterface
 import           Lndr.Types
+import           Lndr.Util
 import           Network.Ethereum.Web3
 
 -- DB Typeclass instances

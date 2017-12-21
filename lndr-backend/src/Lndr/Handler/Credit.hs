@@ -11,6 +11,7 @@ import qualified Lndr.Db as Db
 import           Lndr.EthInterface
 import           Lndr.Handler.Types
 import           Lndr.Types
+import           Lndr.Util
 import qualified Network.Ethereum.Util as EU
 import           Network.Ethereum.Web3
 import           Servant

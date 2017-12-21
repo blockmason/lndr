@@ -44,6 +44,7 @@ import qualified Data.Text.Lazy as LT
 import           Lndr.EthInterface hiding (getNonce)
 import           Lndr.CLI.Config
 import           Lndr.Types
+import           Lndr.Util
 import           Network.Ethereum.Util (hashPersonalMessage, ecsign, privateToAddress, hashText)
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr

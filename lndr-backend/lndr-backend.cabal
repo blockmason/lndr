@@ -22,6 +22,7 @@ library
                      , Lndr.Handler.Types
                      , Lndr.Server
                      , Lndr.Types
+                     , Lndr.Util
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , base16-bytestring

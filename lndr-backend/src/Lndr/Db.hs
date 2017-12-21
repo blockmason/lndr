@@ -34,6 +34,7 @@ module Lndr.Db (
 
     -- * 'push_data' table functions
     , insertPushDatum
+    , lookupPushDatumByAddress
     ) where
 
 
@@ -55,6 +56,12 @@ instance ToField Address where
 
 instance FromField Address where
     fromField f dat = textToAddress <$> fromField f dat
+
+instance FromField DevicePlatform where
+    fromField f dat = toDevicePlatform <$> fromField f dat
+        where toDevicePlatform :: Text -> DevicePlatform
+              toDevicePlatform "ios" = Ios
+              toDevicePlatform "android" = Android
 
 instance FromRow CreditRecord
 
@@ -186,6 +193,9 @@ insertPushDatum :: Address -> Text -> Text -> Connection -> IO Int
 insertPushDatum addr channelID platform conn = fromIntegral <$>
     execute conn "INSERT INTO push_data (address, channel_id, platform) VALUES (?,?,?) ON CONFLICT (address) DO UPDATE SET (channel_id, platform) = (EXCLUDED.channel_id, EXCLUDED.platform)" (addr, channelID, platform)
 
+
+lookupPushDatumByAddress :: Address -> Connection -> IO (Maybe (Text, DevicePlatform))
+lookupPushDatumByAddress addr conn = listToMaybe <$> query conn "SELECT (channel_id, platform) FROM push_data WHERE address = ?" (Only addr)
 
 creditRecordToPendingTuple :: CreditRecord
                            -> (Address, Address, Integer, Text, Address, Integer, Text, Text)

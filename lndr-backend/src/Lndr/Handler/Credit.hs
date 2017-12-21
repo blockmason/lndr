@@ -115,6 +115,14 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             -- delete pending record after transaction finalization
             void . liftIO . withResource pool $ Db.deletePending hash
 
+            -- send push notification to counterparty
+            let counterparty = if creditor /= submitterAddress then debtor else creditor
+            pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
+            case pushDataM of
+                -- TODO include nickname in the alert if we intend to use it
+                Just (channelID, platform) -> void . liftIO $ sendNotification config (Notification channelID platform "New Pending Credit" NewPendingCredit)
+                Nothing -> return ()
+
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
             -- check if a pending transaction already exists between the two users
@@ -127,6 +135,14 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             void . liftIO . withResource pool $ Db.addFriends debtor [creditor]
 
             void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash })
+
+            -- send push notification to counterparty
+            let counterparty = if creditor /= submitterAddress then debtor else creditor
+            pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
+            case pushDataM of
+                -- TODO include nickname in the alert if we intend to use it
+                Just (channelID, platform) -> void . liftIO $ sendNotification config (Notification channelID platform "Credit Confirmation" CreditConfirmation)
+                Nothing -> return ()
 
     return NoContent
 

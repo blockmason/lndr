@@ -16,6 +16,7 @@ module Lndr.Types
     , Nonce(..)
     , GasStationResponse(..)
     , Notification(..)
+    , NotificationAction(..)
     , DevicePlatform(..)
     ) where
 

@@ -125,6 +125,7 @@ sendNotification config notification = do
     where acceptContent = "application/vnd.urbanairship+json; version=3;"
           urbanAirshipUrl = "https://go.urbanairship.com/api/push"
 
+
 safelowUpdate :: ServerConfig -> TVar ServerConfig -> IO ServerConfig
 safelowUpdate config configTVar = do
     req <- HTTP.parseRequest "https://ethgasstation.info/json/ethgasAPI.json"

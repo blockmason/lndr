@@ -6,7 +6,7 @@ module Main where
 import           Control.Concurrent (threadDelay)
 import qualified Data.Text.Lazy as LT
 import           Lndr.CLI.Args
-import           Lndr.EthInterface (textToAddress, hashCreditRecord)
+import           Lndr.Util (textToAddress, hashCreditRecord)
 import           Lndr.Types
 import           Test.Framework
 import           Test.Framework.Providers.HUnit

@@ -17,32 +17,26 @@ import           Control.Concurrent.STM
 import           Control.Exception
 import           Control.Monad
 import qualified Data.ByteArray as BA
-import qualified Data.ByteString as B
 import qualified Data.ByteString.Base16 as BS16
 import           Data.Configurator
 import           Data.Configurator.Types
 import           Data.Default
 import           Data.Either (rights)
-import           Data.Either.Combinators (fromRight, mapLeft)
-import qualified Data.HashMap.Strict           as H (empty, lookup)
+import qualified Data.HashMap.Strict as H (lookup)
 import           Data.List.Safe ((!!))
 import           Data.Maybe (fromMaybe)
-import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Lndr.Types
 import           Lndr.Util
-import qualified Network.Ethereum.Util as EU
 import           Network.Ethereum.Web3 hiding (convert)
-import qualified Network.Ethereum.Web3.Address as Addr
 import qualified Network.Ethereum.Web3.Eth as Eth
 import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
 import qualified Network.HTTP.Client as HTTP (applyBasicAuth)
 import qualified Network.HTTP.Simple as HTTP
 import qualified Network.HTTP.Types as HTTP (hAccept)
-import           Numeric (readHex, showHex)
 import           Prelude hiding (lookup, (!!))
 import           System.FilePath
 

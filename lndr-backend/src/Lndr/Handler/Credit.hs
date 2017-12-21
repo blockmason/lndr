@@ -97,6 +97,15 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     -- check if hash is already registered in pending txs
     pendingCredit <- liftIO . withResource pool $ Db.lookupPending hash
 
+    let attemptToNotify msg notifyAction = do
+            let counterparty = if creditor /= submitterAddress then debtor else creditor
+            pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
+            case pushDataM of
+                -- TODO include nickname in the alert if we intend to use it
+                Just (channelID, platform) -> void . liftIO $
+                    sendNotification config (Notification channelID platform msg notifyAction)
+                Nothing -> return ()
+
     case pendingCredit of
         -- if the submitted credit record has a matching pending record,
         -- finalize the transaction on the blockchain
@@ -116,12 +125,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             void . liftIO . withResource pool $ Db.deletePending hash
 
             -- send push notification to counterparty
-            let counterparty = if creditor /= submitterAddress then debtor else creditor
-            pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
-            case pushDataM of
-                -- TODO include nickname in the alert if we intend to use it
-                Just (channelID, platform) -> void . liftIO $ sendNotification config (Notification channelID platform "New Pending Credit" NewPendingCredit)
-                Nothing -> return ()
+            attemptToNotify "New Pending Credit" NewPendingCredit
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
@@ -137,12 +141,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash })
 
             -- send push notification to counterparty
-            let counterparty = if creditor /= submitterAddress then debtor else creditor
-            pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
-            case pushDataM of
-                -- TODO include nickname in the alert if we intend to use it
-                Just (channelID, platform) -> void . liftIO $ sendNotification config (Notification channelID platform "Credit Confirmation" CreditConfirmation)
-                Nothing -> return ()
+            attemptToNotify "Credit Confirmation" CreditConfirmation
 
     return NoContent
 

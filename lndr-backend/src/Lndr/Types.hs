@@ -135,6 +135,8 @@ data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  , executionAddress :: !Address
                                  , gasPrice :: !Integer
                                  , maxGas :: !Integer
+                                 , urbanAirshipKey :: Text
+                                 , urbanAirshipSecret :: Text
                                  }
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection

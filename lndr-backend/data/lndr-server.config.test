@@ -8,3 +8,5 @@ dbName = "lndrtest"
 executionAddress = "0x198e13017d2333712bd942d8b028610b95c363da"
 gasPrice = 200000000
 maxGas = 250000
+urbanAirshipKey = "4_88888888888mmmmmmmmm"
+urbanAirshipSecret = "rrrrrrrrrrrrrrrrrrrrrr"

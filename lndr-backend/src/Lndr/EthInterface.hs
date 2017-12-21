@@ -61,6 +61,8 @@ loadConfig = do
                           (loadEntry "executionAddress")
                           (loadEntry "gasPrice")
                           (loadEntry "maxGas")
+                          (loadEntry "urbanAirshipKey")
+                          (loadEntry "urbanAirshipSecret")
 
 
 bytesDecode :: Text -> Bytes

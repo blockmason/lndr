@@ -138,3 +138,15 @@ interpretUcacLog change = do
                           amount
                           nonce
                           memo
+
+
+verifySettlementPayment :: Text -> Address -> Address -> Integer -> IO Bool
+verifySettlementPayment txHash debtor creditor amount = do
+    transactionME <- runWeb3 $ Eth.getTransactionByHash txHash
+    case transactionME of
+        Right (Just transaction) ->
+            let fromMatch = txFrom transaction == debtor
+                toMatch = txTo transaction == Just creditor
+                valueMatch = hexToInteger (txValue transaction) == amount
+            in return $ fromMatch && toMatch && valueMatch
+        _                        -> return False

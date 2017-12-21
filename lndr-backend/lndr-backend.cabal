@@ -34,6 +34,7 @@ library
                      , ethereumhs-util
                      , filepath
                      , hashable
+                     , http-client
                      , http-conduit
                      , http-types
                      , listsafe

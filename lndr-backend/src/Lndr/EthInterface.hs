@@ -38,7 +38,9 @@ import qualified Network.Ethereum.Web3.Address as Addr
 import qualified Network.Ethereum.Web3.Eth as Eth
 import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
+import qualified Network.HTTP.Client as HTTP (applyBasicAuth)
 import qualified Network.HTTP.Simple as HTTP
+import qualified Network.HTTP.Types as HTTP (hAccept)
 import           Numeric (readHex, showHex)
 import           Prelude hiding (lookup, (!!))
 import           System.FilePath
@@ -61,6 +63,8 @@ loadConfig = do
                           (loadEntry "executionAddress")
                           (loadEntry "gasPrice")
                           (loadEntry "maxGas")
+                          (loadEntry "urbanAirshipKey")
+                          (loadEntry "urbanAirshipSecret")
 
 
 bytesDecode :: Text -> Bytes
@@ -109,6 +113,17 @@ hashCreditLog (IssueCreditLog ucac creditor debtor amount nonce _) =
                                          , integerToHex nonce
                                          ]
                 in EU.hashText message
+
+
+sendNotification :: ServerConfig -> Notification -> IO Int
+sendNotification config notification = do
+    initReq <- HTTP.parseRequest urbanAirshipUrl
+    let req = HTTP.addRequestHeader HTTP.hAccept acceptContent $
+                    HTTP.applyBasicAuth (urbanAirshipKey config) (urbanAirshipSecret config) $
+                    HTTP.setRequestBodyJSON notification $ HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+    where acceptContent = "application/vnd.urbanairship+json; version=3;"
+          urbanAirshipUrl = "https://go.urbanairship.com/api/push"
 
 
 safelowUpdate :: ServerConfig -> TVar ServerConfig -> IO ServerConfig

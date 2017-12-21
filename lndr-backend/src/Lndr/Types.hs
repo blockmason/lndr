@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Lndr.Types
@@ -14,11 +15,15 @@ module Lndr.Types
     , RejectRecord(RejectRecord)
     , Nonce(..)
     , GasStationResponse(..)
+    , Notification(..)
+    , NotificationAction(..)
+    , DevicePlatform(..)
     ) where
 
 import           Control.Concurrent.STM.TVar
 import           Data.Aeson
 import           Data.Aeson.TH
+import           Data.ByteString (ByteString)
 import           Data.Either.Combinators (mapLeft)
 import           Data.Hashable
 import           Data.Pool
@@ -89,6 +94,38 @@ data PushRequest = PushRequest { channelID :: Text
                                }
 $(deriveJSON defaultOptions ''PushRequest)
 
+data NotificationAction = NewPendingCredit
+                        | CreditConfirmation
+                        | PendingCreditRejection
+$(deriveJSON defaultOptions ''NotificationAction)
+
+data DevicePlatform = Ios
+                    | Android
+
+instance ToJSON DevicePlatform where
+   toJSON Ios = String "ios"
+   toJSON Android = String "android"
+
+data Notification = Notification { channelID :: Text
+                                 , platform :: DevicePlatform
+                                 , message :: Text
+                                 , action :: NotificationAction
+                                 }
+
+instance ToJSON Notification where
+    toJSON (Notification channelID platform message action) =
+        object [ "audience" .= object [ deviceChannel platform .= channelID ]
+               , "notification" .=
+                    object [ "alert" .= message
+                           , "actions" .=
+                                 object [ "app_defined" .=
+                                             object [ "LNDR_ACTIONS" .= [ action ] ]
+                                        ]
+                           ]
+               , "device_types" .= [ platform ]
+               ]
+        where deviceChannel Ios = "ios_channel"
+              deviceChannel Android = "android_channel"
 
 data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  , creditProtocolAddress :: !Address
@@ -100,6 +137,8 @@ data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  , executionAddress :: !Address
                                  , gasPrice :: !Integer
                                  , maxGas :: !Integer
+                                 , urbanAirshipKey :: !ByteString
+                                 , urbanAirshipSecret :: !ByteString
                                  }
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection

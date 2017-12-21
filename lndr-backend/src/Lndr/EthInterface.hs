@@ -38,7 +38,9 @@ import qualified Network.Ethereum.Web3.Address as Addr
 import qualified Network.Ethereum.Web3.Eth as Eth
 import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
+import qualified Network.HTTP.Client as HTTP (applyBasicAuth)
 import qualified Network.HTTP.Simple as HTTP
+import qualified Network.HTTP.Types as HTTP (hAccept)
 import           Numeric (readHex, showHex)
 import           Prelude hiding (lookup, (!!))
 import           System.FilePath
@@ -113,20 +115,15 @@ hashCreditLog (IssueCreditLog ucac creditor debtor amount nonce _) =
                 in EU.hashText message
 
 
-
--- Authorization: Basic <master authorization string>
--- THUS: applyBasicAuth :: ByteString -> ByteString -> Request -> Request
--- Content-Type: application/json
--- setRequestBodyJSON Notification req
--- Accept: application/vnd.urbanairship+json; version=3;
--- THUS: addRequestHeader hAccept "application/vnd.urbanairship+json; version=3;"
-sendNotification :: Notification -> IO Int
-sendNotification notification = do
-    initReq <- HTTP.parseRequest "https://go.urbanairship.com/api/push"
-    -- add basic auth
-    let req = HTTP.setRequestBodyJSON notification $ HTTP.setRequestMethod "POST" initReq
+sendNotification :: ServerConfig -> Notification -> IO Int
+sendNotification config notification = do
+    initReq <- HTTP.parseRequest urbanAirshipUrl
+    let req = HTTP.addRequestHeader HTTP.hAccept acceptContent $
+                    HTTP.applyBasicAuth (urbanAirshipKey config) (urbanAirshipSecret config) $
+                    HTTP.setRequestBodyJSON notification $ HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
-
+    where acceptContent = "application/vnd.urbanairship+json; version=3;"
+          urbanAirshipUrl = "https://go.urbanairship.com/api/push"
 
 safelowUpdate :: ServerConfig -> TVar ServerConfig -> IO ServerConfig
 safelowUpdate config configTVar = do

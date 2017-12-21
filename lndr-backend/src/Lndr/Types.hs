@@ -22,6 +22,7 @@ module Lndr.Types
 import           Control.Concurrent.STM.TVar
 import           Data.Aeson
 import           Data.Aeson.TH
+import           Data.ByteString (ByteString)
 import           Data.Either.Combinators (mapLeft)
 import           Data.Hashable
 import           Data.Pool
@@ -135,8 +136,8 @@ data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  , executionAddress :: !Address
                                  , gasPrice :: !Integer
                                  , maxGas :: !Integer
-                                 , urbanAirshipKey :: Text
-                                 , urbanAirshipSecret :: Text
+                                 , urbanAirshipKey :: !ByteString
+                                 , urbanAirshipSecret :: !ByteString
                                  }
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection

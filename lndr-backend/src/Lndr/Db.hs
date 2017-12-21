@@ -195,7 +195,7 @@ insertPushDatum addr channelID platform conn = fromIntegral <$>
 
 
 lookupPushDatumByAddress :: Address -> Connection -> IO (Maybe (Text, DevicePlatform))
-lookupPushDatumByAddress addr conn = listToMaybe <$> query conn "SELECT (channel_id, platform) FROM push_data WHERE address = ?" (Only addr)
+lookupPushDatumByAddress addr conn = listToMaybe <$> query conn "SELECT channel_id, platform FROM push_data WHERE address = ?" (Only addr)
 
 creditRecordToPendingTuple :: CreditRecord
                            -> (Address, Address, Integer, Text, Address, Integer, Text, Text)

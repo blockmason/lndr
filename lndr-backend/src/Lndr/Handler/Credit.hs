@@ -18,8 +18,9 @@ module Lndr.Handler.Credit (
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Except
-import           Data.Pool (withResource)
+import           Data.Pool (Pool, withResource)
 import qualified Data.Text as T
+import           Database.PostgreSQL.Simple (Connection)
 import qualified Lndr.Db as Db
 import           Lndr.EthereumInterface
 import           Lndr.Handler.Types
@@ -102,8 +103,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
                 throwError (err400 {errBody = "A pending credit record already exists for the two users."})
 
             -- ensuring that creditor is on debtor's friends list and vice-versa
-            void . liftIO . withResource pool $ Db.addFriends creditor [debtor]
-            void . liftIO . withResource pool $ Db.addFriends debtor [creditor]
+            liftIO $ createBilateralFriendship pool creditor debtor
 
             void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash })
 
@@ -111,6 +111,12 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             attemptToNotify "Credit Confirmation" CreditConfirmation
 
     return NoContent
+
+
+createBilateralFriendship :: Pool Connection -> Address -> Address -> IO ()
+createBilateralFriendship pool creditor debtor = do
+            withResource pool $ Db.addFriends creditor [debtor]
+            void . withResource pool $ Db.addFriends debtor [creditor]
 
 
 rejectHandler :: RejectRecord -> LndrHandler NoContent

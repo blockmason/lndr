@@ -20,6 +20,8 @@ library
                      , Lndr.Handler.Credit
                      , Lndr.Handler.Friend
                      , Lndr.Handler.Types
+                     , Lndr.NetworkStatistics
+                     , Lndr.Notifications
                      , Lndr.Server
                      , Lndr.Types
                      , Lndr.Util

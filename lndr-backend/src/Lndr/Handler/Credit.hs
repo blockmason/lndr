@@ -10,6 +10,8 @@ import qualified Data.Text as T
 import qualified Lndr.Db as Db
 import           Lndr.EthInterface
 import           Lndr.Handler.Types
+import           Lndr.Notifications
+import           Lndr.NetworkStatistics
 import           Lndr.Types
 import           Lndr.Util
 import qualified Network.Ethereum.Util as EU

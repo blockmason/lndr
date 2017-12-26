@@ -1,6 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Lndr.Handler.Credit where
+module Lndr.Handler.Credit (
+    -- * credit submission handlers
+      lendHandler
+    , borrowHandler
+    , rejectHandler
+
+    -- * app state-querying handlers
+    , pendingHandler
+    , transactionsHandler
+    , nonceHandler
+    , counterpartiesHandler
+    , balanceHandler
+    , twoPartyBalanceHandler
+    ) where
 
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
@@ -17,56 +30,6 @@ import           Lndr.Util
 import qualified Network.Ethereum.Util as EU
 import           Network.Ethereum.Web3
 import           Servant
-
-
-rejectHandler :: RejectRecord -> LndrHandler NoContent
-rejectHandler(RejectRecord sig hash) = do
-    pool <- dbConnectionPool <$> ask
-    pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
-    let hashNotFound = throwError $ err404 { errBody = "credit hash does not refer to pending record" }
-    (CreditRecord creditor debtor _ _ _ _ _ _) <- maybe hashNotFound pure pendingRecordM
-    -- recover address from sig
-    let signer = EU.ecrecover (stripHexPrefix sig) hash
-    case signer of
-        Left _ -> throwError $ err400 { errBody = "unable to recover addr from sig" }
-        Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
-                            then do liftIO . withResource pool $ Db.deletePending hash
-                                    return NoContent
-                            else throwError $ err400 { errBody = "bad rejection sig" }
-
-
-transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
-transactionsHandler Nothing = do
-    configTVar <- serverConfig <$> ask
-    config <- liftIO . atomically $ readTVar configTVar
-    lndrWeb3 (lndrLogs config Nothing Nothing)
-transactionsHandler (Just addr) = do
-    pool <- dbConnectionPool <$> ask
-    liftIO $ withResource pool $ Db.lookupCreditByAddress addr
-
-
-counterpartiesHandler :: Address -> LndrHandler [Address]
-counterpartiesHandler addr = do
-    pool <- dbConnectionPool <$> ask
-    liftIO $ withResource pool $ Db.counterpartiesByAddress addr
-
-
-balanceHandler :: Address -> LndrHandler Integer
-balanceHandler addr = do
-    pool <- dbConnectionPool <$> ask
-    liftIO . withResource pool $ Db.userBalance addr
-
-
-twoPartyBalanceHandler :: Address -> Address -> LndrHandler Integer
-twoPartyBalanceHandler p1 p2 = do
-    pool <- dbConnectionPool <$> ask
-    liftIO . withResource pool $ Db.twoPartyBalance p1 p2
-
-
-pendingHandler :: Address -> LndrHandler [CreditRecord]
-pendingHandler addr = do
-    pool <- dbConnectionPool <$> ask
-    liftIO . withResource pool $ Db.lookupPendingByAddress addr
 
 
 lendHandler :: CreditRecord -> LndrHandler NoContent
@@ -100,6 +63,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     -- check if hash is already registered in pending txs
     pendingCredit <- liftIO . withResource pool $ Db.lookupPending hash
 
+    -- creating function to query urban airship api
     let attemptToNotify msg notifyAction = do
             let counterparty = if creditor /= submitterAddress then debtor else creditor
             pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
@@ -149,7 +113,58 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     return NoContent
 
 
+rejectHandler :: RejectRecord -> LndrHandler NoContent
+rejectHandler(RejectRecord sig hash) = do
+    pool <- dbConnectionPool <$> ask
+    pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
+    let hashNotFound = throwError $ err404 { errBody = "credit hash does not refer to pending record" }
+    (CreditRecord creditor debtor _ _ _ _ _ _) <- maybe hashNotFound pure pendingRecordM
+    -- recover address from sig
+    let signer = EU.ecrecover (stripHexPrefix sig) hash
+    case signer of
+        Left _ -> throwError $ err400 { errBody = "unable to recover addr from sig" }
+        Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
+                            then do liftIO . withResource pool $ Db.deletePending hash
+                                    return NoContent
+                            else throwError $ err400 { errBody = "bad rejection sig" }
+
+
+pendingHandler :: Address -> LndrHandler [CreditRecord]
+pendingHandler addr = do
+    pool <- dbConnectionPool <$> ask
+    liftIO . withResource pool $ Db.lookupPendingByAddress addr
+
+
+transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
+transactionsHandler Nothing = do
+    configTVar <- serverConfig <$> ask
+    config <- liftIO . atomically $ readTVar configTVar
+    lndrWeb3 (lndrLogs config Nothing Nothing)
+transactionsHandler (Just addr) = do
+    pool <- dbConnectionPool <$> ask
+    liftIO $ withResource pool $ Db.lookupCreditByAddress addr
+
+
+
 nonceHandler :: Address -> Address -> LndrHandler Nonce
 nonceHandler p1 p2 = do
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool $ Db.twoPartyNonce p1 p2
+
+
+counterpartiesHandler :: Address -> LndrHandler [Address]
+counterpartiesHandler addr = do
+    pool <- dbConnectionPool <$> ask
+    liftIO $ withResource pool $ Db.counterpartiesByAddress addr
+
+
+balanceHandler :: Address -> LndrHandler Integer
+balanceHandler addr = do
+    pool <- dbConnectionPool <$> ask
+    liftIO . withResource pool $ Db.userBalance addr
+
+
+twoPartyBalanceHandler :: Address -> Address -> LndrHandler Integer
+twoPartyBalanceHandler p1 p2 = do
+    pool <- dbConnectionPool <$> ask
+    liftIO . withResource pool $ Db.twoPartyBalance p1 p2

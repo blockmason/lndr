@@ -8,6 +8,7 @@ import           Control.Monad.IO.Class
 import           Lndr.Types
 import qualified Network.HTTP.Simple as HTTP
 
+
 safelowUpdate :: ServerConfig -> TVar ServerConfig -> IO ServerConfig
 safelowUpdate config configTVar = do
     req <- HTTP.parseRequest "https://ethgasstation.info/json/ethgasAPI.json"

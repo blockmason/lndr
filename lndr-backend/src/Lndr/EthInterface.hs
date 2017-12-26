@@ -10,7 +10,12 @@
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
-module Lndr.EthInterface where
+module Lndr.EthInterface (
+      sendNotification
+    , safelowUpdate
+    , lndrLogs
+    , finalizeTransaction
+    ) where
 
 import           Control.Monad.IO.Class
 import           Control.Concurrent.STM
@@ -40,31 +45,6 @@ import qualified Network.HTTP.Types as HTTP (hAccept)
 import           Prelude hiding (lookup, (!!))
 import           System.FilePath
 
-instance Configured Address where
-    convert (String x) = Just $ textToAddress x
-    convert _ = Nothing
-
-loadConfig :: IO ServerConfig
-loadConfig = do
-    config <- getMap =<< load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
-    let loadEntry x = fromMaybe (error $ T.unpack x) $ convert =<< H.lookup x config
-    return $ ServerConfig (loadEntry "lndrUcacAddr")
-                          (loadEntry "creditProtocolAddress")
-                          (loadEntry "issueCreditEvent")
-                          (loadEntry "scanStartBlock")
-                          (loadEntry "dbUser")
-                          (loadEntry "dbUserPassword")
-                          (loadEntry "dbName")
-                          (loadEntry "executionAddress")
-                          (loadEntry "gasPrice")
-                          (loadEntry "maxGas")
-                          (loadEntry "urbanAirshipKey")
-                          (loadEntry "urbanAirshipSecret")
-
-
--- Create functions to call CreditProtocol contract. Currently, only `issueCredit` is used.
-[abiFrom|data/CreditProtocol.abi|]
-
 
 sendNotification :: ServerConfig -> Notification -> IO Int
 sendNotification config notification = do
@@ -92,6 +72,10 @@ safelowUpdate config configTVar = do
         safeLowScaling = 100000000 -- eth gas station returns prices in DeciGigaWei
         margin = 1.3 -- multiplier for  additional assurance that tx will make it into blockchain
 
+-- Create functions to call CreditProtocol contract. Currently, only `issueCredit` is used.
+[abiFrom|data/CreditProtocol.abi|]
+
+
 finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord
                     -> IO (Either Web3Error TxHash)
 finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _ _ _ _) = do
@@ -111,6 +95,7 @@ finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _
                         , callValue = Just . Quantity $ 0
                         , callGas = Just . Quantity $ maxGas config
                         }
+
 
 lndrLogs :: Provider a => ServerConfig -> Maybe Address -> Maybe Address
          -> Web3 a [IssueCreditLog]

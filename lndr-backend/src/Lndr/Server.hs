@@ -17,7 +17,11 @@ import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Data.ByteString.Lazy (ByteString)
+import           Data.Configurator
+import           Data.Configurator.Types
 import           Data.Either (either)
+import qualified Data.HashMap.Strict as H (lookup)
+import           Data.Maybe (fromMaybe)
 import           Data.Pool (createPool, withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -29,11 +33,12 @@ import           Lndr.Docs
 import           Lndr.EthInterface
 import           Lndr.Handler
 import           Lndr.Types
-import           Network.Ethereum.Web3
+import           Network.Ethereum.Web3 hiding (convert)
 import           Network.HTTP.Types
 import           Network.Wai
 import           Servant
 import           Servant.Docs
+import           System.FilePath
 
 
 type LndrAPI =
@@ -144,3 +149,21 @@ freshState = do
 
     ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
                 <*> newTVarIO serverConfig
+
+
+loadConfig :: IO ServerConfig
+loadConfig = do
+    config <- getMap =<< load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
+    let loadEntry x = fromMaybe (error $ T.unpack x) $ convert =<< H.lookup x config
+    return $ ServerConfig (loadEntry "lndrUcacAddr")
+                          (loadEntry "creditProtocolAddress")
+                          (loadEntry "issueCreditEvent")
+                          (loadEntry "scanStartBlock")
+                          (loadEntry "dbUser")
+                          (loadEntry "dbUserPassword")
+                          (loadEntry "dbName")
+                          (loadEntry "executionAddress")
+                          (loadEntry "gasPrice")
+                          (loadEntry "maxGas")
+                          (loadEntry "urbanAirshipKey")
+                          (loadEntry "urbanAirshipSecret")

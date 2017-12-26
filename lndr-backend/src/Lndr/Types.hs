@@ -24,7 +24,8 @@ import           Control.Concurrent.STM.TVar
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.ByteString (ByteString)
-import           Data.Either.Combinators (mapLeft)
+import qualified Data.Configurator.Types as Conf
+import           Data.Either.Combinators (mapLeft, fromRight)
 import           Data.Hashable
 import           Data.Pool
 import           Data.Text (Text)
@@ -34,6 +35,10 @@ import           GHC.Generics
 import           Network.Ethereum.Web3.Address (Address)
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Servant.API
+
+instance Conf.Configured Address where
+    convert (Conf.String x) = Just . fromRight (error "bad address") . Addr.fromText $ x
+    convert _ = Nothing
 
 instance Hashable Address where
     hashWithSalt x = hashWithSalt x . Addr.toText

@@ -6,6 +6,7 @@ module Main where
 import           Control.Concurrent (threadDelay)
 import qualified Data.Text.Lazy as LT
 import           Lndr.CLI.Args
+import           Lndr.NetworkStatistics
 import           Lndr.Util (textToAddress, hashCreditRecord)
 import           Lndr.Types
 import           Test.Framework
@@ -39,6 +40,7 @@ tests = [ testGroup "Nicks"
             ]
         , testGroup "Credits"
             [ testCase "lend money to friend" basicLendTest
+            , testCase "settlement" basicSettlementTest
             ]
         , testGroup "Admin"
             [ testCase "get and set gas price" basicGasTest
@@ -143,6 +145,12 @@ basicLendTest = do
     -- user1's counterparties list is [user2]
     counterparties <- getCounterparties testUrl testAddress1
     assertEqual "user1's counterparties properly calculated" [testAddress2] counterparties
+
+
+basicSettlementTest :: Assertion
+basicSettlementTest = do
+    price <- queryEtheruemPrice
+    assertBool "nonzero eth price retrieved from coinbase" (unPrice price > 0)
 
 
 basicGasTest :: Assertion

@@ -22,3 +22,9 @@ safelowUpdate config configTVar = do
     where
         safeLowScaling = 100000000 -- eth gas station returns prices in DeciGigaWei
         margin = 1.3 -- multiplier for  additional assurance that tx will make it into blockchain
+
+-- TODO add error handling
+queryEtheruemPrice :: IO EthereumPrice
+queryEtheruemPrice = do
+    req <- HTTP.parseRequest "https://api.coinbase.com/v2/exchange-rates?currency=ETH"
+    HTTP.getResponseBody <$> HTTP.httpJSON req

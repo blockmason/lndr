@@ -18,6 +18,7 @@ module Lndr.Types
     , Notification(..)
     , NotificationAction(..)
     , DevicePlatform(..)
+    , EthereumPrice(..)
     ) where
 
 import           Control.Concurrent.STM.TVar
@@ -50,6 +51,7 @@ instance FromHttpApiData Address where
   parseUrlPiece = mapLeft T.pack . Addr.fromText
 
 newtype Nonce = Nonce { unNonce :: Integer } deriving (Show, Generic)
+
 instance ToJSON Nonce where
     toJSON (Nonce x) = toJSON x
 
@@ -154,3 +156,11 @@ data GasStationResponse = GasStationResponse { safeLow :: Double
                                              , safeLowWait :: Double
                                              } deriving Show
 $(deriveJSON defaultOptions ''GasStationResponse)
+
+newtype EthereumPrice = EthereumPrice { unPrice :: Double } deriving (Show, Generic)
+
+instance FromJSON EthereumPrice where
+        parseJSON (Object v) = do
+            dataObject <- v .: "data"
+            ratesObject <- dataObject .: "rates"
+            EthereumPrice . read <$> ratesObject .: "USD"

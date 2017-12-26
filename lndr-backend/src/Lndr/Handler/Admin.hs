@@ -7,7 +7,7 @@ import           Data.Pool (withResource)
 import           Data.Text (Text)
 import qualified Lndr.Db as Db
 import           Lndr.Handler.Types
-import           Lndr.EthInterface
+import           Lndr.EthereumInterface
 import           Lndr.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3

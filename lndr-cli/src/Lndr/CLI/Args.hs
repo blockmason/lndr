@@ -41,7 +41,7 @@ import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
-import           Lndr.EthInterface hiding (getNonce)
+import           Lndr.EthereumInterface hiding (getNonce)
 import           Lndr.CLI.Config
 import           Lndr.Types
 import           Lndr.Util

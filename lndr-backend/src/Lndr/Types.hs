@@ -5,20 +5,28 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Lndr.Types
-    ( ServerState(..)
+    (
+    -- * server configuration
+      ServerState(..)
     , ServerConfig(..)
+
+    -- * lndr api types
     , NickRequest(..)
     , NickInfo(..)
-    , PushRequest(..)
     , CreditRecord(CreditRecord, hash, creditor, debtor, submitter, signature, nonce)
     , IssueCreditLog(IssueCreditLog, ucac, amount)
     , RejectRecord(RejectRecord)
     , Nonce(..)
-    , GasStationResponse(..)
+
+    -- * push notifications-relatd types
+    , PushRequest(..)
     , Notification(..)
     , NotificationAction(..)
     , DevicePlatform(..)
+
+    -- * network statistics api response types
     , EthereumPrice(..)
+    , GasStationResponse(..)
     ) where
 
 import           Control.Concurrent.STM.TVar

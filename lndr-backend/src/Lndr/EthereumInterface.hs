@@ -9,10 +9,17 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -fno-cse #-}
+-- | Functions that interact with ethereum blockchain using web3.
+--
+-- The TemplateHaskell 'abiFrom' is used to create the 'issueCredit' function
+-- at compile time. This funtion is used to submit credit records to the
+-- 'CreditProtocol.sol' smart contract. NB: all functions from the smart
+-- contract abi are populated, including 'getNonce', etc.
 
-module Lndr.EthInterface (
+module Lndr.EthereumInterface (
       lndrLogs
     , finalizeTransaction
+    , verifySettlementPayment
     ) where
 
 import           Control.Monad.IO.Class

@@ -30,7 +30,7 @@ import qualified Data.Text.Lazy as LT
 import qualified Database.PostgreSQL.Simple as DB
 import qualified Lndr.Db as Db
 import           Lndr.Docs
-import           Lndr.EthInterface
+import           Lndr.EthereumInterface
 import           Lndr.Handler
 import           Lndr.Types
 import           Network.Ethereum.Web3 hiding (convert)

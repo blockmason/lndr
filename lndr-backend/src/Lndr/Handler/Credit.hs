@@ -19,6 +19,7 @@ import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Except
 import           Data.Pool (Pool, withResource)
+import           Data.Text (Text)
 import qualified Data.Text as T
 import           Database.PostgreSQL.Simple (Connection)
 import qualified Lndr.Db as Db
@@ -41,13 +42,8 @@ borrowHandler :: CreditRecord -> LndrHandler NoContent
 borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
 
 
-submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
-submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig) = do
-    (ServerState pool configTVar) <- ask
-    config <- liftIO . atomically $ readTVar configTVar
-    nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
-    let hash = hashCreditRecord (lndrUcacAddr config) nonce signedRecord
-
+validSubmission :: Text -> Address -> Address -> Address -> Text -> Text -> LndrHandler ()
+validSubmission memo submitterAddress creditor debtor sig hash = do
     unless (T.length memo <= 32) $
         throwError (err400 {errBody = "Memo too long. Memos must be no longer than 32 characters."})
     unless (submitterAddress == creditor || submitterAddress == debtor) $
@@ -55,14 +51,21 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     unless (creditor /= debtor) $
         throwError (err400 {errBody = "Creditor and debtor cannot be equal."})
 
+    -- check that submitter signed the tx
     signer <- web3ToLndr . return . EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
-
-    -- submitter signed the tx
     unless (textToAddress signer == submitterAddress) $
         throwError (err400 {errBody = "Bad submitter sig"})
 
-    -- check if hash is already registered in pending txs
-    pendingCredit <- liftIO . withResource pool $ Db.lookupPending hash
+
+submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
+submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig) = do
+    (ServerState pool configTVar) <- ask
+    config <- liftIO . atomically $ readTVar configTVar
+    nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
+    let hash = hashCreditRecord (lndrUcacAddr config) nonce signedRecord
+
+    -- check that credit submission is valid
+    validSubmission memo submitterAddress creditor debtor sig hash
 
     -- creating function to query urban airship api
     let attemptToNotify msg notifyAction = do
@@ -74,6 +77,8 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
                     sendNotification config (Notification channelID platform msg notifyAction)
                 Nothing -> return ()
 
+    -- check if hash is already registered in pending txs
+    pendingCredit <- liftIO . withResource pool $ Db.lookupPending hash
     case pendingCredit of
         -- if the submitted credit record has a matching pending record,
         -- finalize the transaction on the blockchain

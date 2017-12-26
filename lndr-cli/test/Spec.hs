@@ -100,7 +100,13 @@ nickTest = do
 basicLendTest :: Assertion
 basicLendTest = do
     let testCredit = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" ""
+        badTestCredit = CreditRecord testAddress1 testAddress1 100 "dinner" testAddress1 0 "" ""
         creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
+
+    -- user1 fails to submit pending credit to himself
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 badTestCredit
+    assertEqual "user1 cannot lend to himself" 400 httpCode
+
     -- user1 submits pending credit to user2
     httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit
     assertEqual "lend success" 204 httpCode

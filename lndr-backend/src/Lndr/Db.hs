@@ -118,8 +118,8 @@ lookupPending :: Text -> Connection -> IO (Maybe CreditRecord)
 lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE hash = ?" (Only hash)
 
 
-lookupPendingByAddress :: Address -> Connection -> IO [CreditRecord]
-lookupPendingByAddress addr conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
+lookupPendingByAddress :: Address -> Bool -> Connection -> IO [CreditRecord]
+lookupPendingByAddress addr settlement conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE (creditor = ? OR debtor = ?) AND settlement = ?" (addr, addr, settlement)
 
 
 lookupPendingByAddresses :: Address -> Address -> Connection -> IO [CreditRecord]
@@ -151,8 +151,8 @@ allCredits :: Connection -> IO [IssueCreditLog]
 allCredits conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits" ()
 
 -- TODO fix this creditor, creditor repetition
-lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
-lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
+lookupCreditByAddress :: Address -> Bool -> Connection -> IO [IssueCreditLog]
+lookupCreditByAddress addr settlement conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits WHERE (creditor = ? OR debtor = ?) AND settlement = ?" (addr, addr, settlement)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]

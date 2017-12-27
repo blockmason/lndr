@@ -168,7 +168,7 @@ verifyHandler debtor creditor (Just txHash) = do
 pendingHandler :: Address -> LndrHandler [CreditRecord]
 pendingHandler addr = do
     pool <- dbConnectionPool <$> ask
-    liftIO . withResource pool $ Db.lookupPendingByAddress addr
+    liftIO . withResource pool $ Db.lookupPendingByAddress addr False
 
 
 transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
@@ -178,15 +178,15 @@ transactionsHandler Nothing = do
     lndrWeb3 (lndrLogs config Nothing Nothing)
 transactionsHandler (Just addr) = do
     pool <- dbConnectionPool <$> ask
-    liftIO $ withResource pool $ Db.lookupCreditByAddress addr
+    liftIO $ withResource pool $ Db.lookupCreditByAddress addr False
 
 
-pendingSettlementsHandler :: Address -> LndrHandler [IssueCreditLog]
+pendingSettlementsHandler :: Address -> LndrHandler ([CreditRecord], [IssueCreditLog])
 pendingSettlementsHandler addr = do
     pool <- dbConnectionPool <$> ask
-    -- TODO lookup pendings in `pending_credits`
-    -- TODO lookup pendings in `verified_credits`
-    liftIO $ withResource pool $ Db.lookupCreditByAddress addr
+    pending <- liftIO . withResource pool $ Db.lookupPendingByAddress addr True
+    verified <- liftIO $ withResource pool $ Db.lookupCreditByAddress addr True
+    return (pending, verified)
 
 
 nonceHandler :: Address -> Address -> LndrHandler Nonce

@@ -98,24 +98,28 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             void . liftIO . withResource pool $ Db.deletePending hash
 
             -- send push notification to counterparty
-            attemptToNotify "New Pending Credit" NewPendingCredit
+            attemptToNotify "Credit Confirmation" CreditConfirmation
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
-            -- check if a pending transaction already exists between the two users
-            existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses creditor debtor
-            unless (null existingPending) $
-                throwError (err400 {errBody = "A pending credit record already exists for the two users."})
-
-            -- ensuring that creditor is on debtor's friends list and vice-versa
-            liftIO $ createBilateralFriendship pool creditor debtor
-
-            void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash })
-
+            createPendingRecord pool creditor debtor signedRecord hash
             -- send push notification to counterparty
-            attemptToNotify "Credit Confirmation" CreditConfirmation
+            attemptToNotify "New Pending Credit" NewPendingCredit
 
     return NoContent
+
+
+createPendingRecord :: Pool Connection -> Address -> Address -> CreditRecord -> Text -> LndrHandler ()
+createPendingRecord pool creditor debtor signedRecord hash = do
+    -- check if a pending transaction already exists between the two users
+    existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses creditor debtor
+    unless (null existingPending) $
+        throwError (err400 {errBody = "A pending credit record already exists for the two users."})
+
+    -- ensuring that creditor is on debtor's friends list and vice-versa
+    liftIO $ createBilateralFriendship pool creditor debtor
+
+    void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash })
 
 
 createBilateralFriendship :: Pool Connection -> Address -> Address -> IO ()

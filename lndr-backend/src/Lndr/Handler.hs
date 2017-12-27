@@ -10,6 +10,7 @@ module Lndr.Handler (
     , transactionsHandler
     , pendingHandler
     , pendingSettlementsHandler
+    , settleHandler
     , lendHandler
     , borrowHandler
     , nonceHandler

@@ -2,7 +2,8 @@
 
 module Lndr.Handler.Credit (
     -- * credit submission handlers
-      lendHandler
+      settleHandler
+    , lendHandler
     , borrowHandler
     , rejectHandler
     , verifyHandler
@@ -34,6 +35,10 @@ import           Lndr.Util
 import qualified Network.Ethereum.Util as EU
 import           Network.Ethereum.Web3
 import           Servant
+
+
+settleHandler :: CreditRecord -> LndrHandler NoContent
+settleHandler creditRecord = submitHandler (creditor creditRecord) creditRecord
 
 
 lendHandler :: CreditRecord -> LndrHandler NoContent

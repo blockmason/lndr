@@ -91,7 +91,7 @@ server = transactionsHandler
     :<|> pendingSettlementsHandler
     :<|> verifyHandler
     :<|> pendingHandler
-    :<|> undefined
+    :<|> settleHandler
     :<|> lendHandler
     :<|> borrowHandler
     :<|> rejectHandler

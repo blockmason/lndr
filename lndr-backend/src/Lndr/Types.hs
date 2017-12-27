@@ -13,6 +13,7 @@ module Lndr.Types
     -- * lndr api types
     , NickRequest(..)
     , NickInfo(..)
+    -- TODO clean this up, very unorganized as is
     , CreditRecord(CreditRecord, hash, creditor, debtor, submitter, signature, nonce)
     , IssueCreditLog(IssueCreditLog, ucac, amount)
     , RejectRecord(RejectRecord)

@@ -155,15 +155,21 @@ rejectHandler(RejectRecord sig hash) = do
                             else throwError $ err400 { errBody = "bad rejection sig" }
 
 
--- TODO for now we'll assume Just txHash, eventually, the server will be smart
+-- TODO for now we'll assume 'Just txHash', eventually, the server will be smart
 -- enough to look for the tx automatically
-verifyHandler :: Address -> Address -> Maybe Text -> LndrHandler NoContent
-verifyHandler debtor creditor (Just txHash) = do
-    -- TODO replace the 0 here with the value that we grab from the db
-    verified <- liftIO $ verifySettlementPayment txHash debtor creditor 0
+verifyHandler :: Text -> Maybe Text -> LndrHandler NoContent
+verifyHandler creditHash (Just txHash) = do
+    pool <- dbConnectionPool <$> ask
+    recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
+    (creditor, debtor, amount) <- case recordM of
+        Just (CreditRecord creditor debtor amount _ _ _ _ _, _, _) ->
+            pure (creditor, debtor, amount)
+        Nothing -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
+    verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
     if verified
         then return NoContent -- flip the settlement bit off
         else throwError $ err400 { errBody = "Unable to verify debt settlement" }
+
 
 pendingHandler :: Address -> LndrHandler [CreditRecord]
 pendingHandler addr = do

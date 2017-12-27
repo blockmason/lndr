@@ -43,7 +43,7 @@ import           System.FilePath
 type LndrAPI =
         "transactions" :> QueryParam "user" Address :> Get '[JSON] [IssueCreditLog]
    :<|> "pending_settlements" :> Capture "user" Address :> Get '[JSON] ([CreditRecord], [IssueCreditLog])
-   :<|> "verify_settlement" :> Capture "user" Address :> Capture "user" Address :> QueryParam "txHash" Text :> PostNoContent '[JSON] NoContent
+   :<|> "verify_settlement" :> Capture "hash" Text :> QueryParam "txHash" Text :> PostNoContent '[JSON] NoContent
    :<|> "pending" :> Capture "user" Address :> Get '[JSON] [CreditRecord]
    :<|> "settle" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "lend" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent

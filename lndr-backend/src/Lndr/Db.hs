@@ -160,7 +160,6 @@ counterpartiesByAddress addr conn = fmap fromOnly <$>
     query conn "SELECT creditor FROM verified_credits WHERE debtor = ? UNION SELECT debtor FROM verified_credits WHERE creditor = ?" (addr, addr)
 
 
--- TODO fix this creditor, creditor repetition
 lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text))
 lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
     where process (creditor, debtor, amount, nonce, memo, sig1, sig2) = ( CreditRecord creditor debtor

@@ -38,15 +38,15 @@ import           Servant
 
 
 settleHandler :: CreditRecord -> LndrHandler NoContent
-settleHandler creditRecord = submitHandler (creditor creditRecord) creditRecord
+settleHandler creditRecord = submitHandler (creditor creditRecord) creditRecord True
 
 
 lendHandler :: CreditRecord -> LndrHandler NoContent
-lendHandler creditRecord = submitHandler (creditor creditRecord) creditRecord
+lendHandler creditRecord = submitHandler (creditor creditRecord) creditRecord False
 
 
 borrowHandler :: CreditRecord -> LndrHandler NoContent
-borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
+borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord False
 
 
 validSubmission :: Text -> Address -> Address -> Address -> Text -> Text -> LndrHandler ()
@@ -64,8 +64,8 @@ validSubmission memo submitterAddress creditor debtor sig hash = do
         throwError (err400 {errBody = "Bad submitter sig"})
 
 
-submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
-submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig) = do
+submitHandler :: Address -> CreditRecord -> Bool -> LndrHandler NoContent
+submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig) settlement = do
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor

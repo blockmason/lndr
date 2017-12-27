@@ -132,14 +132,14 @@ deletePending hash conn = fromIntegral <$>
     execute conn "DELETE FROM pending_credits WHERE hash = ?" (Only hash)
 
 
-insertPending :: CreditRecord -> Connection -> IO Int
-insertPending creditRecord conn =
-    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord)
+insertPending :: CreditRecord -> Bool -> Connection -> IO Int
+insertPending creditRecord settlement conn =
+    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature, settlement) VALUES (?,?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord settlement)
 
 
-insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
-insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _) conn =
-    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig)
+insertCredit :: Text -> Text -> CreditRecord -> Bool -> Connection -> IO Int
+insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _) settlement conn =
+    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, settlement) VALUES (?,?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig, settlement)
 
 
 insertCredits :: [IssueCreditLog] -> Connection -> IO Int
@@ -201,10 +201,10 @@ insertPushDatum addr channelID platform conn = fromIntegral <$>
 lookupPushDatumByAddress :: Address -> Connection -> IO (Maybe (Text, DevicePlatform))
 lookupPushDatumByAddress addr conn = listToMaybe <$> query conn "SELECT channel_id, platform FROM push_data WHERE address = ?" (Only addr)
 
-creditRecordToPendingTuple :: CreditRecord
-                           -> (Address, Address, Integer, Text, Address, Integer, Text, Text)
-creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig) =
-    (creditor, debtor, amount, memo, submitter, nonce, hash, sig)
+creditRecordToPendingTuple :: CreditRecord -> Bool
+                           -> (Address, Address, Integer, Text, Address, Integer, Text, Text, Bool)
+creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig) settlement =
+    (creditor, debtor, amount, memo, submitter, nonce, hash, sig, settlement)
 
 
 creditLogToCreditTuple :: IssueCreditLog

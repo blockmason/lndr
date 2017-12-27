@@ -97,31 +97,31 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             -- update gas price to latest safelow value
             updatedConfig <- safelowUpdate config configTVar
 
-            finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig hash
+            finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig hash settlement
 
             -- send push notification to counterparty
             attemptToNotify "Credit Confirmation" CreditConfirmation
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
-            createPendingRecord pool creditor debtor signedRecord hash
+            createPendingRecord pool creditor debtor signedRecord hash settlement
             -- send push notification to counterparty
             attemptToNotify "New Pending Credit" NewPendingCredit
 
     return NoContent
 
 
-finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> Text -> IO ()
-finalizeCredit pool storedRecord config creditorSig debtorSig hash = do
+finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> Text -> Bool -> IO ()
+finalizeCredit pool storedRecord config creditorSig debtorSig hash settlement = do
             finalizeTransaction config creditorSig debtorSig storedRecord
             -- saving transaction record
-            withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord
+            withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord settlement
             -- delete pending record after transaction finalization
             void . withResource pool $ Db.deletePending hash
 
 
-createPendingRecord :: Pool Connection -> Address -> Address -> CreditRecord -> Text -> LndrHandler ()
-createPendingRecord pool creditor debtor signedRecord hash = do
+createPendingRecord :: Pool Connection -> Address -> Address -> CreditRecord -> Text -> Bool -> LndrHandler ()
+createPendingRecord pool creditor debtor signedRecord hash settlement = do
     -- check if a pending transaction already exists between the two users
     existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses creditor debtor
     unless (null existingPending) $
@@ -130,7 +130,7 @@ createPendingRecord pool creditor debtor signedRecord hash = do
     -- ensuring that creditor is on debtor's friends list and vice-versa
     liftIO $ createBilateralFriendship pool creditor debtor
 
-    void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash })
+    void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash }) settlement
 
 
 createBilateralFriendship :: Pool Connection -> Address -> Address -> IO ()

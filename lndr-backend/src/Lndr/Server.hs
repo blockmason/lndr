@@ -89,7 +89,7 @@ docsBS = encodeUtf8
 server :: ServerT LndrAPI LndrHandler
 server = transactionsHandler
     :<|> undefined
-    :<|> undefined
+    :<|> verifyHandler
     :<|> pendingHandler
     :<|> undefined
     :<|> lendHandler

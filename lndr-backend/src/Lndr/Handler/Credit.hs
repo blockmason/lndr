@@ -5,6 +5,7 @@ module Lndr.Handler.Credit (
       lendHandler
     , borrowHandler
     , rejectHandler
+    , verifyHandler
 
     -- * app state-querying handlers
     , pendingHandler
@@ -147,6 +148,16 @@ rejectHandler(RejectRecord sig hash) = do
                                     return NoContent
                             else throwError $ err400 { errBody = "bad rejection sig" }
 
+
+-- TODO for now we'll assume Just txHash, eventually, the server will be smart
+-- enough to look for the tx automatically
+verifyHandler :: Address -> Address -> Maybe Text -> LndrHandler NoContent
+verifyHandler debtor creditor (Just txHash) = do
+    -- TODO replace the 0 here with the value that we grab from the db
+    verified <- liftIO $ verifySettlementPayment txHash debtor creditor 0
+    if verified
+        then return NoContent -- flip the settlement bit off
+        else throwError $ err400 { errBody = "Unable to verify debt settlement" }
 
 pendingHandler :: Address -> LndrHandler [CreditRecord]
 pendingHandler addr = do

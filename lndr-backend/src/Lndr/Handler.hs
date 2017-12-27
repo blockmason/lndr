@@ -6,6 +6,7 @@ module Lndr.Handler (
 
       -- * Transaction Handlers
     , rejectHandler
+    , verifyHandler
     , transactionsHandler
     , pendingHandler
     , lendHandler

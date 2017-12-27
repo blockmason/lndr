@@ -21,10 +21,14 @@ testPrivkey1 = "7231a774a538fce22a329729b03087de4cb4a1119494db1c10eae3bb491823e7
 testPrivkey2 = "f581608ccd4dcd78e341e464b86f268b77ee2673acc705023e64eeb5a4e31490"
 testPrivkey3 = "b217205550c6011141e3580142ac43d7d41d217102f30e816eb36b70727e292e"
 testPrivkey4 = "024f55d169862624eec05be973a38f52ad252b3bcc0f0ed1927defa4ab4ea098"
+testPrivkey5 = "024f55d169862624eec05be973a38f52ad252b3bcc0f0ed1927defa4ab4ea099"
+testPrivkey6 = "024f55d169862624eec05be973a38f52ad252b3bcc0f0ed1927defa4ab4ea100"
 testAddress1 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey1
 testAddress2 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey2
 testAddress3 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey3
 testAddress4 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey4
+testAddress5 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey5
+testAddress6 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey6
 testSearch = "test"
 testNick1 = "test1"
 testNick2 = "test2"
@@ -104,11 +108,11 @@ basicLendTest = do
         creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
 
     -- user1 fails to submit pending credit to himself
-    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 badTestCredit
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 badTestCredit False
     assertEqual "user1 cannot lend to himself" 400 httpCode
 
     -- user1 submits pending credit to user2
-    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit False
     assertEqual "lend success" 204 httpCode
 
     -- user1 checks pending transactions
@@ -128,11 +132,11 @@ basicLendTest = do
     assertEqual "zero pending records found for user2" 0 (length creditRecords2)
 
     -- user1 attempts same credit again
-    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit False
     assertEqual "lend success" 204 httpCode
 
     -- user2 accepts user1's pending credit
-    httpCode <- submitCredit testUrl ucacAddr testPrivkey2 (testCredit { submitter = testAddress2 })
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey2 (testCredit { submitter = testAddress2 }) False
     assertEqual "borrow success" 204 httpCode
 
     -- user1's checks that he has pending credits and one verified credit
@@ -157,6 +161,13 @@ basicSettlementTest :: Assertion
 basicSettlementTest = do
     price <- queryEtheruemPrice
     assertBool "nonzero eth price retrieved from coinbase" (unPrice price > 0)
+
+    let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" ""
+        creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
+
+    -- user1 submits pending credit to user2
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey5 testCredit True
+    assertEqual "lend success" 204 httpCode
 
 
 basicGasTest :: Assertion

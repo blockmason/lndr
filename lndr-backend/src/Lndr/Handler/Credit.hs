@@ -167,7 +167,8 @@ verifyHandler creditHash (Just txHash) = do
         Nothing -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
     verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
     if verified
-        then return NoContent -- flip the settlement bit off
+        then do liftIO . withResource pool $ Db.verifyCreditByHash creditHash
+                return NoContent
         else throwError $ err400 { errBody = "Unable to verify debt settlement" }
 
 

@@ -28,6 +28,7 @@ module Lndr.Db (
     , lookupCreditByAddress
     , counterpartiesByAddress
     , lookupCreditByHash
+    , verifyCreditByHash
     , userBalance
     , twoPartyBalance
     , twoPartyNonce
@@ -169,6 +170,10 @@ lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELE
                                                                         , sig2
                                                                         )
 
+
+-- Flips settlement bit off once a settlement payment has been confirmed
+verifyCreditByHash :: Text -> Connection -> IO Int
+verifyCreditByHash hash conn = fromIntegral <$> execute conn "UPDATE verified_credits SET settlement = FALSE WHERE hash = ?" (Only hash)
 
 userBalance :: Address -> Connection -> IO Integer
 userBalance addr conn = do

@@ -9,6 +9,7 @@ module Lndr.Handler (
     , verifyHandler
     , transactionsHandler
     , pendingHandler
+    , pendingSettlementsHandler
     , lendHandler
     , borrowHandler
     , nonceHandler

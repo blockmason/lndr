@@ -9,6 +9,7 @@ module Lndr.Handler.Credit (
 
     -- * app state-querying handlers
     , pendingHandler
+    , pendingSettlementsHandler
     , transactionsHandler
     , nonceHandler
     , counterpartiesHandler
@@ -174,6 +175,13 @@ transactionsHandler (Just addr) = do
     pool <- dbConnectionPool <$> ask
     liftIO $ withResource pool $ Db.lookupCreditByAddress addr
 
+
+pendingSettlementsHandler :: Address -> LndrHandler [IssueCreditLog]
+pendingSettlementsHandler addr = do
+    pool <- dbConnectionPool <$> ask
+    -- TODO lookup pendings in `pending_credits`
+    -- TODO lookup pendings in `verified_credits`
+    liftIO $ withResource pool $ Db.lookupCreditByAddress addr
 
 
 nonceHandler :: Address -> Address -> LndrHandler Nonce

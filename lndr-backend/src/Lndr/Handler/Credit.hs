@@ -105,8 +105,8 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
 
 
 finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> Text -> IO ()
-finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig hash = do
-            finalizeTransaction updatedConfig creditorSig debtorSig storedRecord
+finalizeCredit pool storedRecord config creditorSig debtorSig hash = do
+            finalizeTransaction config creditorSig debtorSig storedRecord
             -- saving transaction record
             withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord
             -- delete pending record after transaction finalization

@@ -90,12 +90,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             -- update gas price to latest safelow value
             updatedConfig <- safelowUpdate config configTVar
 
-            finalizeTransaction updatedConfig creditorSig debtorSig storedRecord
-
-            -- saving transaction record
-            liftIO . withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord
-            -- delete pending record after transaction finalization
-            void . liftIO . withResource pool $ Db.deletePending hash
+            finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig hash
 
             -- send push notification to counterparty
             attemptToNotify "Credit Confirmation" CreditConfirmation
@@ -107,6 +102,15 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             attemptToNotify "New Pending Credit" NewPendingCredit
 
     return NoContent
+
+
+finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> Text -> IO ()
+finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig hash = do
+            finalizeTransaction updatedConfig creditorSig debtorSig storedRecord
+            -- saving transaction record
+            withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord
+            -- delete pending record after transaction finalization
+            void . withResource pool $ Db.deletePending hash
 
 
 createPendingRecord :: Pool Connection -> Address -> Address -> CreditRecord -> Text -> LndrHandler ()

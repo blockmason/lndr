@@ -165,9 +165,16 @@ basicSettlementTest = do
     let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" ""
         creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
 
-    -- user1 submits pending credit to user2
+    -- user5 submits pending settlement credit to user6
     httpCode <- submitCredit testUrl ucacAddr testPrivkey5 testCredit True
     assertEqual "lend success" 204 httpCode
+
+    -- user6 accepts user5's pending settlement credit
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey6 (testCredit { submitter = testAddress6 }) True
+    assertEqual "borrow success" 204 httpCode
+
+
+    -- user5 verifies that he has made the settlement credit
 
 
 basicGasTest :: Assertion

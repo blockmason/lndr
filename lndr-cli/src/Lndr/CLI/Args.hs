@@ -31,6 +31,7 @@ module Lndr.CLI.Args (
     , getTwoPartyBalance
     , getCounterparties
     , getTransactions
+    , verifySettlement
 
     -- * notifications-related requests
     , registerChannel
@@ -168,6 +169,10 @@ getTransactions :: String -> Address -> IO [IssueCreditLog]
 getTransactions url address = do
     initReq <- HTTP.parseRequest $ url ++ "/transactions?user=" ++ show address
     HTTP.getResponseBody <$> HTTP.httpJSON initReq
+
+
+getSettlements :: IO ()
+getSettlements = undefined
 
 
 getCounterparties :: String -> Address -> IO [Address]
@@ -310,6 +315,14 @@ rejectCredit url secretKey hash = do
         rejectRecord = RejectRecord sig hash
         req = HTTP.setRequestBodyJSON rejectRecord $
                 HTTP.setRequestMethod "POST" initReq
+    resp <- HTTP.httpNoBody req
+    return $ HTTP.getResponseStatusCode resp
+
+
+verifySettlement :: String -> Text -> Text -> IO Int
+verifySettlement url creditHash txHash = do
+    let fullUrl = url ++ "/verify_settlement/" ++ T.unpack creditHash ++ "?txHash=" ++ T.unpack txHash
+    req <- HTTP.setRequestMethod "POST" <$> HTTP.parseRequest fullUrl
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp
 

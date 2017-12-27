@@ -4,11 +4,15 @@
 module Main where
 
 import           Control.Concurrent (threadDelay)
+import           Data.Either.Combinators (fromRight)
 import qualified Data.Text.Lazy as LT
 import           Lndr.CLI.Args
 import           Lndr.NetworkStatistics
 import           Lndr.Util (textToAddress, hashCreditRecord)
 import           Lndr.Types
+import           Network.Ethereum.Web3
+import           Network.Ethereum.Web3.Types
+import qualified Network.Ethereum.Web3.Eth as Eth
 import           Test.Framework
 import           Test.Framework.Providers.HUnit
 import           Test.HUnit hiding (Test)
@@ -167,14 +171,32 @@ basicSettlementTest = do
 
     -- user5 submits pending settlement credit to user6
     httpCode <- submitCredit testUrl ucacAddr testPrivkey5 testCredit True
-    assertEqual "lend success" 204 httpCode
+    -- assertEqual "lend (settle) success" 204 httpCode
+    print httpCode
 
     -- user6 accepts user5's pending settlement credit
     httpCode <- submitCredit testUrl ucacAddr testPrivkey6 (testCredit { submitter = testAddress6 }) True
-    assertEqual "borrow success" 204 httpCode
+    -- assertEqual "borrow (settle) success" 204 httpCode
+    print httpCode
 
+    -- user5 transfers eth to user6
+    txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)
+                                                    testAddress6
+                                                    (Just 21000)
+                                                    Nothing
+                                                    (Just $ 10 ^ 18)
+                                                    Nothing
+
+    let txHash = fromRight (error "error sending eth") txHashE
+    print txHash
+
+    -- ensure that tx registers in blockchain w/ a 10 second pause
+    threadDelay (10 ^ 7)
 
     -- user5 verifies that he has made the settlement credit
+    httpCode <- verifySettlement testUrl creditHash txHash
+    -- assertEqual "verification success" 204 httpCode
+    print httpCode
 
 
 basicGasTest :: Assertion

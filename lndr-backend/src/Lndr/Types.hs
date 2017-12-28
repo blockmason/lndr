@@ -5,26 +5,37 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Lndr.Types
-    ( ServerState(..)
+    (
+    -- * server configuration
+      ServerState(..)
     , ServerConfig(..)
+
+    -- * lndr api types
     , NickRequest(..)
     , NickInfo(..)
-    , PushRequest(..)
+    -- TODO clean this up, very unorganized as is
     , CreditRecord(CreditRecord, hash, creditor, debtor, submitter, signature, nonce)
     , IssueCreditLog(IssueCreditLog, ucac, amount)
     , RejectRecord(RejectRecord)
     , Nonce(..)
-    , GasStationResponse(..)
+
+    -- * push notifications-relatd types
+    , PushRequest(..)
     , Notification(..)
     , NotificationAction(..)
     , DevicePlatform(..)
+
+    -- * network statistics api response types
+    , EthereumPrice(..)
+    , GasStationResponse(..)
     ) where
 
 import           Control.Concurrent.STM.TVar
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.ByteString (ByteString)
-import           Data.Either.Combinators (mapLeft)
+import qualified Data.Configurator.Types as Conf
+import           Data.Either.Combinators (mapLeft, fromRight)
 import           Data.Hashable
 import           Data.Pool
 import           Data.Text (Text)
@@ -34,6 +45,10 @@ import           GHC.Generics
 import           Network.Ethereum.Web3.Address (Address)
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Servant.API
+
+instance Conf.Configured Address where
+    convert (Conf.String x) = Just . fromRight (error "bad address") . Addr.fromText $ x
+    convert _ = Nothing
 
 instance Hashable Address where
     hashWithSalt x = hashWithSalt x . Addr.toText
@@ -45,6 +60,7 @@ instance FromHttpApiData Address where
   parseUrlPiece = mapLeft T.pack . Addr.fromText
 
 newtype Nonce = Nonce { unNonce :: Integer } deriving (Show, Generic)
+
 instance ToJSON Nonce where
     toJSON (Nonce x) = toJSON x
 
@@ -149,3 +165,11 @@ data GasStationResponse = GasStationResponse { safeLow :: Double
                                              , safeLowWait :: Double
                                              } deriving Show
 $(deriveJSON defaultOptions ''GasStationResponse)
+
+newtype EthereumPrice = EthereumPrice { unPrice :: Double } deriving (Show, Generic)
+
+instance FromJSON EthereumPrice where
+        parseJSON (Object v) = do
+            dataObject <- v .: "data"
+            ratesObject <- dataObject .: "rates"
+            EthereumPrice . read <$> ratesObject .: "USD"

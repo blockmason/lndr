@@ -97,3 +97,11 @@ instance ToParam (QueryParam "user" Address) where
                   , "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb" ]
                   "address of user whose records to display"
                   Normal
+
+instance ToParam (QueryParam "txHash" Text) where
+  toParam _ =
+    DocQueryParam "txHash"
+                  [ "0x3cb5a3890ca592a6e857f83413bef59dcc59c25445922dbcb3c5623563301639"
+                  , "0x5c0dede3096ec95edaadc2cd258514ee837c45a55a71b05273837c123947ba0d" ]
+                  "address of user whose records to display"
+                  Normal

@@ -14,14 +14,17 @@ library
   hs-source-dirs:      src
   exposed-modules:     Lndr.Docs
                      , Lndr.Db
-                     , Lndr.EthInterface
+                     , Lndr.EthereumInterface
                      , Lndr.Handler
                      , Lndr.Handler.Admin
                      , Lndr.Handler.Credit
                      , Lndr.Handler.Friend
                      , Lndr.Handler.Types
+                     , Lndr.NetworkStatistics
+                     , Lndr.Notifications
                      , Lndr.Server
                      , Lndr.Types
+                     , Lndr.Util
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , base16-bytestring

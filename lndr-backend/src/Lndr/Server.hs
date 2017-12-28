@@ -17,7 +17,11 @@ import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Data.ByteString.Lazy (ByteString)
+import           Data.Configurator
+import           Data.Configurator.Types
 import           Data.Either (either)
+import qualified Data.HashMap.Strict as H (lookup)
+import           Data.Maybe (fromMaybe)
 import           Data.Pool (createPool, withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -26,20 +30,24 @@ import qualified Data.Text.Lazy as LT
 import qualified Database.PostgreSQL.Simple as DB
 import qualified Lndr.Db as Db
 import           Lndr.Docs
-import           Lndr.EthInterface
+import           Lndr.EthereumInterface
 import           Lndr.Handler
 import           Lndr.Types
-import           Network.Ethereum.Web3
+import           Network.Ethereum.Web3 hiding (convert)
 import           Network.HTTP.Types
 import           Network.Wai
 import           Servant
 import           Servant.Docs
-
+import           System.FilePath
 
 type LndrAPI =
         "transactions" :> QueryParam "user" Address :> Get '[JSON] [IssueCreditLog]
+   :<|> "pending_settlements" :> Capture "user" Address :> Get '[JSON] ([CreditRecord], [IssueCreditLog])
+   :<|> "verify_settlement" :> Capture "hash" Text :> QueryParam "txHash" Text :> PostNoContent '[JSON] NoContent
    :<|> "pending" :> Capture "user" Address :> Get '[JSON] [CreditRecord]
+   :<|> "lend_settle" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "lend" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
+   :<|> "borrow_settle" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "borrow" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "reject" :> ReqBody '[JSON] RejectRecord :> PostNoContent '[JSON] NoContent
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
@@ -81,8 +89,12 @@ docsBS = encodeUtf8
 
 server :: ServerT LndrAPI LndrHandler
 server = transactionsHandler
+    :<|> pendingSettlementsHandler
+    :<|> verifyHandler
     :<|> pendingHandler
+    :<|> lendSettleHandler
     :<|> lendHandler
+    :<|> borrowSettleHandler
     :<|> borrowHandler
     :<|> rejectHandler
     :<|> nonceHandler
@@ -144,3 +156,21 @@ freshState = do
 
     ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
                 <*> newTVarIO serverConfig
+
+
+loadConfig :: IO ServerConfig
+loadConfig = do
+    config <- getMap =<< load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
+    let loadEntry x = fromMaybe (error $ T.unpack x) $ convert =<< H.lookup x config
+    return $ ServerConfig (loadEntry "lndrUcacAddr")
+                          (loadEntry "creditProtocolAddress")
+                          (loadEntry "issueCreditEvent")
+                          (loadEntry "scanStartBlock")
+                          (loadEntry "dbUser")
+                          (loadEntry "dbUserPassword")
+                          (loadEntry "dbName")
+                          (loadEntry "executionAddress")
+                          (loadEntry "gasPrice")
+                          (loadEntry "maxGas")
+                          (loadEntry "urbanAirshipKey")
+                          (loadEntry "urbanAirshipSecret")

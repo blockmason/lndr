@@ -6,7 +6,8 @@ CREATE TABLE pending_credits (
     debtor      CHAR(40),
     amount      BIGINT,
     memo        CHAR(32),
-    signature   CHAR(130)
+    signature   CHAR(130),
+    settlement  BOOLEAN NOT NULL
 );
 
 CREATE TABLE verified_credits (
@@ -17,7 +18,8 @@ CREATE TABLE verified_credits (
     amount             BIGINT,
     memo               CHAR(32),
     creditor_signature CHAR(130),
-    debtor_signature   CHAR(130)
+    debtor_signature   CHAR(130),
+    settlement         BOOLEAN NOT NULL
 );
 
 CREATE TABLE friendships (

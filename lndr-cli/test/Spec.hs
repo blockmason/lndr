@@ -4,10 +4,15 @@
 module Main where
 
 import           Control.Concurrent (threadDelay)
+import           Data.Either.Combinators (fromRight)
 import qualified Data.Text.Lazy as LT
 import           Lndr.CLI.Args
-import           Lndr.EthInterface (textToAddress, hashCreditRecord)
+import           Lndr.NetworkStatistics
+import           Lndr.Util (textToAddress, hashCreditRecord)
 import           Lndr.Types
+import           Network.Ethereum.Web3
+import           Network.Ethereum.Web3.Types
+import qualified Network.Ethereum.Web3.Eth as Eth
 import           Test.Framework
 import           Test.Framework.Providers.HUnit
 import           Test.HUnit hiding (Test)
@@ -20,10 +25,14 @@ testPrivkey1 = "7231a774a538fce22a329729b03087de4cb4a1119494db1c10eae3bb491823e7
 testPrivkey2 = "f581608ccd4dcd78e341e464b86f268b77ee2673acc705023e64eeb5a4e31490"
 testPrivkey3 = "b217205550c6011141e3580142ac43d7d41d217102f30e816eb36b70727e292e"
 testPrivkey4 = "024f55d169862624eec05be973a38f52ad252b3bcc0f0ed1927defa4ab4ea098"
+testPrivkey5 = "024f55d169862624eec05be973a38f52ad252b3bcc0f0ed1927defa4ab4ea099"
+testPrivkey6 = "024f55d169862624eec05be973a38f52ad252b3bcc0f0ed1927defa4ab4ea100"
 testAddress1 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey1
 testAddress2 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey2
 testAddress3 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey3
 testAddress4 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey4
+testAddress5 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey5
+testAddress6 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey6
 testSearch = "test"
 testNick1 = "test1"
 testNick2 = "test2"
@@ -39,6 +48,7 @@ tests = [ testGroup "Nicks"
             ]
         , testGroup "Credits"
             [ testCase "lend money to friend" basicLendTest
+            , testCase "settlement" basicSettlementTest
             ]
         , testGroup "Admin"
             [ testCase "get and set gas price" basicGasTest
@@ -98,9 +108,15 @@ nickTest = do
 basicLendTest :: Assertion
 basicLendTest = do
     let testCredit = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" ""
+        badTestCredit = CreditRecord testAddress1 testAddress1 100 "dinner" testAddress1 0 "" ""
         creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
+
+    -- user1 fails to submit pending credit to himself
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 badTestCredit False
+    assertEqual "user1 cannot lend to himself" 400 httpCode
+
     -- user1 submits pending credit to user2
-    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit False
     assertEqual "lend success" 204 httpCode
 
     -- user1 checks pending transactions
@@ -120,11 +136,11 @@ basicLendTest = do
     assertEqual "zero pending records found for user2" 0 (length creditRecords2)
 
     -- user1 attempts same credit again
-    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit False
     assertEqual "lend success" 204 httpCode
 
     -- user2 accepts user1's pending credit
-    httpCode <- submitCredit testUrl ucacAddr testPrivkey2 (testCredit { submitter = testAddress2 })
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey2 (testCredit { submitter = testAddress2 }) False
     assertEqual "borrow success" 204 httpCode
 
     -- user1's checks that he has pending credits and one verified credit
@@ -143,6 +159,44 @@ basicLendTest = do
     -- user1's counterparties list is [user2]
     counterparties <- getCounterparties testUrl testAddress1
     assertEqual "user1's counterparties properly calculated" [testAddress2] counterparties
+
+
+basicSettlementTest :: Assertion
+basicSettlementTest = do
+    price <- queryEtheruemPrice
+    assertBool "nonzero eth price retrieved from coinbase" (unPrice price > 0)
+
+    let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" ""
+        creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
+
+    -- user5 submits pending settlement credit to user6
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey5 testCredit True
+    -- assertEqual "lend (settle) success" 204 httpCode
+    print httpCode
+
+    -- user6 accepts user5's pending settlement credit
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey6 (testCredit { submitter = testAddress6 }) True
+    -- assertEqual "borrow (settle) success" 204 httpCode
+    print httpCode
+
+    -- user5 transfers eth to user6
+    txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)
+                                                    testAddress6
+                                                    (Just 21000)
+                                                    Nothing
+                                                    (Just $ 10 ^ 18)
+                                                    Nothing
+
+    let txHash = fromRight (error "error sending eth") txHashE
+    print txHash
+
+    -- ensure that tx registers in blockchain w/ a 10 second pause
+    threadDelay (10 ^ 7)
+
+    -- user5 verifies that he has made the settlement credit
+    httpCode <- verifySettlement testUrl creditHash txHash
+    -- assertEqual "verification success" 204 httpCode
+    print httpCode
 
 
 basicGasTest :: Assertion

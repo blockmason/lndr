@@ -28,6 +28,7 @@ module Lndr.Db (
     , lookupCreditByAddress
     , counterpartiesByAddress
     , lookupCreditByHash
+    , verifyCreditByHash
     , userBalance
     , twoPartyBalance
     , twoPartyNonce
@@ -45,8 +46,8 @@ import qualified Data.Text as T
 import           Database.PostgreSQL.Simple
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.ToField
-import           Lndr.EthInterface
 import           Lndr.Types
+import           Lndr.Util
 import           Network.Ethereum.Web3
 
 -- DB Typeclass instances
@@ -118,8 +119,8 @@ lookupPending :: Text -> Connection -> IO (Maybe CreditRecord)
 lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE hash = ?" (Only hash)
 
 
-lookupPendingByAddress :: Address -> Connection -> IO [CreditRecord]
-lookupPendingByAddress addr conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
+lookupPendingByAddress :: Address -> Bool -> Connection -> IO [CreditRecord]
+lookupPendingByAddress addr settlement conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE (creditor = ? OR debtor = ?) AND settlement = ?" (addr, addr, settlement)
 
 
 lookupPendingByAddresses :: Address -> Address -> Connection -> IO [CreditRecord]
@@ -131,14 +132,14 @@ deletePending hash conn = fromIntegral <$>
     execute conn "DELETE FROM pending_credits WHERE hash = ?" (Only hash)
 
 
-insertPending :: CreditRecord -> Connection -> IO Int
-insertPending creditRecord conn =
-    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord)
+insertPending :: CreditRecord -> Bool -> Connection -> IO Int
+insertPending creditRecord settlement conn =
+    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature, settlement) VALUES (?,?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord settlement)
 
 
-insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
-insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _) conn =
-    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig)
+insertCredit :: Text -> Text -> CreditRecord -> Bool -> Connection -> IO Int
+insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _) settlement conn =
+    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, settlement) VALUES (?,?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig, settlement)
 
 
 insertCredits :: [IssueCreditLog] -> Connection -> IO Int
@@ -151,8 +152,8 @@ allCredits :: Connection -> IO [IssueCreditLog]
 allCredits conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits" ()
 
 -- TODO fix this creditor, creditor repetition
-lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
-lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits WHERE creditor = ? OR debtor = ?" (addr, addr)
+lookupCreditByAddress :: Address -> Bool -> Connection -> IO [IssueCreditLog]
+lookupCreditByAddress addr settlement conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits WHERE (creditor = ? OR debtor = ?) AND settlement = ?" (addr, addr, settlement)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]
@@ -160,7 +161,6 @@ counterpartiesByAddress addr conn = fmap fromOnly <$>
     query conn "SELECT creditor FROM verified_credits WHERE debtor = ? UNION SELECT debtor FROM verified_credits WHERE creditor = ?" (addr, addr)
 
 
--- TODO fix this creditor, creditor repetition
 lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text))
 lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
     where process (creditor, debtor, amount, nonce, memo, sig1, sig2) = ( CreditRecord creditor debtor
@@ -170,6 +170,10 @@ lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELE
                                                                         , sig2
                                                                         )
 
+
+-- Flips settlement bit off once a settlement payment has been confirmed
+verifyCreditByHash :: Text -> Connection -> IO Int
+verifyCreditByHash hash conn = fromIntegral <$> execute conn "UPDATE verified_credits SET settlement = FALSE WHERE hash = ?" (Only hash)
 
 userBalance :: Address -> Connection -> IO Integer
 userBalance addr conn = do
@@ -197,10 +201,10 @@ insertPushDatum addr channelID platform conn = fromIntegral <$>
 lookupPushDatumByAddress :: Address -> Connection -> IO (Maybe (Text, DevicePlatform))
 lookupPushDatumByAddress addr conn = listToMaybe <$> query conn "SELECT channel_id, platform FROM push_data WHERE address = ?" (Only addr)
 
-creditRecordToPendingTuple :: CreditRecord
-                           -> (Address, Address, Integer, Text, Address, Integer, Text, Text)
-creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig) =
-    (creditor, debtor, amount, memo, submitter, nonce, hash, sig)
+creditRecordToPendingTuple :: CreditRecord -> Bool
+                           -> (Address, Address, Integer, Text, Address, Integer, Text, Text, Bool)
+creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig) settlement =
+    (creditor, debtor, amount, memo, submitter, nonce, hash, sig, settlement)
 
 
 creditLogToCreditTuple :: IssueCreditLog

@@ -31,6 +31,7 @@ module Lndr.CLI.Args (
     , getTwoPartyBalance
     , getCounterparties
     , getTransactions
+    , verifySettlement
 
     -- * notifications-related requests
     , registerChannel
@@ -41,9 +42,10 @@ import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
-import           Lndr.EthInterface hiding (getNonce)
+import           Lndr.EthereumInterface hiding (getNonce)
 import           Lndr.CLI.Config
 import           Lndr.Types
+import           Lndr.Util
 import           Network.Ethereum.Util (hashPersonalMessage, ecsign, privateToAddress, hashText)
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
@@ -116,13 +118,11 @@ runMode (Config url sk _) RejectPending = do
     print httpCode
 
 runMode (Config url sk ucacAddr) (Lend friend amount memo) = do
-    httpCode <- submitCredit (LT.unpack url) (textToAddress $ LT.toStrict ucacAddr) (LT.toStrict sk) $
-        CreditRecord (textToAddress $ userFromSK sk) (textToAddress friend) amount memo (textToAddress $ userFromSK sk) 0 "" ""
+    httpCode <- submitCredit (LT.unpack url) (textToAddress $ LT.toStrict ucacAddr) (LT.toStrict sk) (CreditRecord (textToAddress $ userFromSK sk) (textToAddress friend) amount memo (textToAddress $ userFromSK sk) 0 "" "") False
     print httpCode
 
 runMode (Config url sk ucacAddr) (Borrow friend amount memo) = do
-    httpCode <- submitCredit (LT.unpack url) (textToAddress $ LT.toStrict ucacAddr) (LT.toStrict sk) $
-        CreditRecord (textToAddress friend) (textToAddress $ userFromSK sk) amount memo (textToAddress $ userFromSK sk) 0 "" ""
+    httpCode <- submitCredit (LT.unpack url) (textToAddress $ LT.toStrict ucacAddr) (LT.toStrict sk) (CreditRecord (textToAddress friend) (textToAddress $ userFromSK sk) amount memo (textToAddress $ userFromSK sk) 0 "" "") False
     print httpCode
 
 -- Friend-related Modes
@@ -169,6 +169,10 @@ getTransactions :: String -> Address -> IO [IssueCreditLog]
 getTransactions url address = do
     initReq <- HTTP.parseRequest $ url ++ "/transactions?user=" ++ show address
     HTTP.getResponseBody <$> HTTP.httpJSON initReq
+
+
+getSettlements :: IO ()
+getSettlements = undefined
 
 
 getCounterparties :: String -> Address -> IO [Address]
@@ -291,12 +295,12 @@ checkPending url userAddress = do
 
 
 -- TODO Don't take a credit record
-submitCredit :: String -> Address -> Text -> CreditRecord -> IO Int
-submitCredit url ucacAddr secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ _ _) = do
+submitCredit :: String -> Address -> Text -> CreditRecord -> Bool -> IO Int
+submitCredit url ucacAddr secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ _ _) settlement = do
     nonce <- getNonce url debtor creditor
     initReq <- if textToAddress (userFromSK (LT.fromStrict secretKey)) == creditor
-                   then HTTP.parseRequest $ url ++ "/lend"
-                   else HTTP.parseRequest $ url ++ "/borrow"
+                   then HTTP.parseRequest $ url ++ (if settlement then "/lend_settlement" else "/lend")
+                   else HTTP.parseRequest $ url ++ (if settlement then "/borrow_settlement" else "/borrow")
     let signedCredit = signCredit secretKey ucacAddr (unsignedCredit { nonce = nonce })
     let req = HTTP.setRequestBodyJSON signedCredit $
                 HTTP.setRequestMethod "POST" initReq
@@ -311,6 +315,14 @@ rejectCredit url secretKey hash = do
         rejectRecord = RejectRecord sig hash
         req = HTTP.setRequestBodyJSON rejectRecord $
                 HTTP.setRequestMethod "POST" initReq
+    resp <- HTTP.httpNoBody req
+    return $ HTTP.getResponseStatusCode resp
+
+
+verifySettlement :: String -> Text -> Text -> IO Int
+verifySettlement url creditHash txHash = do
+    let fullUrl = url ++ "/verify_settlement/" ++ T.unpack creditHash ++ "?txHash=" ++ T.unpack txHash
+    req <- HTTP.setRequestMethod "POST" <$> HTTP.parseRequest fullUrl
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp
 

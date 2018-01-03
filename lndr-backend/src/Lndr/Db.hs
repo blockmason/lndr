@@ -134,12 +134,12 @@ deletePending hash conn = fromIntegral <$>
 
 insertPending :: CreditRecord -> Bool -> Connection -> IO Int
 insertPending creditRecord settlement conn =
-    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature, settlement) VALUES (?,?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord settlement)
+    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord)
 
 
 insertCredit :: Text -> Text -> CreditRecord -> Bool -> Connection -> IO Int
 insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _) settlement conn =
-    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, settlement) VALUES (?,?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig, settlement)
+    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig)
 
 
 insertCredits :: [IssueCreditLog] -> Connection -> IO Int
@@ -171,9 +171,9 @@ lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELE
                                                                         )
 
 
--- Flips settlement bit off once a settlement payment has been confirmed
+-- Flips verified bit on once a settlement payment has been confirmed
 verifyCreditByHash :: Text -> Connection -> IO Int
-verifyCreditByHash hash conn = fromIntegral <$> execute conn "UPDATE verified_credits SET settlement = FALSE WHERE hash = ?" (Only hash)
+verifyCreditByHash hash conn = fromIntegral <$> execute conn "UPDATE settlements SET verified = TRUE WHERE hash = ?" (Only hash)
 
 userBalance :: Address -> Connection -> IO Integer
 userBalance addr conn = do
@@ -201,10 +201,10 @@ insertPushDatum addr channelID platform conn = fromIntegral <$>
 lookupPushDatumByAddress :: Address -> Connection -> IO (Maybe (Text, DevicePlatform))
 lookupPushDatumByAddress addr conn = listToMaybe <$> query conn "SELECT channel_id, platform FROM push_data WHERE address = ?" (Only addr)
 
-creditRecordToPendingTuple :: CreditRecord -> Bool
-                           -> (Address, Address, Integer, Text, Address, Integer, Text, Text, Bool)
-creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig) settlement =
-    (creditor, debtor, amount, memo, submitter, nonce, hash, sig, settlement)
+creditRecordToPendingTuple :: CreditRecord
+                           -> (Address, Address, Integer, Text, Address, Integer, Text, Text)
+creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig) =
+    (creditor, debtor, amount, memo, submitter, nonce, hash, sig)
 
 
 creditLogToCreditTuple :: IssueCreditLog

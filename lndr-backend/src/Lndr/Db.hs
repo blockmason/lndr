@@ -122,9 +122,11 @@ lookupPending :: Text -> Connection -> IO (Maybe CreditRecord)
 lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE hash = ?" (Only hash)
 
 
+-- Boolean parameter determines if search is through settlement records or
+-- non-settlement records
 lookupPendingByAddress :: Address -> Bool -> Connection -> IO [CreditRecord]
-lookupPendingByAddress addr True conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.has WHERE (creditor = ? OR debtor = ?)" (addr, addr)
-lookupPendingByAddress addr False conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.has WHERE (creditor = ? OR debtor = ?) AND settlement.hash IS NULL" (addr, addr)
+lookupPendingByAddress addr True conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
+lookupPendingByAddress addr False conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlement.hash IS NULL" (addr, addr)
 
 
 lookupPendingSettlementByAddresses :: Address -> Address -> Connection -> IO [Only Text]
@@ -170,7 +172,7 @@ allCredits conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, 
 -- TODO fix this creditor, creditor repetition
 lookupCreditByAddress :: Address -> Bool -> Connection -> IO [IssueCreditLog]
 -- return all settlement records
-lookupCreditByAddress addr True conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
+lookupCreditByAddress addr True conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
 -- return all non-settlement records
 lookupCreditByAddress addr False conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
 

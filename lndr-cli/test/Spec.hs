@@ -107,8 +107,9 @@ nickTest = do
 
 basicLendTest :: Assertion
 basicLendTest = do
-    let testCredit = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" ""
-        badTestCredit = CreditRecord testAddress1 testAddress1 100 "dinner" testAddress1 0 "" ""
+    let testCredit = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" "" Nothing Nothing Nothing
+        badTestCredit = CreditRecord testAddress1 testAddress1 100 "dinner" testAddress1 0 "" "" Nothing Nothing Nothing
+
         creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
 
     -- user1 fails to submit pending credit to himself
@@ -166,7 +167,7 @@ basicSettlementTest = do
     price <- queryEtheruemPrice
     assertBool "nonzero eth price retrieved from coinbase" (unPrice price > 0)
 
-    let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" ""
+    let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" "" Nothing Nothing Nothing
         creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
 
     -- user5 submits pending settlement credit to user6

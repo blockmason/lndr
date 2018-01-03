@@ -28,6 +28,7 @@ module Lndr.Db (
     , lookupCreditByAddress
     , counterpartiesByAddress
     , lookupCreditByHash
+    , lookupPendingSettlementByAddresses
     , verifyCreditByHash
     , userBalance
     , twoPartyBalance
@@ -124,6 +125,10 @@ lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, a
 lookupPendingByAddress :: Address -> Bool -> Connection -> IO [CreditRecord]
 lookupPendingByAddress addr True conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.has WHERE (creditor = ? OR debtor = ?)" (addr, addr)
 lookupPendingByAddress addr False conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.has WHERE (creditor = ? OR debtor = ?) AND settlement.hash IS NULL" (addr, addr)
+
+
+lookupPendingSettlementByAddresses :: Address -> Address -> Connection -> IO [Only Text]
+lookupPendingSettlementByAddresses p1 p2 conn = query conn "SELECT hash FROM verified_credits JOIN settlements ON settlements.hash = verified_credits.hash WHERE ((creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)) AND settlements.verified = FALSE" (p1, p2, p2, p1)
 
 
 lookupPendingByAddresses :: Address -> Address -> Connection -> IO [CreditRecord]

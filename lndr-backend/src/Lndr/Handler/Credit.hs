@@ -4,8 +4,6 @@ module Lndr.Handler.Credit (
     -- * credit submission handlers
       lendHandler
     , borrowHandler
-    , lendSettleHandler
-    , borrowSettleHandler
     , rejectHandler
     , verifyHandler
 
@@ -38,19 +36,12 @@ import           Network.Ethereum.Web3
 import           Servant
 
 
-lendSettleHandler :: CreditRecord -> LndrHandler NoContent
-lendSettleHandler creditRecord = submitHandler (creditor creditRecord) creditRecord True
-
 lendHandler :: CreditRecord -> LndrHandler NoContent
-lendHandler creditRecord = submitHandler (creditor creditRecord) creditRecord False
-
-
-borrowSettleHandler :: CreditRecord -> LndrHandler NoContent
-borrowSettleHandler creditRecord = submitHandler (debtor creditRecord) creditRecord True
+lendHandler creditRecord = submitHandler (creditor creditRecord) creditRecord
 
 
 borrowHandler :: CreditRecord -> LndrHandler NoContent
-borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord False
+borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
 
 
 validSubmission :: Text -> Address -> Address -> Address -> Text -> Text -> LndrHandler ()
@@ -68,12 +59,13 @@ validSubmission memo submitterAddress creditor debtor sig hash = do
         throwError (err400 {errBody = "Bad submitter sig"})
 
 
-submitHandler :: Address -> CreditRecord -> Bool -> LndrHandler NoContent
-submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig) settlement = do
+submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
+submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig _ _ _) = do
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
     let hash = hashCreditRecord (lndrUcacAddr config) nonce signedRecord
+        settlementM = settlementDataFromCreditRecord signedRecord
 
     -- check that credit submission is valid
     validSubmission memo submitterAddress creditor debtor sig hash
@@ -101,31 +93,31 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             -- update gas price to latest safelow value
             updatedConfig <- safelowUpdate config configTVar
 
-            finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig hash settlement
+            finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig hash settlementM
 
             -- send push notification to counterparty
             attemptToNotify "Credit Confirmation" CreditConfirmation
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
-            createPendingRecord pool creditor debtor signedRecord hash settlement
+            createPendingRecord pool creditor debtor signedRecord hash settlementM
             -- send push notification to counterparty
             attemptToNotify "New Pending Credit" NewPendingCredit
 
     return NoContent
 
 
-finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> Text -> Bool -> IO ()
-finalizeCredit pool storedRecord config creditorSig debtorSig hash settlement = do
+finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> Text -> Maybe SettlementData -> IO ()
+finalizeCredit pool storedRecord config creditorSig debtorSig hash settlementM = do
             finalizeTransaction config creditorSig debtorSig storedRecord
             -- saving transaction record
-            withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord settlement
+            withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord settlementM
             -- delete pending record after transaction finalization
             void . withResource pool $ Db.deletePending hash
 
 
-createPendingRecord :: Pool Connection -> Address -> Address -> CreditRecord -> Text -> Bool -> LndrHandler ()
-createPendingRecord pool creditor debtor signedRecord hash settlement = do
+createPendingRecord :: Pool Connection -> Address -> Address -> CreditRecord -> Text -> Maybe SettlementData -> LndrHandler ()
+createPendingRecord pool creditor debtor signedRecord hash settlementM = do
     -- check if a pending transaction already exists between the two users
     existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses creditor debtor
     unless (null existingPending) $
@@ -134,7 +126,7 @@ createPendingRecord pool creditor debtor signedRecord hash settlement = do
     -- ensuring that creditor is on debtor's friends list and vice-versa
     liftIO $ createBilateralFriendship pool creditor debtor
 
-    void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash }) settlement
+    void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash }) settlementM
 
 
 createBilateralFriendship :: Pool Connection -> Address -> Address -> IO ()
@@ -148,7 +140,7 @@ rejectHandler(RejectRecord sig hash) = do
     pool <- dbConnectionPool <$> ask
     pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
     let hashNotFound = throwError $ err404 { errBody = "credit hash does not refer to pending record" }
-    (CreditRecord creditor debtor _ _ _ _ _ _) <- maybe hashNotFound pure pendingRecordM
+    (CreditRecord creditor debtor _ _ _ _ _ _ _ _ _) <- maybe hashNotFound pure pendingRecordM
     -- recover address from sig
     let signer = EU.ecrecover (stripHexPrefix sig) hash
     case signer of
@@ -166,7 +158,7 @@ verifyHandler creditHash (Just txHash) = do
     pool <- dbConnectionPool <$> ask
     recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
     (creditor, debtor, amount) <- case recordM of
-        Just (CreditRecord creditor debtor amount _ _ _ _ _, _, _) ->
+        Just (CreditRecord creditor debtor amount _ _ _ _ _ _ _ _, _, _) ->
             pure (creditor, debtor, amount)
         Nothing -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
     verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount

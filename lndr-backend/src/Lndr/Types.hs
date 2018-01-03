@@ -95,8 +95,11 @@ data CreditRecord = CreditRecord { creditor :: Address
                                  , nonce :: Integer
                                  , hash :: Text
                                  , signature :: Text
+                                 , settlementAmount :: Maybe Integer
+                                 , settlementCurrency :: Maybe Text
+                                 , settlementBlocknumber :: Maybe Integer
                                  } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''CreditRecord)
+$(deriveJSON (defaultOptions { omitNothingFields = True }) ''CreditRecord)
 
 data RejectRecord = RejectRecord { rejectSig :: Text
                                  , hash :: Text

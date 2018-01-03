@@ -143,8 +143,8 @@ insertPending creditRecord settlementDataM conn = do
     traverse_ (flip (insertSettlementData (hash creditRecord)) conn) settlementDataM
     fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord)
 
-insertCredit :: Text -> Text -> CreditRecord -> Bool -> Connection -> IO Int
-insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _) settlement conn =
+insertCredit :: Text -> Text -> CreditRecord -> Maybe SettlementData -> Connection -> IO Int
+insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _ _ _ _) settlement conn =
     fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig)
 
 
@@ -171,7 +171,7 @@ lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text)
 lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
     where process (creditor, debtor, amount, nonce, memo, sig1, sig2) = ( CreditRecord creditor debtor
                                                                                        amount memo
-                                                                                       creditor nonce hash sig1
+                                                                                       creditor nonce hash sig1 Nothing Nothing Nothing
                                                                         , sig1
                                                                         , sig2
                                                                         )
@@ -209,7 +209,7 @@ lookupPushDatumByAddress addr conn = listToMaybe <$> query conn "SELECT channel_
 
 creditRecordToPendingTuple :: CreditRecord
                            -> (Address, Address, Integer, Text, Address, Integer, Text, Text)
-creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig) =
+creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig _ _ _) =
     (creditor, debtor, amount, memo, submitter, nonce, hash, sig)
 
 

@@ -45,9 +45,7 @@ type LndrAPI =
    :<|> "pending_settlements" :> Capture "user" Address :> Get '[JSON] ([CreditRecord], [IssueCreditLog])
    :<|> "verify_settlement" :> Capture "hash" Text :> QueryParam "txHash" Text :> PostNoContent '[JSON] NoContent
    :<|> "pending" :> Capture "user" Address :> Get '[JSON] [CreditRecord]
-   :<|> "lend_settle" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "lend" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
-   :<|> "borrow_settle" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "borrow" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "reject" :> ReqBody '[JSON] RejectRecord :> PostNoContent '[JSON] NoContent
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
@@ -93,9 +91,7 @@ server = transactionsHandler
     :<|> pendingSettlementsHandler
     :<|> verifyHandler
     :<|> pendingHandler
-    :<|> lendSettleHandler
     :<|> lendHandler
-    :<|> borrowSettleHandler
     :<|> borrowHandler
     :<|> rejectHandler
     :<|> nonceHandler

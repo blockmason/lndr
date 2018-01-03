@@ -49,7 +49,7 @@ import           Prelude hiding (lookup, (!!))
 
 finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord
                     -> IO (Either Web3Error TxHash)
-finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _ _ _ _) = do
+finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _ _ _ _ _ _ _) = do
       let (sig1r, sig1s, sig1v) = decomposeSig sig1
           (sig2r, sig2s, sig2v) = decomposeSig sig2
           encodedMemo :: BytesN 32

@@ -122,7 +122,8 @@ lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, a
 
 
 lookupPendingByAddress :: Address -> Bool -> Connection -> IO [CreditRecord]
-lookupPendingByAddress addr settlement conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE (creditor = ? OR debtor = ?) AND settlement = ?" (addr, addr, settlement)
+lookupPendingByAddress addr True conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.has WHERE (creditor = ? OR debtor = ?)" (addr, addr)
+lookupPendingByAddress addr False conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.has WHERE (creditor = ? OR debtor = ?) AND settlement.hash IS NULL" (addr, addr)
 
 
 lookupPendingByAddresses :: Address -> Address -> Connection -> IO [CreditRecord]

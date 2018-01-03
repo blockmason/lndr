@@ -34,6 +34,7 @@ module Lndr.Handler (
     , unsubmittedHandler
     , resubmitHandler
     , registerPushHandler
+    , configHandler
     ) where
 
 import           Lndr.Handler.Admin

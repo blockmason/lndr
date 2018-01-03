@@ -43,6 +43,7 @@ import           Data.Maybe (listToMaybe)
 import           Data.Scientific
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           Data.Foldable
 import           Database.PostgreSQL.Simple
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.ToField
@@ -132,10 +133,15 @@ deletePending hash conn = fromIntegral <$>
     execute conn "DELETE FROM pending_credits WHERE hash = ?" (Only hash)
 
 
-insertPending :: CreditRecord -> Bool -> Connection -> IO Int
-insertPending creditRecord settlement conn =
-    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord)
+insertSettlementData :: Text -> SettlementData -> Connection -> IO Int
+insertSettlementData hash (SettlementData amount currency blocknumber) conn =
+    fromIntegral <$> execute conn "INSERT INTO settlements (hash, amount, currency, blocknumber, verified) VALUES (?,?,?,?,FALSE)" (hash, amount, currency, blocknumber)
 
+
+insertPending :: CreditRecord -> Maybe SettlementData -> Connection -> IO Int
+insertPending creditRecord settlementDataM conn = do
+    traverse_ (flip (insertSettlementData (hash creditRecord)) conn) settlementDataM
+    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord)
 
 insertCredit :: Text -> Text -> CreditRecord -> Bool -> Connection -> IO Int
 insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _) settlement conn =

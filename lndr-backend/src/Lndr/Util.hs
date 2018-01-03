@@ -115,3 +115,6 @@ alignR = snd . align
 
 setUcac :: Address -> IssueCreditLog -> IssueCreditLog
 setUcac lndrUcac creditlog =  creditlog { ucac = lndrUcac }
+
+configToResponse :: ServerConfig -> ConfigResponse
+configToResponse config = ConfigResponse (lndrUcacAddr config) (creditProtocolAddress config)

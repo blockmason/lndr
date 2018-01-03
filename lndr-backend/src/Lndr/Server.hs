@@ -72,6 +72,7 @@ type LndrAPI =
    :<|> "register_push" :> Capture "user" Address
                         :> ReqBody '[JSON] PushRequest
                         :> PostNoContent '[JSON] NoContent
+   :<|> "config" :> Get '[JSON] ConfigResponse
    :<|> "docs" :> Raw
 
 
@@ -113,6 +114,7 @@ server = transactionsHandler
     :<|> unsubmittedHandler
     :<|> resubmitHandler
     :<|> registerPushHandler
+    :<|> configHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =
             respond $ responseLBS ok200 [plain] docsBS

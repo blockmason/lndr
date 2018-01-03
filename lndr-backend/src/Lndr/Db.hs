@@ -145,6 +145,8 @@ insertPending creditRecord settlementDataM conn = do
     traverse_ (flip (insertSettlementData (hash creditRecord)) conn) settlementDataM
     fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord)
 
+
+-- TODO set block number here for eth settlment
 insertCredit :: Text -> Text -> CreditRecord -> Maybe SettlementData -> Connection -> IO Int
 insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _ _ _ _) settlement conn =
     fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig)
@@ -161,7 +163,10 @@ allCredits conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, 
 
 -- TODO fix this creditor, creditor repetition
 lookupCreditByAddress :: Address -> Bool -> Connection -> IO [IssueCreditLog]
-lookupCreditByAddress addr settlement conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits WHERE (creditor = ? OR debtor = ?) AND settlement = ?" (addr, addr, settlement)
+-- return all settlement records
+lookupCreditByAddress addr True conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
+-- return all non-settlement records
+lookupCreditByAddress addr False conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]

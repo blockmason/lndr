@@ -113,7 +113,7 @@ finalizeCredit pool storedRecord config creditorSig debtorSig hash settlementM =
             -- saving transaction record
             withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord settlementM
             -- delete pending record after transaction finalization
-            void . withResource pool $ Db.deletePending hash
+            void . withResource pool $ Db.deletePending hash False
 
 
 createPendingRecord :: Pool Connection -> Address -> Address -> CreditRecord -> Text -> Maybe SettlementData -> LndrHandler ()
@@ -146,7 +146,7 @@ rejectHandler(RejectRecord sig hash) = do
     case signer of
         Left _ -> throwError $ err400 { errBody = "unable to recover addr from sig" }
         Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
-                            then do liftIO . withResource pool $ Db.deletePending hash
+                            then do liftIO . withResource pool $ Db.deletePending hash True
                                     return NoContent
                             else throwError $ err400 { errBody = "bad rejection sig" }
 

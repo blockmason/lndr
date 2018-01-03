@@ -39,6 +39,7 @@ module Lndr.Db (
     ) where
 
 
+import           Control.Monad (when, void)
 import           Data.Maybe (listToMaybe)
 import           Data.Scientific
 import           Data.Text (Text)
@@ -128,9 +129,10 @@ lookupPendingByAddresses :: Address -> Address -> Connection -> IO [CreditRecord
 lookupPendingByAddresses p1 p2 conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (p1, p2, p2, p1)
 
 
-deletePending :: Text -> Connection -> IO Int
-deletePending hash conn = fromIntegral <$>
-    execute conn "DELETE FROM pending_credits WHERE hash = ?" (Only hash)
+deletePending :: Text -> Bool -> Connection -> IO Int
+deletePending hash rejection conn = do
+    when rejection . void $ execute conn "DELETE FROM settlements WHERE hash = ?" (Only hash)
+    fromIntegral <$> execute conn "DELETE FROM pending_credits WHERE hash = ?" (Only hash)
 
 
 insertSettlementData :: Text -> SettlementData -> Connection -> IO Int

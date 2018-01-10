@@ -174,9 +174,9 @@ allCredits conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, 
 -- non-settlement records
 lookupCreditByAddress :: Address -> Bool -> Connection -> IO [IssueCreditLog]
 -- return all settlement records
-lookupCreditByAddress addr True conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
+lookupCreditByAddress addr True conn = query conn "SELECT creditor, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
 -- return all non-settlement records
-lookupCreditByAddress addr False conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
+lookupCreditByAddress addr False conn = query conn "SELECT creditor, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]

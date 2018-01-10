@@ -28,7 +28,7 @@ safelowUpdate config configTVar = do
         margin = 1.3 -- multiplier for  additional assurance that tx will make it into blockchain
 
 -- TODO add error handling
--- TODO Document units of price here
+-- Returns price in USD per 1 eth
 queryEtheruemPrice :: IO EthereumPrice
 queryEtheruemPrice = do
     req <- HTTP.parseRequest "https://api.coinbase.com/v2/exchange-rates?currency=ETH"

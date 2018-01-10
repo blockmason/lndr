@@ -116,8 +116,7 @@ settlementDataFromCreditRecord (CreditRecord _ _ amount _ _ _ _ _ saM scM sbnM) 
     Just currency -> do
         price <- queryEtheruemPrice
         -- assumes USD / ETH settlement for now
-        -- TODO make sure floor is what you want -- check uni
-        let settlementAmount = floor $ fromIntegral amount * unPrice price
+        let settlementAmount = floor $ fromIntegral amount * unPrice price * 10 ^ 18
         blockNumber <- currentBlockNumber
         return . Just $ SettlementData settlementAmount currency blockNumber
     Nothing -> return Nothing

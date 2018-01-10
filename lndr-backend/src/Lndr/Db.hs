@@ -125,12 +125,12 @@ lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, a
 -- Boolean parameter determines if search is through settlement records or
 -- non-settlement records
 lookupPendingByAddress :: Address -> Bool -> Connection -> IO [CreditRecord]
-lookupPendingByAddress addr True conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
-lookupPendingByAddress addr False conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlement.hash IS NULL" (addr, addr)
+lookupPendingByAddress addr True conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, pending_credits.hash, signature FROM pending_credits JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
+lookupPendingByAddress addr False conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, pending_credits.hash, signature FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlement.hash IS NULL" (addr, addr)
 
 
 lookupPendingSettlementByAddresses :: Address -> Address -> Connection -> IO [Only Text]
-lookupPendingSettlementByAddresses p1 p2 conn = query conn "SELECT hash FROM verified_credits JOIN settlements ON settlements.hash = verified_credits.hash WHERE ((creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)) AND settlements.verified = FALSE" (p1, p2, p2, p1)
+lookupPendingSettlementByAddresses p1 p2 conn = query conn "SELECT verified_credits.hash FROM verified_credits JOIN settlements ON settlements.hash = verified_credits.hash WHERE ((creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)) AND settlements.verified = FALSE" (p1, p2, p2, p1)
 
 
 lookupPendingByAddresses :: Address -> Address -> Connection -> IO [CreditRecord]
@@ -224,6 +224,7 @@ insertPushDatum addr channelID platform conn = fromIntegral <$>
 
 lookupPushDatumByAddress :: Address -> Connection -> IO (Maybe (Text, DevicePlatform))
 lookupPushDatumByAddress addr conn = listToMaybe <$> query conn "SELECT channel_id, platform FROM push_data WHERE address = ?" (Only addr)
+
 
 creditRecordToPendingTuple :: CreditRecord
                            -> (Address, Address, Integer, Text, Address, Integer, Text, Text)

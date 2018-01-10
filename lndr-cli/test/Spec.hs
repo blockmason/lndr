@@ -51,7 +51,8 @@ tests = [ testGroup "Nicks"
             , testCase "settlement" basicSettlementTest
             ]
         , testGroup "Admin"
-            [ testCase "get and set gas price" basicGasTest
+            [ testCase "get and set gas price" gasTest
+            , testCase "get current blocknumber" blocknumberTest
             ]
         , testGroup "Notifications"
             [ testCase "registerChannel" basicNotificationsTest
@@ -172,8 +173,7 @@ basicSettlementTest = do
 
     -- user5 submits pending settlement credit to user6
     httpCode <- submitCredit testUrl ucacAddr testPrivkey5 testCredit
-    -- assertEqual "lend (settle) success" 204 httpCode
-    print httpCode
+    assertEqual "lend (settle) success" 204 httpCode
 
     -- user6 accepts user5's pending settlement credit
     httpCode <- submitCredit testUrl ucacAddr testPrivkey6 (testCredit { submitter = testAddress6 })
@@ -195,12 +195,11 @@ basicSettlementTest = do
 
     -- user5 verifies that he has made the settlement credit
     httpCode <- verifySettlement testUrl creditHash txHash
-    -- assertEqual "verification success" 204 httpCode
-    print httpCode
+    assertEqual "verification success" 204 httpCode
 
 
-basicGasTest :: Assertion
-basicGasTest = do
+gasTest :: Assertion
+gasTest = do
     price <- getGasPrice testUrl
 
     -- double gas price
@@ -210,6 +209,13 @@ basicGasTest = do
     -- check that gas price has been doubled
     newPrice <- getGasPrice testUrl
     assertEqual "gas price doubled" newPrice (price * 2)
+
+
+blocknumberTest :: Assertion
+blocknumberTest = do
+    blockNumber <- currentBlockNumber
+
+    assertBool "block number within expected bounds" (blockNumber < 200)
 
 
 basicNotificationsTest :: Assertion

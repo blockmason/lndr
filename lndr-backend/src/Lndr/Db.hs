@@ -116,17 +116,18 @@ lookupFriendsWithNick :: Address -> Connection -> IO [NickInfo]
 lookupFriendsWithNick addr conn =
     query conn "SELECT friend, nickname FROM friendships, nicknames WHERE origin = ? AND address = friend" (Only addr) :: IO [NickInfo]
 
+
 -- pending_credits table manipulations
 
 lookupPending :: Text -> Connection -> IO (Maybe CreditRecord)
-lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE hash = ?" (Only hash)
+lookupPending hash conn = (fmap creditRowToCreditRecord . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE hash = ?" (Only hash)
 
 
 -- Boolean parameter determines if search is through settlement records or
 -- non-settlement records
 lookupPendingByAddress :: Address -> Bool -> Connection -> IO [CreditRecord]
-lookupPendingByAddress addr True conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, pending_credits.hash, signature FROM pending_credits JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
-lookupPendingByAddress addr False conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, pending_credits.hash, signature FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlement.hash IS NULL" (addr, addr)
+lookupPendingByAddress addr True conn = fmap creditRowToCreditRecord <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, pending_credits.hash, signature FROM pending_credits JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
+lookupPendingByAddress addr False conn = fmap creditRowToCreditRecord <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, pending_credits.hash, signature FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlement.hash IS NULL" (addr, addr)
 
 
 lookupPendingSettlementByAddresses :: Address -> Address -> Connection -> IO [Only Text]
@@ -134,7 +135,7 @@ lookupPendingSettlementByAddresses p1 p2 conn = query conn "SELECT verified_cred
 
 
 lookupPendingByAddresses :: Address -> Address -> Connection -> IO [CreditRecord]
-lookupPendingByAddresses p1 p2 conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (p1, p2, p2, p1)
+lookupPendingByAddresses p1 p2 conn = fmap creditRowToCreditRecord <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature FROM pending_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (p1, p2, p2, p1)
 
 
 deletePending :: Text -> Bool -> Connection -> IO Int

@@ -119,3 +119,7 @@ setUcac lndrUcac creditlog =  creditlog { ucac = lndrUcac }
 
 configToResponse :: ServerConfig -> ConfigResponse
 configToResponse config = ConfigResponse (lndrUcacAddr config) (creditProtocolAddress config)
+
+
+creditRowToCreditRecord :: (Address, Address, Integer, Text, Address, Integer, Text, Text) -> CreditRecord
+creditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, signature) = CreditRecord creditor debtor amount memo submitter nonce hash signature Nothing Nothing Nothing

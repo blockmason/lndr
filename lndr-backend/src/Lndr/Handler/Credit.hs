@@ -64,8 +64,9 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
+    settlementM <- liftIO $ settlementDataFromCreditRecord signedRecord
+
     let hash = hashCreditRecord (lndrUcacAddr config) nonce signedRecord
-        settlementM = settlementDataFromCreditRecord signedRecord
 
     -- check that credit submission is valid
     validSubmission memo submitterAddress creditor debtor sig hash
@@ -111,7 +112,7 @@ finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Tex
 finalizeCredit pool storedRecord config creditorSig debtorSig hash settlementM = do
             finalizeTransaction config creditorSig debtorSig storedRecord
             -- saving transaction record
-            withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord settlementM
+            withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord
             -- delete pending record after transaction finalization
             void . withResource pool $ Db.deletePending hash False
 

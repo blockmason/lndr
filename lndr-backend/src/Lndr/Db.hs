@@ -151,12 +151,11 @@ insertSettlementData hash (SettlementData amount currency blocknumber) conn =
 insertPending :: CreditRecord -> Maybe SettlementData -> Connection -> IO Int
 insertPending creditRecord settlementDataM conn = do
     traverse_ (flip (insertSettlementData (hash creditRecord)) conn) settlementDataM
-    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord)
+    fromIntegral <$> execute conn "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature) VALUES (?,?,?,?,?,?,?,?)" (creditRecordToPendingTuple creditRecord)
 
 
--- TODO set block number here for eth settlment
-insertCredit :: Text -> Text -> CreditRecord -> Maybe SettlementData -> Connection -> IO Int
-insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _ _ _ _) settlement conn =
+insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
+insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _ _ _ _) conn =
     fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig)
 
 

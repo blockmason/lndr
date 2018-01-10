@@ -170,6 +170,8 @@ allCredits :: Connection -> IO [IssueCreditLog]
 allCredits conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits" ()
 
 -- TODO fix this creditor, creditor repetition
+-- Boolean parameter determines if search is through settlement records or
+-- non-settlement records
 lookupCreditByAddress :: Address -> Bool -> Connection -> IO [IssueCreditLog]
 -- return all settlement records
 lookupCreditByAddress addr True conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
@@ -186,7 +188,8 @@ lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text)
 lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
     where process (creditor, debtor, amount, nonce, memo, sig1, sig2) = ( CreditRecord creditor debtor
                                                                                        amount memo
-                                                                                       creditor nonce hash sig1 Nothing Nothing Nothing
+                                                                                       creditor nonce hash sig1
+                                                                                       Nothing Nothing Nothing
                                                                         , sig1
                                                                         , sig2
                                                                         )

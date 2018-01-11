@@ -115,8 +115,7 @@ verifySettlementPayment txHash debtor creditor amount = do
             let fromMatch = txFrom transaction == debtor
                 toMatch = txTo transaction == Just creditor
                 valueMatch = hexToInteger (txValue transaction) == amount
-                -- TODO bring back this value match component
-            in return $ fromMatch && toMatch -- && valueMatch
+            in return $ fromMatch && toMatch && valueMatch
         _                        -> return False
 
 

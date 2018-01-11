@@ -163,12 +163,15 @@ rejectHandler(RejectRecord sig hash) = do
 verifyHandler :: Text -> Maybe Text -> LndrHandler NoContent
 verifyHandler creditHash (Just txHash) = do
     pool <- dbConnectionPool <$> ask
+    liftIO $ print "post pool"
     recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
+    liftIO $ print "post recordM"
     (creditor, debtor, amount) <- case recordM of
         Just (CreditRecord creditor debtor amount _ _ _ _ _ _ _ _, _, _) ->
             pure (creditor, debtor, amount)
         Nothing -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
     verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
+    liftIO $ print "post verifiy"
     if verified
         then do liftIO . withResource pool $ Db.verifyCreditByHash creditHash
                 return NoContent

@@ -35,6 +35,7 @@ queryEtheruemPrice = do
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
+-- TODO add error handling
 currentBlockNumber :: IO Integer
 currentBlockNumber = do
     blockNumberTextE <- runWeb3 Eth.blockNumber

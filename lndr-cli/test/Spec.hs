@@ -175,9 +175,18 @@ basicSettlementTest = do
     httpCode <- submitCredit testUrl ucacAddr testPrivkey5 testCredit
     assertEqual "lend (settle) success" 204 httpCode
 
+    -- check that pending settlement is registered in test
+    (pendingSettlements, bilateralPendingSettlements) <- getSettlements testUrl testAddress5
+    assertEqual "pre-confirmation: get pending settlements success" 1 (length pendingSettlements)
+    assertEqual "pre-confirmation: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
+
     -- user6 accepts user5's pending settlement credit
     httpCode <- submitCredit testUrl ucacAddr testPrivkey6 (testCredit { submitter = testAddress6 })
     assertEqual "borrow (settle) success" 204 httpCode
+
+    (pendingSettlements, bilateralPendingSettlements) <- getSettlements testUrl testAddress5
+    assertEqual "post-confirmation: get pending settlements success" 0 (length pendingSettlements)
+    assertEqual "post-confirmation: get bilateral pending settlements success" 1 (length bilateralPendingSettlements)
 
     -- user5 transfers eth to user6
     txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)
@@ -197,6 +206,11 @@ basicSettlementTest = do
     httpCode <- verifySettlement testUrl creditHash txHash
     assertEqual "verification success" 204 httpCode
 
+    (pendingSettlements, bilateralPendingSettlements) <- getSettlements testUrl testAddress5
+    assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)
+    assertEqual "post-verification: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
+
+
 
 gasTest :: Assertion
 gasTest = do
@@ -214,7 +228,6 @@ gasTest = do
 blocknumberTest :: Assertion
 blocknumberTest = do
     blockNumber <- currentBlockNumber
-
     assertBool "block number within expected bounds" (blockNumber < 200)
 
 

@@ -5,6 +5,9 @@ module Lndr.NetworkStatistics where
 import           Control.Concurrent.STM
 import           Control.Exception
 import           Control.Monad.IO.Class
+import           Control.Monad.Trans.Class
+import           Control.Monad.Trans.Maybe
+import           Data.Either.Combinators
 import           Lndr.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3
@@ -30,17 +33,15 @@ safelowUpdate config configTVar = do
         safeLowScaling = 100000000 -- eth gas station returns prices in DeciGigaWei
         margin = 1.3 -- multiplier for  additional assurance that tx will make it into blockchain
 
--- TODO add error handling
 -- | Queries the coinbase api and returns price in USD per 1 eth.
-queryEtheruemPrice :: IO EthereumPrice
+queryEtheruemPrice :: MaybeT IO EthereumPrice
 queryEtheruemPrice = do
-    req <- HTTP.parseRequest "https://api.coinbase.com/v2/exchange-rates?currency=ETH"
-    HTTP.getResponseBody <$> HTTP.httpJSON req
+    req <- lift $ HTTP.parseRequest "https://api.coinbase.com/v2/exchange-rates?currency=ETH"
+    MaybeT $ rightToMaybe . HTTP.getResponseBody <$> HTTP.httpJSONEither req
 
 
--- TODO add error handling
 -- | Queries the blockchain for current blocknumber.
-currentBlockNumber :: IO Integer
+currentBlockNumber :: MaybeT IO Integer
 currentBlockNumber = do
     blockNumberTextE <- runWeb3 Eth.blockNumber
     return $ case blockNumberTextE of

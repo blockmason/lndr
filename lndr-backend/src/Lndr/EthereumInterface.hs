@@ -24,6 +24,7 @@ module Lndr.EthereumInterface (
     ) where
 
 import           Control.Monad.IO.Class
+import           Control.Monad.Trans.Maybe
 import           Control.Concurrent.STM
 import           Control.Exception
 import           Control.Monad
@@ -119,12 +120,11 @@ verifySettlementPayment txHash debtor creditor amount = do
         _                        -> return False
 
 
-settlementDataFromCreditRecord :: CreditRecord -> IO (Maybe SettlementData)
-settlementDataFromCreditRecord (CreditRecord _ _ amount _ _ _ _ _ saM scM sbnM) = case scM of
-    Just currency -> do
-        price <- queryEtheruemPrice
-        -- assumes USD / ETH settlement for now
-        let settlementAmount = floor $ fromIntegral amount * unPrice price * 10 ^ 18
-        blockNumber <- currentBlockNumber
-        return . Just $ SettlementData settlementAmount currency blockNumber
-    Nothing -> return Nothing
+settlementDataFromCreditRecord :: CreditRecord -> MaybeT IO SettlementData
+settlementDataFromCreditRecord (CreditRecord _ _ amount _ _ _ _ _ saM scM sbnM) = do
+    currency <- MaybeT (return scM :: IO (Maybe Text))
+    price <- queryEtheruemPrice
+    -- assumes USD / ETH settlement for now
+    let settlementAmount = floor $ fromIntegral amount * unPrice price * 10 ^ 18
+    blockNumber <- currentBlockNumber
+    return $ SettlementData settlementAmount currency blockNumber

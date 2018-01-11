@@ -18,8 +18,9 @@ module Lndr.Handler.Credit (
     ) where
 
 import           Control.Concurrent.STM
-import           Control.Monad.Reader
 import           Control.Monad.Except
+import           Control.Monad.Reader
+import           Control.Monad.Trans.Maybe
 import           Data.Pool (Pool, withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -64,7 +65,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
-    settlementM <- liftIO $ settlementDataFromCreditRecord signedRecord
+    settlementM <- liftIO . runMaybeT $ settlementDataFromCreditRecord signedRecord
 
     let hash = hashCreditRecord (lndrUcacAddr config) nonce signedRecord
 
@@ -163,15 +164,12 @@ rejectHandler(RejectRecord sig hash) = do
 verifyHandler :: Text -> Maybe Text -> LndrHandler NoContent
 verifyHandler creditHash (Just txHash) = do
     pool <- dbConnectionPool <$> ask
-    liftIO $ print "post pool"
     recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
-    liftIO $ print "post recordM"
     (creditor, debtor, amount) <- case recordM of
         Just (CreditRecord creditor debtor amount _ _ _ _ _ _ _ _, _, _) ->
             pure (creditor, debtor, amount)
         Nothing -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
     verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
-    liftIO $ print "post verifiy"
     if verified
         then do liftIO . withResource pool $ Db.verifyCreditByHash creditHash
                 return NoContent

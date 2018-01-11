@@ -196,7 +196,7 @@ basicSettlementTest = do
                                                     Nothing
                                                     (Just $ 10 ^ 18)
                                                     Nothing
-                                                    h
+
     -- user4 transfers eth to user1
     incorrectTxHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
                                                         testAddress1

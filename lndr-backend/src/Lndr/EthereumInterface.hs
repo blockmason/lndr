@@ -20,6 +20,7 @@ module Lndr.EthereumInterface (
       lndrLogs
     , finalizeTransaction
     , verifySettlementPayment
+    , settlementDataFromCreditRecord
     ) where
 
 import           Control.Monad.IO.Class
@@ -34,6 +35,7 @@ import           Data.List.Safe ((!!))
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import           Lndr.NetworkStatistics
 import           Lndr.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3
@@ -49,7 +51,7 @@ import           Prelude hiding (lookup, (!!))
 
 finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord
                     -> IO (Either Web3Error TxHash)
-finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _ _ _ _) = do
+finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _ _ _ _ _ _ _) = do
       let (sig1r, sig1s, sig1v) = decomposeSig sig1
           (sig2r, sig2s, sig2v) = decomposeSig sig2
           encodedMemo :: BytesN 32
@@ -104,5 +106,17 @@ verifySettlementPayment txHash debtor creditor amount = do
             let fromMatch = txFrom transaction == debtor
                 toMatch = txTo transaction == Just creditor
                 valueMatch = hexToInteger (txValue transaction) == amount
+                -- TODO bring back this value match component
             in return $ fromMatch && toMatch -- && valueMatch
         _                        -> return False
+
+
+settlementDataFromCreditRecord :: CreditRecord -> IO (Maybe SettlementData)
+settlementDataFromCreditRecord (CreditRecord _ _ amount _ _ _ _ _ saM scM sbnM) = case scM of
+    Just currency -> do
+        price <- queryEtheruemPrice
+        -- assumes USD / ETH settlement for now
+        let settlementAmount = floor $ fromIntegral amount * unPrice price * 10 ^ 18
+        blockNumber <- currentBlockNumber
+        return . Just $ SettlementData settlementAmount currency blockNumber
+    Nothing -> return Nothing

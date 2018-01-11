@@ -10,8 +10,6 @@ module Lndr.Handler (
     , transactionsHandler
     , pendingHandler
     , pendingSettlementsHandler
-    , lendSettleHandler
-    , borrowSettleHandler
     , lendHandler
     , borrowHandler
     , nonceHandler
@@ -34,6 +32,7 @@ module Lndr.Handler (
     , unsubmittedHandler
     , resubmitHandler
     , registerPushHandler
+    , configHandler
     ) where
 
 import           Lndr.Handler.Admin

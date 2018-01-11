@@ -19,7 +19,7 @@ import qualified Network.Ethereum.Web3.Address as Addr
 import           Numeric (readHex, showHex)
 
 hashCreditRecord :: Address -> Nonce -> CreditRecord -> Text
-hashCreditRecord ucacAddr nonce (CreditRecord creditor debtor amount _ _ _ _ _) =
+hashCreditRecord ucacAddr nonce (CreditRecord creditor debtor amount _ _ _ _ _ _ _ _) =
                 let message = T.concat $
                       stripHexPrefix <$> [ Addr.toText ucacAddr
                                          , Addr.toText creditor
@@ -115,3 +115,11 @@ alignR = snd . align
 
 setUcac :: Address -> IssueCreditLog -> IssueCreditLog
 setUcac lndrUcac creditlog =  creditlog { ucac = lndrUcac }
+
+
+configToResponse :: ServerConfig -> ConfigResponse
+configToResponse config = ConfigResponse (lndrUcacAddr config) (creditProtocolAddress config)
+
+
+creditRowToCreditRecord :: (Address, Address, Integer, Text, Address, Integer, Text, Text) -> CreditRecord
+creditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, signature) = CreditRecord creditor debtor amount memo submitter nonce hash signature Nothing Nothing Nothing

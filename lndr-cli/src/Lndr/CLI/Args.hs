@@ -118,11 +118,12 @@ runMode (Config url sk _) RejectPending = do
     print httpCode
 
 runMode (Config url sk ucacAddr) (Lend friend amount memo) = do
-    httpCode <- submitCredit (LT.unpack url) (textToAddress $ LT.toStrict ucacAddr) (LT.toStrict sk) (CreditRecord (textToAddress $ userFromSK sk) (textToAddress friend) amount memo (textToAddress $ userFromSK sk) 0 "" "") False
+    httpCode <- submitCredit (LT.unpack url) (textToAddress $ LT.toStrict ucacAddr) (LT.toStrict sk) (CreditRecord (textToAddress $ userFromSK sk) (textToAddress friend) amount memo (textToAddress $ userFromSK sk) 0 "" "" Nothing Nothing Nothing)
     print httpCode
 
 runMode (Config url sk ucacAddr) (Borrow friend amount memo) = do
-    httpCode <- submitCredit (LT.unpack url) (textToAddress $ LT.toStrict ucacAddr) (LT.toStrict sk) (CreditRecord (textToAddress friend) (textToAddress $ userFromSK sk) amount memo (textToAddress $ userFromSK sk) 0 "" "") False
+    httpCode <- submitCredit (LT.unpack url) (textToAddress $ LT.toStrict ucacAddr) (LT.toStrict sk) (CreditRecord (textToAddress friend) (textToAddress $ userFromSK sk) amount memo (textToAddress $ userFromSK sk) 0 "" "" Nothing Nothing Nothing)
+
     print httpCode
 
 -- Friend-related Modes
@@ -276,7 +277,7 @@ getNonce url addr1 addr2 = do
 
 
 signCredit :: Text -> Address -> CreditRecord -> CreditRecord
-signCredit secretKey ucacAddr r@(CreditRecord c d a m _ nonce _ _) = r { signature = sig , hash = message }
+signCredit secretKey ucacAddr r@(CreditRecord c d a m _ nonce _ _ _ _ _) = r { signature = sig , hash = message }
     where message = hashText . T.concat $
                         stripHexPrefix <$> [ Addr.toText ucacAddr
                                            , Addr.toText c
@@ -295,12 +296,12 @@ checkPending url userAddress = do
 
 
 -- TODO Don't take a credit record
-submitCredit :: String -> Address -> Text -> CreditRecord -> Bool -> IO Int
-submitCredit url ucacAddr secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ _ _) settlement = do
+submitCredit :: String -> Address -> Text -> CreditRecord -> IO Int
+submitCredit url ucacAddr secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ _ _ _ _ _) = do
     nonce <- getNonce url debtor creditor
     initReq <- if textToAddress (userFromSK (LT.fromStrict secretKey)) == creditor
-                   then HTTP.parseRequest $ url ++ (if settlement then "/lend_settlement" else "/lend")
-                   else HTTP.parseRequest $ url ++ (if settlement then "/borrow_settlement" else "/borrow")
+                   then HTTP.parseRequest $ url ++ "/lend"
+                   else HTTP.parseRequest $ url ++ "/borrow"
     let signedCredit = signCredit secretKey ucacAddr (unsignedCredit { nonce = nonce })
     let req = HTTP.setRequestBodyJSON signedCredit $
                 HTTP.setRequestMethod "POST" initReq

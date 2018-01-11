@@ -6,6 +6,9 @@ import           Control.Concurrent.STM
 import           Control.Exception
 import           Control.Monad.IO.Class
 import           Lndr.Types
+import           Lndr.Util
+import           Network.Ethereum.Web3
+import qualified Network.Ethereum.Web3.Eth as Eth
 import qualified Network.HTTP.Simple as HTTP
 
 
@@ -25,7 +28,16 @@ safelowUpdate config configTVar = do
         margin = 1.3 -- multiplier for  additional assurance that tx will make it into blockchain
 
 -- TODO add error handling
+-- Returns price in USD per 1 eth
 queryEtheruemPrice :: IO EthereumPrice
 queryEtheruemPrice = do
     req <- HTTP.parseRequest "https://api.coinbase.com/v2/exchange-rates?currency=ETH"
     HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
+currentBlockNumber :: IO Integer
+currentBlockNumber = do
+    blockNumberTextE <- runWeb3 Eth.blockNumber
+    return $ case blockNumberTextE of
+        Right numText -> hexToInteger numText
+        Left _        -> 0

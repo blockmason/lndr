@@ -107,16 +107,17 @@ nickTest = do
 
 basicLendTest :: Assertion
 basicLendTest = do
-    let testCredit = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" ""
-        badTestCredit = CreditRecord testAddress1 testAddress1 100 "dinner" testAddress1 0 "" ""
+    let testCredit = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" "" Nothing Nothing Nothing
+        badTestCredit = CreditRecord testAddress1 testAddress1 100 "dinner" testAddress1 0 "" "" Nothing Nothing Nothing
+
         creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
 
     -- user1 fails to submit pending credit to himself
-    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 badTestCredit False
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 badTestCredit
     assertEqual "user1 cannot lend to himself" 400 httpCode
 
     -- user1 submits pending credit to user2
-    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit False
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit
     assertEqual "lend success" 204 httpCode
 
     -- user1 checks pending transactions
@@ -136,11 +137,11 @@ basicLendTest = do
     assertEqual "zero pending records found for user2" 0 (length creditRecords2)
 
     -- user1 attempts same credit again
-    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit False
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey1 testCredit
     assertEqual "lend success" 204 httpCode
 
     -- user2 accepts user1's pending credit
-    httpCode <- submitCredit testUrl ucacAddr testPrivkey2 (testCredit { submitter = testAddress2 }) False
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey2 (testCredit { submitter = testAddress2 })
     assertEqual "borrow success" 204 httpCode
 
     -- user1's checks that he has pending credits and one verified credit
@@ -166,18 +167,17 @@ basicSettlementTest = do
     price <- queryEtheruemPrice
     assertBool "nonzero eth price retrieved from coinbase" (unPrice price > 0)
 
-    let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" ""
+    let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" "" Nothing Nothing Nothing
         creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
 
     -- user5 submits pending settlement credit to user6
-    httpCode <- submitCredit testUrl ucacAddr testPrivkey5 testCredit True
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey5 testCredit
     -- assertEqual "lend (settle) success" 204 httpCode
     print httpCode
 
     -- user6 accepts user5's pending settlement credit
-    httpCode <- submitCredit testUrl ucacAddr testPrivkey6 (testCredit { submitter = testAddress6 }) True
-    -- assertEqual "borrow (settle) success" 204 httpCode
-    print httpCode
+    httpCode <- submitCredit testUrl ucacAddr testPrivkey6 (testCredit { submitter = testAddress6 })
+    assertEqual "borrow (settle) success" 204 httpCode
 
     -- user5 transfers eth to user6
     txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)

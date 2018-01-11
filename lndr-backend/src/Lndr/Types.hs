@@ -16,6 +16,7 @@ module Lndr.Types
     -- TODO clean this up, very unorganized as is
     , CreditRecord(CreditRecord, hash, creditor, debtor, submitter, signature, nonce)
     , IssueCreditLog(IssueCreditLog, ucac, amount)
+    , SettlementData(..)
     , RejectRecord(RejectRecord)
     , Nonce(..)
 
@@ -28,12 +29,15 @@ module Lndr.Types
     -- * network statistics api response types
     , EthereumPrice(..)
     , GasStationResponse(..)
+    , ConfigResponse(..)
     ) where
 
 import           Control.Concurrent.STM.TVar
+import           Control.Lens (over, _head)
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.ByteString (ByteString)
+import           Data.Char (toLower)
 import qualified Data.Configurator.Types as Conf
 import           Data.Either.Combinators (mapLeft, fromRight)
 import           Data.Hashable
@@ -64,6 +68,11 @@ newtype Nonce = Nonce { unNonce :: Integer } deriving (Show, Generic)
 instance ToJSON Nonce where
     toJSON (Nonce x) = toJSON x
 
+data SettlementData = SettlementData { settlementAmount :: Integer
+                                     , settlementCurrency :: Text
+                                     , settlementBlocknumber :: Integer
+                                     }
+
 data IssueCreditLog = IssueCreditLog { ucac :: Address
                                      , creditor :: Address
                                      , debtor :: Address
@@ -86,8 +95,11 @@ data CreditRecord = CreditRecord { creditor :: Address
                                  , nonce :: Integer
                                  , hash :: Text
                                  , signature :: Text
+                                 , settlementAmount :: Maybe Integer
+                                 , settlementCurrency :: Maybe Text
+                                 , settlementBlocknumber :: Maybe Integer
                                  } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''CreditRecord)
+$(deriveJSON (defaultOptions { omitNothingFields = True }) ''CreditRecord)
 
 data RejectRecord = RejectRecord { rejectSig :: Text
                                  , hash :: Text
@@ -156,6 +168,11 @@ data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  , urbanAirshipKey :: !ByteString
                                  , urbanAirshipSecret :: !ByteString
                                  }
+
+data ConfigResponse = ConfigResponse { configResponseLndrAddress :: Address
+                                     , configResponseCreditProtocolAddress :: Address
+                                     }
+$(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 14 }) ''ConfigResponse)
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection
                                , serverConfig :: TVar ServerConfig

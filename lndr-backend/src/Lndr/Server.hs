@@ -74,18 +74,6 @@ type LndrAPI =
    :<|> "docs" :> Raw
 
 
-lndrAPI :: Proxy LndrAPI
-lndrAPI = Proxy
-
-
-docsBS :: ByteString
-docsBS = encodeUtf8
-       . LT.pack
-       . markdown
-       $ docsWithIntros [intro] lndrAPI
-  where intro = DocIntro "LNDR Server" ["Web service API"]
-
-
 server :: ServerT LndrAPI LndrHandler
 server = transactionsHandler
     :<|> pendingSettlementsHandler
@@ -117,26 +105,48 @@ server = transactionsHandler
           plain = ("Content-Type", "text/plain")
 
 
-readerToHandler' :: forall a. ServerState -> LndrHandler a -> Handler a
-readerToHandler' state r = do
-    res <- liftIO . runExceptT $ runReaderT (runLndr r) state
-    case res of
-      Left err -> throwError err
-      Right a  -> return a
+lndrAPI :: Proxy LndrAPI
+lndrAPI = Proxy
 
 
-readerToHandler :: ServerState -> LndrHandler :~> Handler
-readerToHandler state = NT (readerToHandler' state)
+docsBS :: ByteString
+docsBS = encodeUtf8
+       . LT.pack
+       . markdown
+       $ docsWithIntros [intro] lndrAPI
+  where intro = DocIntro "LNDR Server" ["Web service API"]
+
+
+-- Natural Transformation from 'LndrHandler' to 'Handler'. Servant expects all
+-- routes to be of type 'ExceptT ServantErr IO a' ('Handler') so the endpoints
+-- used in this application, of type 'ReaderT ServerState (ExceptT ServantErr IO)'
+-- ('LndrHandler'), must be converted to the default 'Handler' type before they
+-- can be served by the 'serve' function.
+lndrHandlerToHandler :: ServerState -> LndrHandler :~> Handler
+lndrHandlerToHandler state = NT (lndrHandlerToHandler' state)
+    where lndrHandlerToHandler' :: forall a. ServerState -> LndrHandler a -> Handler a
+          lndrHandlerToHandler' state r = do
+                res <- liftIO . runExceptT $ runReaderT (runLndr r) state
+                case res of
+                  Left err -> throwError err
+                  Right a  -> return a
 
 
 readerServer :: ServerState -> Server LndrAPI
-readerServer state = enter (readerToHandler state) server
+readerServer state = enter (lndrHandlerToHandler state) server
 
 
 app :: ServerState -> Application
 app state = serve lndrAPI (readerServer state)
 
 
+-- | Scans blockchain for previously-submitted credit records and inserts them
+-- into 'verified_credits' table if missing.
+--
+-- This function is called at startup to ensure database consistency with the
+-- blockchain. All credit-related queries use database data so without these
+-- consistency checks at startup, it's possible user's transaction history
+-- would be inaccurately represented.
 updateDbFromLndrLogs :: ServerState -> IO ()
 updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
     config <- atomically $ readTVar configMVar
@@ -144,6 +154,8 @@ updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
     withResource pool . Db.insertCredits $ either (const []) id logs
 
 
+-- | Load required server configuration and create database connection pool.
+-- Called at server startup.
 freshState :: IO ServerState
 freshState = do
     serverConfig <- loadConfig

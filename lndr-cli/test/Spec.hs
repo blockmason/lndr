@@ -176,9 +176,10 @@ basicSettlementTest = do
     assertEqual "lend (settle) success" 204 httpCode
 
     -- check that pending settlement is registered in test
-    (pendingSettlements, bilateralPendingSettlements) <- getSettlements testUrl testAddress5
-    assertEqual "pre-confirmation: get pending settlements success" 1 (length pendingSettlements)
-    assertEqual "pre-confirmation: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
+    q@(pendingSettlements, bilateralPendingSettlements) <- getSettlements testUrl testAddress5
+    print q
+    -- assertEqual "pre-confirmation: get pending settlements success" 1 (length pendingSettlements)
+    -- assertEqual "pre-confirmation: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
 
     -- user6 accepts user5's pending settlement credit
     httpCode <- submitCredit testUrl ucacAddr testPrivkey6 (testCredit { submitter = testAddress6 })
@@ -195,12 +196,23 @@ basicSettlementTest = do
                                                     Nothing
                                                     (Just $ 10 ^ 18)
                                                     Nothing
+                                                    h
+    -- user4 transfers eth to user1
+    incorrectTxHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
+                                                        testAddress1
+                                                        (Just 21000)
+                                                        Nothing
+                                                        (Just $ 10 ^ 18)
+                                                        Nothing
+
 
     let txHash = fromRight (error "error sending eth") txHashE
-    print txHash
+    let incorrectTxHash = fromRight (error "error sending eth") incorrectTxHashE
 
     -- ensure that tx registers in blockchain w/ a 10 second pause
     threadDelay (10 ^ 7)
+
+    -- TODO negative eth test with incorrect tx info
 
     -- user5 verifies that he has made the settlement credit
     httpCode <- verifySettlement testUrl creditHash txHash
@@ -209,7 +221,6 @@ basicSettlementTest = do
     (pendingSettlements, bilateralPendingSettlements) <- getSettlements testUrl testAddress5
     assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)
     assertEqual "post-verification: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
-
 
 
 gasTest :: Assertion

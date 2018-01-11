@@ -22,9 +22,9 @@ CREATE TABLE verified_credits (
 
 CREATE TABLE settlements (
     hash               CHAR(64) PRIMARY KEY,
-    amount             BIGINT NOT NULL,
+    amount             NUMERIC(78) NOT NULL,
     currency           CHAR(3) NOT NULL,
-    blocknumber        BIGINT NOT NULL,
+    blocknumber        NUMERIC(78) NOT NULL,
     verified           BOOLEAN NOT NULL
 );
 

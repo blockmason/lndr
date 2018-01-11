@@ -12,6 +12,9 @@ import qualified Network.Ethereum.Web3.Eth as Eth
 import qualified Network.HTTP.Simple as HTTP
 
 
+-- | Sets server's default gasPrice to the current safelow price on
+-- ethgasstation.info. If a query to ethgasstation.info fails, the old value
+-- for 'gasPrice' is used.
 safelowUpdate :: ServerConfig -> TVar ServerConfig -> IO ServerConfig
 safelowUpdate config configTVar = do
     req <- HTTP.parseRequest "https://ethgasstation.info/json/ethgasAPI.json"
@@ -28,7 +31,7 @@ safelowUpdate config configTVar = do
         margin = 1.3 -- multiplier for  additional assurance that tx will make it into blockchain
 
 -- TODO add error handling
--- Returns price in USD per 1 eth
+-- | Queries the coinbase api and returns price in USD per 1 eth.
 queryEtheruemPrice :: IO EthereumPrice
 queryEtheruemPrice = do
     req <- HTTP.parseRequest "https://api.coinbase.com/v2/exchange-rates?currency=ETH"
@@ -36,6 +39,7 @@ queryEtheruemPrice = do
 
 
 -- TODO add error handling
+-- | Queries the blockchain for current blocknumber.
 currentBlockNumber :: IO Integer
 currentBlockNumber = do
     blockNumberTextE <- runWeb3 Eth.blockNumber

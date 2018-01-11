@@ -4,6 +4,7 @@
 module Main where
 
 import           Control.Concurrent (threadDelay)
+import           Control.Monad.Trans.Maybe
 import           Data.Either.Combinators (fromRight)
 import qualified Data.Text.Lazy as LT
 import           Lndr.CLI.Args
@@ -165,8 +166,10 @@ basicLendTest = do
 
 basicSettlementTest :: Assertion
 basicSettlementTest = do
-    price <- queryEtheruemPrice
-    assertBool "nonzero eth price retrieved from coinbase" (unPrice price > 0)
+    priceM <- runMaybeT queryEtheruemPrice
+    case priceM of
+        Just price -> assertBool "nonzero eth price retrieved from coinbase" (unPrice price > 0)
+        Nothing -> return ()
 
     let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" "" Nothing (Just "ETH") Nothing
         creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
@@ -237,8 +240,11 @@ gasTest = do
 
 blocknumberTest :: Assertion
 blocknumberTest = do
-    blockNumber <- currentBlockNumber
-    assertBool "block number within expected bounds" (blockNumber < 200)
+    blockNumberM <- runMaybeT currentBlockNumber
+
+    case blockNumberM of
+        Just blockNumber -> assertBool "block number within expected bounds" (blockNumber < 200)
+        Nothing -> return ()
 
 
 basicNotificationsTest :: Assertion

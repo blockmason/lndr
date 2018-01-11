@@ -168,7 +168,7 @@ basicSettlementTest = do
     price <- queryEtheruemPrice
     assertBool "nonzero eth price retrieved from coinbase" (unPrice price > 0)
 
-    let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" "" Nothing Nothing Nothing
+    let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" "" Nothing (Maybe "ETH") Nothing
         creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
 
     -- user5 submits pending settlement credit to user6

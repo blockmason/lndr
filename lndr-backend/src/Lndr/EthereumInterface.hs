@@ -49,6 +49,7 @@ import           Prelude hiding (lookup, (!!))
 [abiFrom|data/CreditProtocol.abi|]
 
 
+-- | Submit a bilateral credit record to the Credit Protocol smart contract.
 finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord
                     -> IO (Either Web3Error TxHash)
 finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _ _ _ _ _ _ _) = do
@@ -70,18 +71,22 @@ finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _
                         }
 
 
+-- | Scan blockchain for 'IssueCredit' events emitted by the Credit Protocol
+-- smart contract. If 'Just addr' values are passed in for either 'creditorM'
+-- or 'debtorM', or both, logs are filtered to show matching results.
 lndrLogs :: Provider a => ServerConfig -> Maybe Address -> Maybe Address
          -> Web3 a [IssueCreditLog]
-lndrLogs config p1M p2M = rights . fmap interpretUcacLog <$>
+lndrLogs config creditorM debtorM = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just $ creditProtocolAddress config)
                         (Just [ Just (issueCreditEvent config)
                               , Just (addressToBytes32 $ lndrUcacAddr config)
-                              , addressToBytes32 <$> p1M
-                              , addressToBytes32 <$> p2M ])
+                              , addressToBytes32 <$> creditorM
+                              , addressToBytes32 <$> debtorM ])
                         (Just . integerToHex' $ scanStartBlock config)
                         Nothing)
 
 
+-- | Parse a log 'Change' into an 'IssueCreditLog' if possible.
 interpretUcacLog :: Change -> Either SomeException IssueCreditLog
 interpretUcacLog change = do
     ucacAddr <- bytes32ToAddress <=< (!! 1) $ changeTopics change
@@ -98,6 +103,9 @@ interpretUcacLog change = do
                           memo
 
 
+-- | Verify that a settlement payment was made using a 'txHash' corresponding to
+-- an Ethereum transaction on the blockchain and the associated addresses and
+-- eth settlment amount.
 verifySettlementPayment :: Text -> Address -> Address -> Integer -> IO Bool
 verifySettlementPayment txHash debtor creditor amount = do
     transactionME <- runWeb3 $ Eth.getTransactionByHash txHash

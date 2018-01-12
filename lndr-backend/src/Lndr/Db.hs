@@ -113,6 +113,7 @@ lookupFriends :: Address -> Connection -> IO [Address]
 lookupFriends addr conn = fmap fromOnly <$>
     (query conn "SELECT friend FROM friendships WHERE origin = ?" (Only addr) :: IO [Only Address])
 
+
 lookupFriendsWithNick :: Address -> Connection -> IO [NickInfo]
 lookupFriendsWithNick addr conn =
     query conn "SELECT friend, nickname FROM friendships, nicknames WHERE origin = ? AND address = friend" (Only addr) :: IO [NickInfo]
@@ -127,7 +128,7 @@ lookupPending hash conn = (fmap creditRowToCreditRecord . listToMaybe) <$> query
 -- Boolean parameter determines if search is through settlement records or
 -- non-settlement records
 lookupPendingByAddress :: Address -> Bool -> Connection -> IO [CreditRecord]
-lookupPendingByAddress addr True conn = query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature, settlements.amount, settlements.currency, settlements.blocknumber FROM pending_credits JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
+lookupPendingByAddress addr True conn = fmap settlementCreditRowToCreditRecord <$> query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, settlements.amount, settlements.currency, settlements.blocknumber FROM pending_credits JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
 lookupPendingByAddress addr False conn = fmap creditRowToCreditRecord <$> query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
 
 
@@ -178,7 +179,7 @@ lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor,
 
 
 lookupSettlementCreditByAddress :: Address -> Connection -> IO [CreditRecord]
-lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, hash, creditor_signature, settlements.amount, settlments.currency, settlements.blocknumber FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
+lookupSettlementCreditByAddress addr conn = fmap settlementCreditRowToCreditRecord <$> query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, hash, settlements.amount, settlments.currency, settlements.blocknumber FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]
@@ -218,9 +219,7 @@ twoPartyNonce addr counterparty conn = do
     [Only nonce] <- query conn "SELECT COALESCE(MAX(nonce) + 1, 0) FROM verified_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
     return . Nonce . floor $ nonce
 
-
 -- 'push_data' table functions
-
 
 insertPushDatum :: Address -> Text -> Text -> Connection -> IO Int
 insertPushDatum addr channelID platform conn = fromIntegral <$>

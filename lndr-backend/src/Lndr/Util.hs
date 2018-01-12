@@ -128,6 +128,6 @@ creditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash,
 
 -- TODO the signature is excluded here to keep number of parameters below 10
 -- (postgres-simple limit)
-settlementCreditRowToCreditRecord :: (Address, Address, Integer, Text, Address, Integer, Text, Integer, Text, Integer)
+settlementCreditRowToCreditRecord :: (Address, Address, Integer, Text, Address, Integer, Text, Rational, Text, Rational)
                                   -> CreditRecord
-settlementCreditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, settlementAmount, settlementCurrency, settlementBlockNumber) = CreditRecord creditor debtor amount memo submitter nonce hash "" (Just settlementAmount) (Just settlementCurrency) (Just settlementBlockNumber)
+settlementCreditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, settlementAmount, settlementCurrency, settlementBlockNumber) = CreditRecord creditor debtor amount memo submitter nonce hash "" (Just $ floor settlementAmount) (Just settlementCurrency) (Just $ floor settlementBlockNumber)

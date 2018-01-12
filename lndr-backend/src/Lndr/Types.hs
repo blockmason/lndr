@@ -14,9 +14,11 @@ module Lndr.Types
     , NickRequest(..)
     , NickInfo(..)
     -- TODO clean this up, very unorganized as is
-    , CreditRecord(CreditRecord, hash, creditor, debtor, submitter, signature, nonce)
+    , CreditRecord( CreditRecord, hash, creditor, debtor, submitter, signature
+                  , nonce, settlementAmount
+                  )
     , IssueCreditLog(IssueCreditLog, ucac, amount)
-    , SettlementData(..)
+    , SettlementData(SettlementData)
     , RejectRecord(RejectRecord)
     , Nonce(..)
 

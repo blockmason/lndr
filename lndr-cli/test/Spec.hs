@@ -231,22 +231,6 @@ basicSettlementTest = do
     assertEqual "post-verification: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
 
 
-verifySettlementTest :: Assertion
-verifySettlementTest = do
-    txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
-                                                    testAddress1
-                                                    (Just 21000)
-                                                    Nothing
-                                                    (Just $ 10 ^ 18)
-                                                    Nothing
-    let txHash = fromRight (error "error sending eth") txHashE
-
-    threadDelay (10 ^ 7)
-
-    verified <- verifySettlementPayment txHash testAddress4 testAddress1 (10 ^ 18)
-    assertBool "payment properly verified" verified
-
-
 gasTest :: Assertion
 gasTest = do
     price <- getGasPrice testUrl

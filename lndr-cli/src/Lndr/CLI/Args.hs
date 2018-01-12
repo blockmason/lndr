@@ -173,7 +173,7 @@ getTransactions url address = do
     HTTP.getResponseBody <$> HTTP.httpJSON initReq
 
 
-getSettlements :: String -> Address -> IO ([CreditRecord], [IssueCreditLog])
+getSettlements :: String -> Address -> IO ([CreditRecord], [CreditRecord])
 getSettlements url address = do
     initReq <- HTTP.parseRequest $ url ++ "/pending_settlements/" ++ show address
     HTTP.getResponseBody <$> HTTP.httpJSON initReq

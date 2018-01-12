@@ -193,6 +193,8 @@ basicSettlementTest = do
     assertEqual "post-confirmation: get pending settlements success" 0 (length pendingSettlements)
     assertEqual "post-confirmation: get bilateral pending settlements success" 1 (length bilateralPendingSettlements)
 
+    print bilateralPendingSettlements
+
     -- user5 transfers eth to user6
     txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)
                                                     testAddress6
@@ -216,7 +218,9 @@ basicSettlementTest = do
     -- ensure that tx registers in blockchain w/ a 10 second pause
     threadDelay (10 ^ 7)
 
-    -- TODO negative eth test with incorrect tx info
+    -- user5 tries to verify a settlement with an incorrect txHash
+    httpCode <- verifySettlement testUrl creditHash incorrectTxHash
+    assertEqual "verification success" 204 httpCode
 
     -- user5 verifies that he has made the settlement credit
     httpCode <- verifySettlement testUrl creditHash txHash
@@ -261,7 +265,7 @@ blocknumberTest = do
     blockNumberM <- runMaybeT currentBlockNumber
 
     case blockNumberM of
-        Just blockNumber -> assertBool "block number within expected bounds" (blockNumber < 200)
+        Just blockNumber -> assertBool "block number within expected bounds" (blockNumber < 500)
         Nothing -> return ()
 
 

@@ -179,7 +179,7 @@ lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor,
 
 
 lookupSettlementCreditByAddress :: Address -> Connection -> IO [CreditRecord]
-lookupSettlementCreditByAddress addr conn = fmap settlementCreditRowToCreditRecord <$> query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, hash, settlements.amount, settlments.currency, settlements.blocknumber FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
+lookupSettlementCreditByAddress addr conn = fmap settlementCreditRowToCreditRecord <$> query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, verified_credits.hash, settlements.amount, settlments.currency, settlements.blocknumber FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]

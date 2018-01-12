@@ -26,6 +26,7 @@ module Lndr.Db (
     , insertCredits
     , allCredits
     , lookupCreditByAddress
+    , lookupSettlementCreditByAddress
     , counterpartiesByAddress
     , lookupCreditByHash
     , lookupPendingSettlementByAddresses
@@ -172,11 +173,12 @@ allCredits conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, 
 -- TODO fix this creditor, creditor repetition
 -- Boolean parameter determines if search is through settlement records or
 -- non-settlement records
-lookupCreditByAddress :: Address -> Bool -> Connection -> IO [IssueCreditLog]
--- return all settlement records
-lookupCreditByAddress addr True conn = query conn "SELECT creditor, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
--- return all non-settlement records
-lookupCreditByAddress addr False conn = query conn "SELECT creditor, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
+lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
+lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
+
+
+lookupSettlementCreditByAddress :: Address -> Connection -> IO [CreditRecord]
+lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, hash, creditor_signature, settlements.amount, settlments.currency, settlements.blocknumber FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]

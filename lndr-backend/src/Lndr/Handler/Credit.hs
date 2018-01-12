@@ -189,14 +189,14 @@ transactionsHandler Nothing = do
     lndrWeb3 (lndrLogs config Nothing Nothing)
 transactionsHandler (Just addr) = do
     pool <- dbConnectionPool <$> ask
-    liftIO $ withResource pool $ Db.lookupCreditByAddress addr False
+    liftIO $ withResource pool $ Db.lookupCreditByAddress addr
 
 
-pendingSettlementsHandler :: Address -> LndrHandler ([CreditRecord], [IssueCreditLog])
+pendingSettlementsHandler :: Address -> LndrHandler ([CreditRecord], [CreditRecord])
 pendingSettlementsHandler addr = do
     pool <- dbConnectionPool <$> ask
     pending <- liftIO . withResource pool $ Db.lookupPendingByAddress addr True
-    verified <- liftIO $ withResource pool $ Db.lookupCreditByAddress addr True
+    verified <- liftIO $ withResource pool $ Db.lookupSettlementCreditByAddress addr
     return (pending, verified)
 
 

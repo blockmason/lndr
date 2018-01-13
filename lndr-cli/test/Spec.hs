@@ -50,7 +50,6 @@ tests = [ testGroup "Nicks"
             ]
         , testGroup "Credits"
             [ testCase "lend money to friend" basicLendTest
-            , testCase "verify payment" verifySettlementTest
             , testCase "settlement" basicSettlementTest
             ]
         , testGroup "Admin"

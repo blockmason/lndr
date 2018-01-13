@@ -168,12 +168,14 @@ verifyHandler creditHash (Just txHash) = do
     (creditor, debtor, amount) <- case recordM of
         Just (CreditRecord creditor debtor amount _ _ _ _ _ _ _ _, _, _) ->
             pure (creditor, debtor, amount)
-        Nothing -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
+        Nothing -> do print "Unable to find matching settlement record"
+                      throwError $ err400 { errBody = "Unable to find matching settlement record" }
     verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
     if verified
         then do liftIO . withResource pool $ Db.verifyCreditByHash creditHash
                 return NoContent
-        else throwError $ err400 { errBody = "Unable to verify debt settlement" }
+        else do print "Unable to verify debt settlement"
+                throwError $ err400 { errBody = "Unable to verify debt settlement" }
 
 
 pendingHandler :: Address -> LndrHandler [CreditRecord]

@@ -18,8 +18,9 @@ module Lndr.Handler.Credit (
     ) where
 
 import           Control.Concurrent.STM
-import           Control.Monad.Reader
 import           Control.Monad.Except
+import           Control.Monad.Reader
+import           Control.Monad.Trans.Maybe
 import           Data.Pool (Pool, withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -54,7 +55,7 @@ validSubmission memo submitterAddress creditor debtor sig hash = do
         throwError (err400 {errBody = "Creditor and debtor cannot be equal."})
 
     -- check that submitter signed the tx
-    signer <- web3ToLndr . return . EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
+    signer <- ioEitherToLndr . return . EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
     unless (textToAddress signer == submitterAddress) $
         throwError (err400 {errBody = "Bad submitter sig"})
 
@@ -64,7 +65,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
-    settlementM <- liftIO $ settlementDataFromCreditRecord signedRecord
+    settlementM <- liftIO . runMaybeT $ settlementDataFromCreditRecord signedRecord
 
     let hash = hashCreditRecord (lndrUcacAddr config) nonce signedRecord
 
@@ -165,9 +166,9 @@ verifyHandler creditHash (Just txHash) = do
     pool <- dbConnectionPool <$> ask
     recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
     (creditor, debtor, amount) <- case recordM of
-        Just (CreditRecord creditor debtor amount _ _ _ _ _ _ _ _, _, _) ->
+        Just (CreditRecord creditor debtor _ _ _ _ _ _ (Just amount) _ _, _, _) ->
             pure (creditor, debtor, amount)
-        Nothing -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
+        _ -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
     verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
     if verified
         then do liftIO . withResource pool $ Db.verifyCreditByHash creditHash
@@ -188,14 +189,14 @@ transactionsHandler Nothing = do
     lndrWeb3 (lndrLogs config Nothing Nothing)
 transactionsHandler (Just addr) = do
     pool <- dbConnectionPool <$> ask
-    liftIO $ withResource pool $ Db.lookupCreditByAddress addr False
+    liftIO $ withResource pool $ Db.lookupCreditByAddress addr
 
 
-pendingSettlementsHandler :: Address -> LndrHandler ([CreditRecord], [IssueCreditLog])
+pendingSettlementsHandler :: Address -> LndrHandler ([CreditRecord], [CreditRecord])
 pendingSettlementsHandler addr = do
     pool <- dbConnectionPool <$> ask
     pending <- liftIO . withResource pool $ Db.lookupPendingByAddress addr True
-    verified <- liftIO $ withResource pool $ Db.lookupCreditByAddress addr True
+    verified <- liftIO $ withResource pool $ Db.lookupSettlementCreditByAddress addr
     return (pending, verified)
 
 

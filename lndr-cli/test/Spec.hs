@@ -4,9 +4,11 @@
 module Main where
 
 import           Control.Concurrent (threadDelay)
+import           Control.Monad.Trans.Maybe
 import           Data.Either.Combinators (fromRight)
 import qualified Data.Text.Lazy as LT
 import           Lndr.CLI.Args
+import           Lndr.EthereumInterface
 import           Lndr.NetworkStatistics
 import           Lndr.Util (textToAddress, hashCreditRecord)
 import           Lndr.Types
@@ -48,10 +50,12 @@ tests = [ testGroup "Nicks"
             ]
         , testGroup "Credits"
             [ testCase "lend money to friend" basicLendTest
+            , testCase "verify payment" verifySettlementTest
             , testCase "settlement" basicSettlementTest
             ]
         , testGroup "Admin"
-            [ testCase "get and set gas price" basicGasTest
+            [ testCase "get and set gas price" gasTest
+            , testCase "get current blocknumber" blocknumberTest
             ]
         , testGroup "Notifications"
             [ testCase "registerChannel" basicNotificationsTest
@@ -164,43 +168,87 @@ basicLendTest = do
 
 basicSettlementTest :: Assertion
 basicSettlementTest = do
-    price <- queryEtheruemPrice
-    assertBool "nonzero eth price retrieved from coinbase" (unPrice price > 0)
+    priceM <- runMaybeT queryEtheruemPrice
+    case priceM of
+        Just price -> assertBool "nonzero eth price retrieved from coinbase" (unPrice price > 0)
+        Nothing -> return ()
 
-    let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" "" Nothing Nothing Nothing
+    let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" "" Nothing (Just "ETH") Nothing
         creditHash = hashCreditRecord ucacAddr (Nonce 0) testCredit
 
     -- user5 submits pending settlement credit to user6
     httpCode <- submitCredit testUrl ucacAddr testPrivkey5 testCredit
-    -- assertEqual "lend (settle) success" 204 httpCode
-    print httpCode
+    assertEqual "lend (settle) success" 204 httpCode
+
+    -- check that pending settlement is registered in test
+    (pendingSettlements, bilateralPendingSettlements) <- getSettlements testUrl testAddress5
+    assertEqual "pre-confirmation: get pending settlements success" 1 (length pendingSettlements)
+    assertEqual "pre-confirmation: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
 
     -- user6 accepts user5's pending settlement credit
     httpCode <- submitCredit testUrl ucacAddr testPrivkey6 (testCredit { submitter = testAddress6 })
     assertEqual "borrow (settle) success" 204 httpCode
+
+    (pendingSettlements, bilateralPendingSettlements) <- getSettlements testUrl testAddress5
+    assertEqual "post-confirmation: get pending settlements success" 0 (length pendingSettlements)
+    assertEqual "post-confirmation: get bilateral pending settlements success" 1 (length bilateralPendingSettlements)
+
+    let settleAmount = fmap Quantity . settlementAmount $ head bilateralPendingSettlements
 
     -- user5 transfers eth to user6
     txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)
                                                     testAddress6
                                                     (Just 21000)
                                                     Nothing
-                                                    (Just $ 10 ^ 18)
+                                                    settleAmount
                                                     Nothing
 
+    -- user4 transfers eth to user1
+    incorrectTxHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
+                                                        testAddress1
+                                                        (Just 21000)
+                                                        Nothing
+                                                        (Just $ 10 ^ 18)
+                                                        Nothing
+
+
     let txHash = fromRight (error "error sending eth") txHashE
-    print txHash
+    let incorrectTxHash = fromRight (error "error sending eth") incorrectTxHashE
 
     -- ensure that tx registers in blockchain w/ a 10 second pause
     threadDelay (10 ^ 7)
 
+    -- user5 tries to verify a settlement with an incorrect txHash
+    httpCode <- verifySettlement testUrl creditHash incorrectTxHash
+    assertEqual "verification failure upon bad txHash submission" 400 httpCode
+
     -- user5 verifies that he has made the settlement credit
     httpCode <- verifySettlement testUrl creditHash txHash
-    -- assertEqual "verification success" 204 httpCode
-    print httpCode
+    assertEqual "verification success" 204 httpCode
+
+    (pendingSettlements, bilateralPendingSettlements) <- getSettlements testUrl testAddress5
+    assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)
+    assertEqual "post-verification: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
 
 
-basicGasTest :: Assertion
-basicGasTest = do
+verifySettlementTest :: Assertion
+verifySettlementTest = do
+    txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
+                                                    testAddress1
+                                                    (Just 21000)
+                                                    Nothing
+                                                    (Just $ 10 ^ 18)
+                                                    Nothing
+    let txHash = fromRight (error "error sending eth") txHashE
+
+    threadDelay (10 ^ 7)
+
+    verified <- verifySettlementPayment txHash testAddress1 testAddress4 (10 ^ 18)
+    assertBool "payment properly verified" verified
+
+
+gasTest :: Assertion
+gasTest = do
     price <- getGasPrice testUrl
 
     -- double gas price
@@ -210,6 +258,15 @@ basicGasTest = do
     -- check that gas price has been doubled
     newPrice <- getGasPrice testUrl
     assertEqual "gas price doubled" newPrice (price * 2)
+
+
+blocknumberTest :: Assertion
+blocknumberTest = do
+    blockNumberM <- runMaybeT currentBlockNumber
+
+    case blockNumberM of
+        Just blockNumber -> assertBool "block number within expected bounds" (blockNumber < 500)
+        Nothing -> return ()
 
 
 basicNotificationsTest :: Assertion

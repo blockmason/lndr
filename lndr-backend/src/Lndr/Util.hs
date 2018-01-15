@@ -121,5 +121,13 @@ configToResponse :: ServerConfig -> ConfigResponse
 configToResponse config = ConfigResponse (lndrUcacAddr config) (creditProtocolAddress config)
 
 
-creditRowToCreditRecord :: (Address, Address, Integer, Text, Address, Integer, Text, Text) -> CreditRecord
+creditRowToCreditRecord :: (Address, Address, Integer, Text, Address, Integer, Text, Text)
+                        -> CreditRecord
 creditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, signature) = CreditRecord creditor debtor amount memo submitter nonce hash signature Nothing Nothing Nothing
+
+
+-- TODO the signature is excluded here to keep number of parameters below 10
+-- (postgres-simple limit)
+settlementCreditRowToCreditRecord :: (Address, Address, Integer, Text, Address, Integer, Text, Rational, Text, Rational)
+                                  -> CreditRecord
+settlementCreditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, settlementAmount, settlementCurrency, settlementBlockNumber) = CreditRecord creditor debtor amount memo submitter nonce hash "" (Just $ floor settlementAmount) (Just settlementCurrency) (Just $ floor settlementBlockNumber)

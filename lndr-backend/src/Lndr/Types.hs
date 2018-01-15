@@ -14,9 +14,11 @@ module Lndr.Types
     , NickRequest(..)
     , NickInfo(..)
     -- TODO clean this up, very unorganized as is
-    , CreditRecord(CreditRecord, hash, creditor, debtor, submitter, signature, nonce)
+    , CreditRecord( CreditRecord, hash, creditor, debtor, submitter, signature
+                  , nonce, settlementAmount
+                  )
     , IssueCreditLog(IssueCreditLog, ucac, amount)
-    , SettlementData(..)
+    , SettlementData(SettlementData)
     , RejectRecord(RejectRecord)
     , Nonce(..)
 
@@ -122,11 +124,16 @@ data PushRequest = PushRequest { channelID :: Text
                                }
 $(deriveJSON defaultOptions ''PushRequest)
 
+-- The 'NotificationAction' type enumerates those events upon which a push
+-- notification may be sent.
 data NotificationAction = NewPendingCredit
                         | CreditConfirmation
                         | PendingCreditRejection
 $(deriveJSON defaultOptions ''NotificationAction)
 
+-- The 'DevicePlatform' type is used to select among mobile platforms in the
+-- 'Notification' type below and when dealing with Urban Airship-related types
+-- generally.
 data DevicePlatform = Ios
                     | Android
 
@@ -134,6 +141,8 @@ instance ToJSON DevicePlatform where
    toJSON Ios = String "ios"
    toJSON Android = String "android"
 
+-- This should probably be called 'Push Object' to match the Urban Airship docs
+-- here: https://docs.urbanairship.com/api/ua/#push-object
 data Notification = Notification { channelID :: Text
                                  , platform :: DevicePlatform
                                  , message :: Text
@@ -169,6 +178,9 @@ data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
                                  , urbanAirshipSecret :: !ByteString
                                  }
 
+-- 'ConfigResponse' contains all the server data that users have access to via
+-- the /config endpoint. By and large, this endpoint is used by clients to
+-- ensure their configuratoins match the server's.
 data ConfigResponse = ConfigResponse { configResponseLndrAddress :: Address
                                      , configResponseCreditProtocolAddress :: Address
                                      }
@@ -183,6 +195,9 @@ data GasStationResponse = GasStationResponse { safeLow :: Double
                                              } deriving Show
 $(deriveJSON defaultOptions ''GasStationResponse)
 
+-- A newtype wrapper is used for this 'Double' value which holds an Ethereum
+-- price expressed in USD. This is necessary in order to have easy decoding
+-- from the JSON response of the coinbase API.
 newtype EthereumPrice = EthereumPrice { unPrice :: Double } deriving (Show, Generic)
 
 instance FromJSON EthereumPrice where

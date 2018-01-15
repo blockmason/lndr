@@ -24,6 +24,7 @@ module Lndr.EthereumInterface (
     ) where
 
 import           Control.Monad.IO.Class
+import           Control.Monad.Trans.Maybe
 import           Control.Concurrent.STM
 import           Control.Exception
 import           Control.Monad
@@ -49,6 +50,7 @@ import           Prelude hiding (lookup, (!!))
 [abiFrom|data/CreditProtocol.abi|]
 
 
+-- | Submit a bilateral credit record to the Credit Protocol smart contract.
 finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord
                     -> IO (Either Web3Error TxHash)
 finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _ _ _ _ _ _ _) = do
@@ -70,18 +72,22 @@ finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _
                         }
 
 
+-- | Scan blockchain for 'IssueCredit' events emitted by the Credit Protocol
+-- smart contract. If 'Just addr' values are passed in for either 'creditorM'
+-- or 'debtorM', or both, logs are filtered to show matching results.
 lndrLogs :: Provider a => ServerConfig -> Maybe Address -> Maybe Address
          -> Web3 a [IssueCreditLog]
-lndrLogs config p1M p2M = rights . fmap interpretUcacLog <$>
+lndrLogs config creditorM debtorM = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just $ creditProtocolAddress config)
                         (Just [ Just (issueCreditEvent config)
                               , Just (addressToBytes32 $ lndrUcacAddr config)
-                              , addressToBytes32 <$> p1M
-                              , addressToBytes32 <$> p2M ])
+                              , addressToBytes32 <$> creditorM
+                              , addressToBytes32 <$> debtorM ])
                         (Just . integerToHex' $ scanStartBlock config)
                         Nothing)
 
 
+-- | Parse a log 'Change' into an 'IssueCreditLog' if possible.
 interpretUcacLog :: Change -> Either SomeException IssueCreditLog
 interpretUcacLog change = do
     ucacAddr <- bytes32ToAddress <=< (!! 1) $ changeTopics change
@@ -98,25 +104,26 @@ interpretUcacLog change = do
                           memo
 
 
+-- | Verify that a settlement payment was made using a 'txHash' corresponding to
+-- an Ethereum transaction on the blockchain and the associated addresses and
+-- eth settlment amount.
 verifySettlementPayment :: Text -> Address -> Address -> Integer -> IO Bool
-verifySettlementPayment txHash debtor creditor amount = do
+verifySettlementPayment txHash creditor debtor amount = do
     transactionME <- runWeb3 $ Eth.getTransactionByHash txHash
     case transactionME of
         Right (Just transaction) ->
             let fromMatch = txFrom transaction == debtor
                 toMatch = txTo transaction == Just creditor
                 valueMatch = hexToInteger (txValue transaction) == amount
-                -- TODO bring back this value match component
-            in return $ fromMatch && toMatch -- && valueMatch
+            in return $ fromMatch && toMatch && valueMatch
         _                        -> return False
 
 
-settlementDataFromCreditRecord :: CreditRecord -> IO (Maybe SettlementData)
-settlementDataFromCreditRecord (CreditRecord _ _ amount _ _ _ _ _ saM scM sbnM) = case scM of
-    Just currency -> do
-        price <- queryEtheruemPrice
-        -- assumes USD / ETH settlement for now
-        let settlementAmount = floor $ fromIntegral amount * unPrice price * 10 ^ 18
-        blockNumber <- currentBlockNumber
-        return . Just $ SettlementData settlementAmount currency blockNumber
-    Nothing -> return Nothing
+settlementDataFromCreditRecord :: CreditRecord -> MaybeT IO SettlementData
+settlementDataFromCreditRecord (CreditRecord _ _ amount _ _ _ _ _ saM scM sbnM) = do
+    currency <- MaybeT (return scM :: IO (Maybe Text))
+    price <- queryEtheruemPrice
+    -- assumes USD / ETH settlement for now
+    let settlementAmount = floor $ fromIntegral amount * unPrice price * 10 ^ 18
+    blockNumber <- currentBlockNumber
+    return $ SettlementData settlementAmount currency blockNumber

@@ -26,6 +26,7 @@ module Lndr.Db (
     , insertCredits
     , allCredits
     , lookupCreditByAddress
+    , lookupSettlementCreditByAddress
     , counterpartiesByAddress
     , lookupCreditByHash
     , lookupPendingSettlementByAddresses
@@ -112,6 +113,7 @@ lookupFriends :: Address -> Connection -> IO [Address]
 lookupFriends addr conn = fmap fromOnly <$>
     (query conn "SELECT friend FROM friendships WHERE origin = ?" (Only addr) :: IO [Only Address])
 
+
 lookupFriendsWithNick :: Address -> Connection -> IO [NickInfo]
 lookupFriendsWithNick addr conn =
     query conn "SELECT friend, nickname FROM friendships, nicknames WHERE origin = ? AND address = friend" (Only addr) :: IO [NickInfo]
@@ -126,7 +128,7 @@ lookupPending hash conn = (fmap creditRowToCreditRecord . listToMaybe) <$> query
 -- Boolean parameter determines if search is through settlement records or
 -- non-settlement records
 lookupPendingByAddress :: Address -> Bool -> Connection -> IO [CreditRecord]
-lookupPendingByAddress addr True conn = fmap creditRowToCreditRecord <$> query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature FROM pending_credits JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
+lookupPendingByAddress addr True conn = fmap settlementCreditRowToCreditRecord <$> query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, settlements.amount, settlements.currency, settlements.blocknumber FROM pending_credits JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
 lookupPendingByAddress addr False conn = fmap creditRowToCreditRecord <$> query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
 
 
@@ -172,11 +174,12 @@ allCredits conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, 
 -- TODO fix this creditor, creditor repetition
 -- Boolean parameter determines if search is through settlement records or
 -- non-settlement records
-lookupCreditByAddress :: Address -> Bool -> Connection -> IO [IssueCreditLog]
--- return all settlement records
-lookupCreditByAddress addr True conn = query conn "SELECT creditor, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
--- return all non-settlement records
-lookupCreditByAddress addr False conn = query conn "SELECT creditor, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
+lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
+lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
+
+
+lookupSettlementCreditByAddress :: Address -> Connection -> IO [CreditRecord]
+lookupSettlementCreditByAddress addr conn = fmap settlementCreditRowToCreditRecord <$> query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, verified_credits.hash, settlements.amount, settlements.currency, settlements.blocknumber FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]
@@ -185,15 +188,18 @@ counterpartiesByAddress addr conn = fmap fromOnly <$>
 
 
 lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text))
-lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
-    where process (creditor, debtor, amount, nonce, memo, sig1, sig2) = ( CreditRecord creditor debtor
-                                                                                       amount memo
-                                                                                       creditor nonce hash sig1
-                                                                                       Nothing Nothing Nothing
-                                                                        , sig1
-                                                                        , sig2
-                                                                        )
-
+lookupCreditByHash hash conn = do
+        settlementAmount <- fmap ((floor :: Rational -> Integer) . fromOnly) . listToMaybe <$> query conn "SELECT amount FROM settlements WHERE hash = ?" (Only hash)
+        let process (creditor, debtor, amount, nonce, memo, sig1, sig2) = ( CreditRecord creditor debtor
+                                                                                         amount memo
+                                                                                         creditor nonce hash sig1
+                                                                                         settlementAmount
+                                                                                         Nothing
+                                                                                         Nothing
+                                                                          , sig1
+                                                                          , sig2
+                                                                          )
+        (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
 
 -- Flips verified bit on once a settlement payment has been confirmed
 verifyCreditByHash :: Text -> Connection -> IO Int
@@ -216,6 +222,7 @@ twoPartyNonce addr counterparty conn = do
     [Only nonce] <- query conn "SELECT COALESCE(MAX(nonce) + 1, 0) FROM verified_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
     return . Nonce . floor $ nonce
 
+-- 'push_data' table functions
 
 insertPushDatum :: Address -> Text -> Text -> Connection -> IO Int
 insertPushDatum addr channelID platform conn = fromIntegral <$>
@@ -225,6 +232,7 @@ insertPushDatum addr channelID platform conn = fromIntegral <$>
 lookupPushDatumByAddress :: Address -> Connection -> IO (Maybe (Text, DevicePlatform))
 lookupPushDatumByAddress addr conn = listToMaybe <$> query conn "SELECT channel_id, platform FROM push_data WHERE address = ?" (Only addr)
 
+-- utility functions
 
 creditRecordToPendingTuple :: CreditRecord
                            -> (Address, Address, Integer, Text, Address, Integer, Text, Text)

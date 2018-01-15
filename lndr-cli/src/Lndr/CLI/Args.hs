@@ -31,6 +31,7 @@ module Lndr.CLI.Args (
     , getTwoPartyBalance
     , getCounterparties
     , getTransactions
+    , getSettlements
     , verifySettlement
 
     -- * notifications-related requests
@@ -172,8 +173,10 @@ getTransactions url address = do
     HTTP.getResponseBody <$> HTTP.httpJSON initReq
 
 
-getSettlements :: IO ()
-getSettlements = undefined
+getSettlements :: String -> Address -> IO ([CreditRecord], [CreditRecord])
+getSettlements url address = do
+    initReq <- HTTP.parseRequest $ url ++ "/pending_settlements/" ++ show address
+    HTTP.getResponseBody <$> HTTP.httpJSON initReq
 
 
 getCounterparties :: String -> Address -> IO [Address]

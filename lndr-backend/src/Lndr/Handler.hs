@@ -1,10 +1,8 @@
 module Lndr.Handler (
     -- * Handler type
       LndrHandler(..)
-    , web3ToLndr
-    , lndrWeb3
 
-      -- * Transaction Handlers
+    -- * Transaction Handlers
     , rejectHandler
     , verifyHandler
     , transactionsHandler
@@ -17,7 +15,7 @@ module Lndr.Handler (
     , balanceHandler
     , twoPartyBalanceHandler
 
-      -- * Friend Handlers
+    -- * Friend Handlers
     , nickHandler
     , nickLookupHandler
     , nickSearchHandler
@@ -26,7 +24,7 @@ module Lndr.Handler (
     , addFriendsHandler
     , removeFriendsHandler
 
-      -- * Admin Handlers
+    -- * Admin Handlers
     , gasPriceHandler
     , setGasPriceHandler
     , unsubmittedHandler

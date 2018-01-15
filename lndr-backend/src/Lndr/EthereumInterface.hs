@@ -108,23 +108,14 @@ interpretUcacLog change = do
 -- an Ethereum transaction on the blockchain and the associated addresses and
 -- eth settlment amount.
 verifySettlementPayment :: Text -> Address -> Address -> Integer -> IO Bool
-verifySettlementPayment txHash debtor creditor amount = do
-    liftIO . putStrLn $ "amount" ++ show amount
+verifySettlementPayment txHash creditor debtor amount = do
     transactionME <- runWeb3 $ Eth.getTransactionByHash txHash
     case transactionME of
         Right (Just transaction) ->
             let fromMatch = txFrom transaction == debtor
                 toMatch = txTo transaction == Just creditor
-                transferValue = hexToInteger (txValue transaction)
-                valueMatch = transferValue == amount
-            in do putStrLn $ "txamount " ++ show (hexToInteger $ txValue transaction)
-                  putStrLn $ "toMatch " ++ show toMatch
-                  putStrLn $ "fromMatch " ++ show toMatch
-                  putStrLn $ "creditor " ++ show creditor
-                  putStrLn $ "txTo " ++ show (txTo transaction)
-                  putStrLn $ "debtor " ++ show debtor
-                  putStrLn $ "txFrom " ++ show (txFrom transaction)
-                  return $ fromMatch && toMatch && valueMatch
+                valueMatch = hexToInteger (txValue transaction) == amount
+            in return $ fromMatch && toMatch && valueMatch
         _                        -> return False
 
 

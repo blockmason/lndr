@@ -243,7 +243,7 @@ verifySettlementTest = do
 
     threadDelay (10 ^ 7)
 
-    verified <- verifySettlementPayment txHash testAddress4 testAddress1 (10 ^ 18)
+    verified <- verifySettlementPayment txHash testAddress1 testAddress4 (10 ^ 18)
     assertBool "payment properly verified" verified
 
 

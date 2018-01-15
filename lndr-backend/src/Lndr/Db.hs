@@ -188,15 +188,18 @@ counterpartiesByAddress addr conn = fmap fromOnly <$>
 
 
 lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text))
-lookupCreditByHash hash conn = (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
-    where process (creditor, debtor, amount, nonce, memo, sig1, sig2) = ( CreditRecord creditor debtor
-                                                                                       amount memo
-                                                                                       creditor nonce hash sig1
-                                                                                       Nothing Nothing Nothing
-                                                                        , sig1
-                                                                        , sig2
-                                                                        )
-
+lookupCreditByHash hash conn = do
+        settlementAmount <- fmap ((floor :: Rational -> Integer) . fromOnly) . listToMaybe <$> query conn "SELECT amount FROM settlements WHERE hash = ?" (Only hash)
+        let process (creditor, debtor, amount, nonce, memo, sig1, sig2) = ( CreditRecord creditor debtor
+                                                                                         amount memo
+                                                                                         creditor nonce hash sig1
+                                                                                         settlementAmount
+                                                                                         Nothing
+                                                                                         Nothing
+                                                                          , sig1
+                                                                          , sig2
+                                                                          )
+        (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
 
 -- Flips verified bit on once a settlement payment has been confirmed
 verifyCreditByHash :: Text -> Connection -> IO Int

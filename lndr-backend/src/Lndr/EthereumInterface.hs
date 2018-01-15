@@ -117,7 +117,11 @@ verifySettlementPayment txHash debtor creditor amount = do
                 toMatch = txTo transaction == Just creditor
                 transferValue = hexToInteger (txValue transaction)
                 valueMatch = transferValue == amount
-            in do putStrLn $ "txamount" ++ show (hexToInteger $ txValue transaction)
+            in do putStrLn $ "txamount " ++ show (hexToInteger $ txValue transaction)
+                  putStrLn $ "toMatch " ++ show toMatch
+                  putStrLn $ "fromMatch " ++ show toMatch
+                  putStrLn $ "creditor " ++ show creditor
+                  putStrLn $ "txTo " ++ show (txTo transaction)
                   return $ fromMatch && toMatch && valueMatch
         _                        -> return False
 

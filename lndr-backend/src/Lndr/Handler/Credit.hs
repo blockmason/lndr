@@ -166,10 +166,10 @@ verifyHandler creditHash (Just txHash) = do
     pool <- dbConnectionPool <$> ask
     recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
     (creditor, debtor, amount) <- case recordM of
-        Just (CreditRecord creditor debtor amount _ _ _ _ _ _ _ _, _, _) ->
+        Just (CreditRecord creditor debtor _ _ _ _ _ _ (Just amount) _ _, _, _) ->
             pure (creditor, debtor, amount)
-        Nothing -> do liftIO $ print "Unable to find matching settlement record"
-                      throwError $ err400 { errBody = "Unable to find matching settlement record" }
+        _ -> do liftIO $ print "Unable to find matching settlement record"
+                throwError $ err400 { errBody = "Unable to find matching settlement record" }
     verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
     if verified
         then do liftIO . withResource pool $ Db.verifyCreditByHash creditHash

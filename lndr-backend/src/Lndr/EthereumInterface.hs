@@ -122,6 +122,8 @@ verifySettlementPayment txHash debtor creditor amount = do
                   putStrLn $ "fromMatch " ++ show toMatch
                   putStrLn $ "creditor " ++ show creditor
                   putStrLn $ "txTo " ++ show (txTo transaction)
+                  putStrLn $ "debtor " ++ show debtor
+                  putStrLn $ "txFrom " ++ show (txFrom transaction)
                   return $ fromMatch && toMatch && valueMatch
         _                        -> return False
 

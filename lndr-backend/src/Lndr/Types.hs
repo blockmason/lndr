@@ -130,6 +130,7 @@ $(deriveJSON defaultOptions ''PushRequest)
 data NotificationAction = NewPendingCredit
                         | CreditConfirmation
                         | PendingCreditRejection
+                        deriving Show
 $(deriveJSON defaultOptions ''NotificationAction)
 
 -- The 'DevicePlatform' type is used to select among mobile platforms in the
@@ -137,6 +138,7 @@ $(deriveJSON defaultOptions ''NotificationAction)
 -- generally.
 data DevicePlatform = Ios
                     | Android
+                    deriving Show
 
 instance ToJSON DevicePlatform where
    toJSON Ios = String "ios"
@@ -148,7 +150,7 @@ data Notification = Notification { channelID :: Text
                                  , platform :: DevicePlatform
                                  , message :: Text
                                  , action :: NotificationAction
-                                 }
+                                 } deriving Show
 
 instance ToJSON Notification where
     toJSON (Notification channelID platform message action) =

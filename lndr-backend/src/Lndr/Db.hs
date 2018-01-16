@@ -85,8 +85,6 @@ lookupNick :: Address -> Connection -> IO (Maybe Text)
 lookupNick addr conn = listToMaybe . fmap fromOnly <$>
     (query conn "SELECT nickname FROM nicknames WHERE address = ?" (Only addr) :: IO [Only Text])
 
-
--- TODO update this to return a maybe
 lookupAddressByNick :: Text -> Connection -> IO (Maybe NickInfo)
 lookupAddressByNick nick conn = listToMaybe <$>
     (query conn "SELECT address, nickname FROM nicknames WHERE nickname = ?" (Only nick) :: IO [NickInfo])

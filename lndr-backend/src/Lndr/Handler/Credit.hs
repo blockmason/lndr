@@ -85,7 +85,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             case pushDataM of
                 -- TODO include nickname in the alert if we intend to use it
                 Just (channelID, platform) -> void . liftIO $
-                    sendNotification config (Notification channelID platform msg notifyAction)
+                    sendNotification config (Notification channelID platform fullMsg notifyAction)
                 Nothing -> return ()
 
     -- check if hash is already registered in pending txs

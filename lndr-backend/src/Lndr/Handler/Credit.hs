@@ -192,12 +192,12 @@ transactionsHandler (Just addr) = do
     liftIO $ withResource pool $ Db.lookupCreditByAddress addr
 
 
-pendingSettlementsHandler :: Address -> LndrHandler ([CreditRecord], [CreditRecord])
+pendingSettlementsHandler :: Address -> LndrHandler SettlementsResponse
 pendingSettlementsHandler addr = do
     pool <- dbConnectionPool <$> ask
     pending <- liftIO . withResource pool $ Db.lookupPendingByAddress addr True
     verified <- liftIO $ withResource pool $ Db.lookupSettlementCreditByAddress addr
-    return (pending, verified)
+    return $ SettlementsResponse pending verified
 
 
 nonceHandler :: Address -> Address -> LndrHandler Nonce

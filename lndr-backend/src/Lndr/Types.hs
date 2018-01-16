@@ -19,6 +19,7 @@ module Lndr.Types
                   )
     , IssueCreditLog(IssueCreditLog, ucac, amount)
     , SettlementData(SettlementData)
+    , SettlementsResponse(..)
     , RejectRecord(RejectRecord)
     , Nonce(..)
 
@@ -185,6 +186,11 @@ data ConfigResponse = ConfigResponse { configResponseLndrAddress :: Address
                                      , configResponseCreditProtocolAddress :: Address
                                      }
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 14 }) ''ConfigResponse)
+
+data SettlementsResponse = SettlementsResponse { unilateralSettlements :: [CreditRecord]
+                                               , bilateralSettlements :: [CreditRecord]
+                                               }
+$(deriveJSON defaultOptions ''SettlementsResponse)
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection
                                , serverConfig :: TVar ServerConfig

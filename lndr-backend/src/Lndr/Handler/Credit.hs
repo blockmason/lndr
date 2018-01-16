@@ -79,7 +79,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             let counterparty = if creditor /= submitterAddress then creditor else debtor
             liftIO $ print counterparty
             pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
-            nicknameM <- liftIO . withResource pool $ Db.lookupNick counterparty
+            nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
             let fullMsg = T.append msg (fromMaybe "..." nicknameM)
             liftIO $ print pushDataM
             case pushDataM of
@@ -151,7 +151,8 @@ createBilateralFriendship pool creditor debtor = do
 
 rejectHandler :: RejectRecord -> LndrHandler NoContent
 rejectHandler(RejectRecord sig hash) = do
-    pool <- dbConnectionPool <$> ask
+    (ServerState pool configTVar) <- ask
+    config <- liftIO . atomically $ readTVar configTVar
     pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
     let hashNotFound = throwError $ err404 { errBody = "credit hash does not refer to pending record" }
     (CreditRecord creditor debtor _ _ _ _ _ _ _ _ _) <- maybe hashNotFound pure pendingRecordM
@@ -161,6 +162,17 @@ rejectHandler(RejectRecord sig hash) = do
         Left _ -> throwError $ err400 { errBody = "unable to recover addr from sig" }
         Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
                             then do liftIO . withResource pool $ Db.deletePending hash True
+
+                                    let counterparty = if creditor /= textToAddress addr then creditor else debtor
+                                    pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
+                                    nicknameM <- liftIO . withResource pool $ Db.lookupNick $ textToAddress addr
+                                    let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
+                                    case pushDataM of
+                                        -- TODO include nickname in the alert if we intend to use it
+                                        Just (channelID, platform) -> void . liftIO $
+                                            sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
+                                        Nothing -> return ()
+
                                     return NoContent
                             else throwError $ err400 { errBody = "bad rejection sig" }
 

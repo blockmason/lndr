@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 
 module Lndr.Db (
     -- * 'nicknames' table functions
@@ -45,77 +44,13 @@ import           Control.Monad (when, void)
 import           Data.Maybe (listToMaybe)
 import           Data.Scientific
 import           Data.Text (Text)
-import qualified Data.Text as T
 import           Data.Foldable
 import           Database.PostgreSQL.Simple
-import           Database.PostgreSQL.Simple.FromField
-import           Database.PostgreSQL.Simple.ToField
+import           Lndr.Db.Nicknames
+import           Lndr.Db.Friendships
 import           Lndr.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3
-
--- DB Typeclass instances
-
-instance ToField Address where
-    toField = Escape . addrToBS
-
-instance FromField Address where
-    fromField f dat = textToAddress <$> fromField f dat
-
-instance FromField DevicePlatform where
-    fromField f dat = toDevicePlatform <$> fromField f dat
-        where toDevicePlatform :: Text -> DevicePlatform
-              toDevicePlatform "ios" = Ios
-              toDevicePlatform "android" = Android
-
-instance FromRow CreditRecord
-
-instance FromRow IssueCreditLog
-
-instance FromRow NickInfo
-
--- nicknames table manipulations
-
-insertNick :: Address -> Text -> Connection -> IO Int
-insertNick addr nick conn = fromIntegral <$>
-    execute conn "INSERT INTO nicknames (address, nickname) VALUES (?,?) ON CONFLICT (address) DO UPDATE SET nickname = EXCLUDED.nickname" (addr, nick)
-
-
-lookupNick :: Address -> Connection -> IO (Maybe Text)
-lookupNick addr conn = listToMaybe . fmap fromOnly <$>
-    (query conn "SELECT nickname FROM nicknames WHERE address = ?" (Only addr) :: IO [Only Text])
-
-lookupAddressByNick :: Text -> Connection -> IO (Maybe NickInfo)
-lookupAddressByNick nick conn = listToMaybe <$>
-    (query conn "SELECT address, nickname FROM nicknames WHERE nickname = ?" (Only nick) :: IO [NickInfo])
-
-
-lookupAddressesByFuzzyNick :: Text -> Connection -> IO [NickInfo]
-lookupAddressesByFuzzyNick nick conn =
-    query conn "SELECT address, nickname FROM nicknames WHERE nickname LIKE ? LIMIT 10" (Only $ T.append nick "%") :: IO [NickInfo]
-
-
--- friendships table manipulations
-
-addFriends :: Address -> [Address] -> Connection -> IO Int
-addFriends addr addresses conn = fromIntegral <$>
-    executeMany conn "INSERT INTO friendships (origin, friend) VALUES (?,?) ON CONFLICT ON CONSTRAINT friendships_origin_friend_key DO NOTHING" ((addr,) <$> addresses)
-
-
-removeFriends :: Address -> [Address] -> Connection -> IO Int
-removeFriends addr addresses conn = fromIntegral <$>
-    execute conn "DELETE FROM friendships WHERE origin = ? AND friend in ?" (addr, In addresses)
-
-
-lookupFriends :: Address -> Connection -> IO [Address]
-lookupFriends addr conn = fmap fromOnly <$>
-    (query conn "SELECT friend FROM friendships WHERE origin = ?" (Only addr) :: IO [Only Address])
-
-
-lookupFriendsWithNick :: Address -> Connection -> IO [NickInfo]
-lookupFriendsWithNick addr conn =
-    query conn "SELECT friend, nickname FROM friendships, nicknames WHERE origin = ? AND address = friend" (Only addr) :: IO [NickInfo]
-
 
 -- pending_credits table manipulations
 

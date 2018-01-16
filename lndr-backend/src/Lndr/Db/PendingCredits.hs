@@ -53,9 +53,3 @@ creditRecordToPendingTuple :: CreditRecord
                            -> (Address, Address, Integer, Text, Address, Integer, Text, Text)
 creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig _ _ _) =
     (creditor, debtor, amount, memo, submitter, nonce, hash, sig)
-
-
-creditLogToCreditTuple :: IssueCreditLog
-                       -> (Address, Address, Integer, Text, Integer, Text, Text, Text)
-creditLogToCreditTuple cl@(IssueCreditLog _ creditor debtor amount nonce memo) =
-    (creditor, debtor, amount, memo, nonce, hashCreditLog cl, "", "")

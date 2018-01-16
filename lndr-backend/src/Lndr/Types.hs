@@ -19,6 +19,7 @@ module Lndr.Types
                   )
     , IssueCreditLog(IssueCreditLog, ucac, amount)
     , SettlementData(SettlementData)
+    , SettlementsResponse(..)
     , RejectRecord(RejectRecord)
     , Nonce(..)
 
@@ -129,6 +130,7 @@ $(deriveJSON defaultOptions ''PushRequest)
 data NotificationAction = NewPendingCredit
                         | CreditConfirmation
                         | PendingCreditRejection
+                        deriving Show
 $(deriveJSON defaultOptions ''NotificationAction)
 
 -- The 'DevicePlatform' type is used to select among mobile platforms in the
@@ -136,6 +138,7 @@ $(deriveJSON defaultOptions ''NotificationAction)
 -- generally.
 data DevicePlatform = Ios
                     | Android
+                    deriving Show
 
 instance ToJSON DevicePlatform where
    toJSON Ios = String "ios"
@@ -147,7 +150,7 @@ data Notification = Notification { channelID :: Text
                                  , platform :: DevicePlatform
                                  , message :: Text
                                  , action :: NotificationAction
-                                 }
+                                 } deriving Show
 
 instance ToJSON Notification where
     toJSON (Notification channelID platform message action) =
@@ -185,6 +188,11 @@ data ConfigResponse = ConfigResponse { configResponseLndrAddress :: Address
                                      , configResponseCreditProtocolAddress :: Address
                                      }
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 14 }) ''ConfigResponse)
+
+data SettlementsResponse = SettlementsResponse { unilateralSettlements :: [CreditRecord]
+                                               , bilateralSettlements :: [CreditRecord]
+                                               }
+$(deriveJSON defaultOptions ''SettlementsResponse)
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection
                                , serverConfig :: TVar ServerConfig

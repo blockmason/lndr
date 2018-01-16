@@ -181,7 +181,7 @@ basicSettlementTest = do
     assertEqual "lend (settle) success" 204 httpCode
 
     -- check that pending settlement is registered in test
-    (pendingSettlements, bilateralPendingSettlements) <- getSettlements testUrl testAddress5
+    (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getSettlements testUrl testAddress5
     assertEqual "pre-confirmation: get pending settlements success" 1 (length pendingSettlements)
     assertEqual "pre-confirmation: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
 
@@ -189,7 +189,7 @@ basicSettlementTest = do
     httpCode <- submitCredit testUrl ucacAddr testPrivkey6 (testCredit { submitter = testAddress6 })
     assertEqual "borrow (settle) success" 204 httpCode
 
-    (pendingSettlements, bilateralPendingSettlements) <- getSettlements testUrl testAddress5
+    (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getSettlements testUrl testAddress5
     assertEqual "post-confirmation: get pending settlements success" 0 (length pendingSettlements)
     assertEqual "post-confirmation: get bilateral pending settlements success" 1 (length bilateralPendingSettlements)
 
@@ -226,7 +226,7 @@ basicSettlementTest = do
     httpCode <- verifySettlement testUrl creditHash txHash
     assertEqual "verification success" 204 httpCode
 
-    (pendingSettlements, bilateralPendingSettlements) <- getSettlements testUrl testAddress5
+    (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getSettlements testUrl testAddress5
     assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)
     assertEqual "post-verification: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
 

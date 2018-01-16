@@ -21,6 +21,7 @@ import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
+import           Data.Maybe (fromMaybe)
 import           Data.Pool (Pool, withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -74,12 +75,14 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
 
     -- creating function to query urban airship api
     let attemptToNotify msg notifyAction = do
-            let counterparty = if creditor /= submitterAddress then debtor else creditor
+            let counterparty = if creditor /= submitterAddress then creditor else debtor
             pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
+            nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
+            let fullMsg = T.append msg (fromMaybe "..." nicknameM)
             case pushDataM of
                 -- TODO include nickname in the alert if we intend to use it
                 Just (channelID, platform) -> void . liftIO $
-                    sendNotification config (Notification channelID platform msg notifyAction)
+                    sendNotification config (Notification channelID platform fullMsg notifyAction)
                 Nothing -> return ()
 
     -- check if hash is already registered in pending txs
@@ -98,13 +101,13 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig hash settlementM
 
             -- send push notification to counterparty
-            attemptToNotify "Credit Confirmation" CreditConfirmation
+            attemptToNotify "Pending credit confirmation from " CreditConfirmation
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
             createPendingRecord pool creditor debtor signedRecord hash settlementM
             -- send push notification to counterparty
-            attemptToNotify "New Pending Credit" NewPendingCredit
+            attemptToNotify "New pending credit from " NewPendingCredit
 
     return NoContent
 
@@ -145,7 +148,8 @@ createBilateralFriendship pool creditor debtor = do
 
 rejectHandler :: RejectRecord -> LndrHandler NoContent
 rejectHandler(RejectRecord sig hash) = do
-    pool <- dbConnectionPool <$> ask
+    (ServerState pool configTVar) <- ask
+    config <- liftIO . atomically $ readTVar configTVar
     pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
     let hashNotFound = throwError $ err404 { errBody = "credit hash does not refer to pending record" }
     (CreditRecord creditor debtor _ _ _ _ _ _ _ _ _) <- maybe hashNotFound pure pendingRecordM
@@ -155,6 +159,17 @@ rejectHandler(RejectRecord sig hash) = do
         Left _ -> throwError $ err400 { errBody = "unable to recover addr from sig" }
         Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
                             then do liftIO . withResource pool $ Db.deletePending hash True
+                                    let submitterAddress = textToAddress addr
+                                        counterparty = if creditor /= submitterAddress then creditor else debtor
+                                    pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
+                                    nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
+                                    let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
+                                    case pushDataM of
+                                        -- TODO include nickname in the alert if we intend to use it
+                                        Just (channelID, platform) -> void . liftIO $
+                                            sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
+                                        Nothing -> return ()
+
                                     return NoContent
                             else throwError $ err400 { errBody = "bad rejection sig" }
 
@@ -192,12 +207,12 @@ transactionsHandler (Just addr) = do
     liftIO $ withResource pool $ Db.lookupCreditByAddress addr
 
 
-pendingSettlementsHandler :: Address -> LndrHandler ([CreditRecord], [CreditRecord])
+pendingSettlementsHandler :: Address -> LndrHandler SettlementsResponse
 pendingSettlementsHandler addr = do
     pool <- dbConnectionPool <$> ask
     pending <- liftIO . withResource pool $ Db.lookupPendingByAddress addr True
     verified <- liftIO $ withResource pool $ Db.lookupSettlementCreditByAddress addr
-    return (pending, verified)
+    return $ SettlementsResponse pending verified
 
 
 nonceHandler :: Address -> Address -> LndrHandler Nonce

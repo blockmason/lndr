@@ -162,10 +162,10 @@ rejectHandler(RejectRecord sig hash) = do
         Left _ -> throwError $ err400 { errBody = "unable to recover addr from sig" }
         Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
                             then do liftIO . withResource pool $ Db.deletePending hash True
-
-                                    let counterparty = if creditor /= textToAddress addr then creditor else debtor
+                                    let submitterAddress = textToAddress addr
+                                        counterparty = if creditor /= submitterAddress then creditor else debtor
                                     pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
-                                    nicknameM <- liftIO . withResource pool $ Db.lookupNick $ textToAddress addr
+                                    nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
                                     let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
                                     case pushDataM of
                                         -- TODO include nickname in the alert if we intend to use it

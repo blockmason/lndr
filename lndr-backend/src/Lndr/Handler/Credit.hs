@@ -75,7 +75,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     -- creating function to query urban airship api
     let attemptToNotify msg notifyAction = do
             liftIO $ putStrLn "attemptToNotify entered."
-            let counterparty = if creditor /= submitterAddress then debtor else creditor
+            let counterparty = if creditor /= submitterAddress then creditor else debtor
             liftIO $ print counterparty
             pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
             liftIO $ print pushDataM

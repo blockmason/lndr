@@ -15,9 +15,6 @@ sendNotification config notification = do
     let req = HTTP.addRequestHeader HTTP.hAccept acceptContent $
                     HTTP.applyBasicAuth (urbanAirshipKey config) (urbanAirshipSecret config) $
                     HTTP.setRequestBodyJSON notification $ HTTP.setRequestMethod "POST" initReq
-    httpCode <- HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
-    putStrLn $ "notification code" ++ show httpCode
-    print notification
-    return httpCode
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
     where acceptContent = "application/vnd.urbanairship+json; version=3;"
           urbanAirshipUrl = "https://go.urbanairship.com/api/push"

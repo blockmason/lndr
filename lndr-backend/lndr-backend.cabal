@@ -14,6 +14,11 @@ library
   hs-source-dirs:      src
   exposed-modules:     Lndr.Docs
                      , Lndr.Db
+                     , Lndr.Db.Friendships
+                     , Lndr.Db.Nicknames
+                     , Lndr.Db.PendingCredits
+                     , Lndr.Db.PushData
+                     , Lndr.Db.Types
                      , Lndr.EthereumInterface
                      , Lndr.Handler
                      , Lndr.Handler.Admin
@@ -23,6 +28,7 @@ library
                      , Lndr.NetworkStatistics
                      , Lndr.Notifications
                      , Lndr.Server
+                     , Lndr.Signature
                      , Lndr.Types
                      , Lndr.Util
   build-depends:       base >= 4.7 && < 5

@@ -21,6 +21,7 @@ import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
+import           Data.Maybe (fromMaybe)
 import           Data.Pool (Pool, withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -78,6 +79,8 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             let counterparty = if creditor /= submitterAddress then creditor else debtor
             liftIO $ print counterparty
             pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
+            nicknameM <- liftIO . withResource pool $ Db.lookupNick counterparty
+            let fullMsg = T.append msg (fromMaybe "..." nicknameM)
             liftIO $ print pushDataM
             case pushDataM of
                 -- TODO include nickname in the alert if we intend to use it
@@ -101,13 +104,13 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig hash settlementM
 
             -- send push notification to counterparty
-            attemptToNotify "Pending Credit Confirmation" CreditConfirmation
+            attemptToNotify "Pending credit confirmation from " CreditConfirmation
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
             createPendingRecord pool creditor debtor signedRecord hash settlementM
             -- send push notification to counterparty
-            attemptToNotify "New Pending Credit" NewPendingCredit
+            attemptToNotify "New pending credit from " NewPendingCredit
 
     return NoContent
 

@@ -21,11 +21,28 @@ module Lndr.EthereumInterface (
     , finalizeTransaction
     , verifySettlementPayment
     , settlementDataFromCreditRecord
+
+    -- * functions defined via TH rendering of solidity ABI
+    , getNonce
+    , balances
+    , createAndStakeUcac
+    , currentTxLevel
+    , executeUcacTx
+    , nonces
+    , owner
+    , setTokensToOwnUcac
+    , setTxPerGigaTokenPerHour
+    , stakeTokens
+    , stakedTokensMap
+    , token
+    , tokensToOwnUcac
+    , transferOwnership
+    , txPerGigaTokenPerHour
+    , ucacs
+    , unstakeTokens
     ) where
 
-import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Maybe
-import           Control.Concurrent.STM
 import           Control.Exception
 import           Control.Monad
 import qualified Data.ByteArray as BA
@@ -34,7 +51,6 @@ import           Data.Default
 import           Data.Either (rights)
 import           Data.List.Safe ((!!))
 import           Data.Text (Text)
-import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Lndr.NetworkStatistics
 import           Lndr.Types
@@ -46,7 +62,7 @@ import           Network.Ethereum.Web3.Types
 import           Prelude hiding (lookup, (!!))
 
 
--- Create functions to call CreditProtocol contract. Currently, only `issueCredit` is used.
+-- Create functions to call CreditProtocol contract.
 [abiFrom|data/CreditProtocol.abi|]
 
 

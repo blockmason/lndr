@@ -12,25 +12,9 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lndr.Docs
-                     , Lndr.Db
-                     , Lndr.Db.Friendships
-                     , Lndr.Db.Nicknames
-                     , Lndr.Db.PendingCredits
-                     , Lndr.Db.PushData
-                     , Lndr.Db.Types
-                     , Lndr.EthereumInterface
-                     , Lndr.Handler
-                     , Lndr.Handler.Admin
-                     , Lndr.Handler.Credit
-                     , Lndr.Handler.Friend
-                     , Lndr.Handler.Types
-                     , Lndr.NetworkStatistics
-                     , Lndr.Notifications
+  exposed-modules:     Lndr.EthereumInterface
                      , Lndr.Server
-                     , Lndr.Signature
                      , Lndr.Types
-                     , Lndr.Util
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , base16-bytestring
@@ -75,4 +59,5 @@ executable lndr-server
                      , wai
                      , wai-logger
                      , warp
+                     , warp-tls
   default-language:    Haskell2010

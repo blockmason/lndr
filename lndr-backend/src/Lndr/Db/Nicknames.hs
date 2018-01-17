@@ -6,8 +6,6 @@ import           Data.Maybe (listToMaybe)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Database.PostgreSQL.Simple
-import           Database.PostgreSQL.Simple.FromField
-import           Database.PostgreSQL.Simple.ToField
 import           Lndr.Db.Types
 import           Lndr.Types
 import           Network.Ethereum.Web3

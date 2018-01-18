@@ -11,7 +11,7 @@ module Lndr.Types
     , ServerConfig(..)
 
     -- * lndr api types
-    , NickRequest(..)
+    , NickRequest(NickRequest)
     , NickInfo(..)
     -- TODO clean this up, very unorganized as is
     , CreditRecord( CreditRecord, hash, creditor, debtor, submitter, signature
@@ -24,7 +24,7 @@ module Lndr.Types
     , Nonce(..)
 
     -- * push notifications-relatd types
-    , PushRequest(..)
+    , PushRequest(PushRequest)
     , Notification(..)
     , NotificationAction(..)
     , DevicePlatform(..)
@@ -111,7 +111,7 @@ $(deriveJSON defaultOptions ''RejectRecord)
 
 data NickRequest = NickRequest { addr :: Address
                                , nick :: Text
-                               , sig :: Text
+                               , signature :: Text
                                }
 $(deriveJSON defaultOptions ''NickRequest)
 
@@ -122,6 +122,7 @@ $(deriveJSON defaultOptions ''NickInfo)
 
 data PushRequest = PushRequest { channelID :: Text
                                , platform :: Text
+                               , signature :: Text
                                }
 $(deriveJSON defaultOptions ''PushRequest)
 

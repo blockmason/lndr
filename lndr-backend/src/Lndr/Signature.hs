@@ -10,7 +10,7 @@ class Hashable a => VerifiableSignature a where
      recoverSigner :: a -> Address
 
 instance Hashable NickRequest where
-    hashWithSalt = undefined
+    hashWithSalt (NickRequest addr nick _) = hashWithSalt (toText addr, nick)
 
 instance VerifiableSignature NickRequest where
     recoverSigner x = undefined
@@ -19,7 +19,7 @@ instance VerifiableSignature NickRequest where
 -- RemoveFriendRequest
 
 instance Hashable PushRequest where
-    hashWithSalt = undefined
+    hashWithSalt (PushRequest channelID platform _) = hashWithSalt (channelID, platform)
 
 instance VerifiableSignature PushRequest where
     recoverSigner = undefined

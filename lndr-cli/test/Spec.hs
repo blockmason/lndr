@@ -265,7 +265,7 @@ blocknumberTest = do
     blockNumberM <- runMaybeT currentBlockNumber
 
     case blockNumberM of
-        Just blockNumber -> assertBool "block number within expected bounds" (blockNumber < 500)
+        Just blockNumber -> assertBool "block number within expected bounds" (blockNumber < 4000)
         Nothing -> return ()
 
 

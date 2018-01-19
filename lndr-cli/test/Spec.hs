@@ -10,7 +10,7 @@ import qualified Data.Text.Lazy as LT
 import           Lndr.CLI.Args
 import           Lndr.EthereumInterface
 import           Lndr.NetworkStatistics
-import           Lndr.Util (textToAddress, hashCreditRecord)
+import           Lndr.Util (textToAddress, hashCreditRecord, parseIssueCreditInput)
 import           Lndr.Types
 import           Network.Ethereum.Web3
 import           Network.Ethereum.Web3.Types
@@ -59,6 +59,9 @@ tests = [ testGroup "Nicks"
             ]
         , testGroup "Notifications"
             [ testCase "registerChannel" basicNotificationsTest
+            ]
+        , testGroup "Utils"
+            [ testCase "parseIssueCreditInput" parseCreditInputTest
             ]
         ]
 
@@ -273,3 +276,11 @@ basicNotificationsTest :: Assertion
 basicNotificationsTest = do
     httpCode <- registerChannel testUrl testAddress1 (PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios" "")
     assertEqual "register channel success" 204 httpCode
+
+
+parseCreditInputTest :: Assertion
+parseCreditInputTest = do
+        assertEqual "expected credit log" creditLog (IssueCreditLog "869a8f2c3d22be392618ed06c8f548d1d5b5aed6" "754952bfa2097104a07f4f347e513a1da576ac7a" "3a1ea286e419130d894c9fa0cf49898bc81f9a5a" 2617 0 "fedex            ")
+        assertBool "good creditor sig" goodCreditorSig
+        assertBool "good debtor sig" goodDebtorSig
+    where (creditLog, _, goodCreditorSig, _, goodDebtorSig) = parseIssueCreditInput (Nonce 0) "0x0a5b410e000000000000000000000000869a8f2c3d22be392618ed06c8f548d1d5b5aed6000000000000000000000000754952bfa2097104a07f4f347e513a1da576ac7a0000000000000000000000003a1ea286e419130d894c9fa0cf49898bc81f9a5a0000000000000000000000000000000000000000000000000000000000000a394988c5614ea5a5807387af10ab3520ed0bb9e8edfcef07924b3630b119dccab12981d3efa478582c5c69a4c9ef5ccb3e019e52cd2b210cc0bc17133799d1f739000000000000000000000000000000000000000000000000000000000000001cd58818da99967a502e7abc5cc74b3569063c7670924d22e25c329b560298cc5566e07b7c87b7a8685f954410480fe2f5cd08dbcb84552dcc3b4475e8469f1b12000000000000000000000000000000000000000000000000000000000000001c6665646578202020202020202020202020202020202020202020202020202020"

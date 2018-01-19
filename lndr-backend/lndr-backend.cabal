@@ -13,6 +13,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules: Lndr.EthereumInterface
+                 , Lndr.NetworkStatistics
                  , Lndr.Server
                  , Lndr.Types
                  , Lndr.Util
@@ -29,7 +30,6 @@ library
                , Lndr.Handler.Credit
                , Lndr.Handler.Friend
                , Lndr.Handler.Types
-               , Lndr.NetworkStatistics
                , Lndr.Notifications
   build-depends:       base >= 4.7 && < 5
                      , aeson

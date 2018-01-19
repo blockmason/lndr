@@ -19,7 +19,7 @@ instance VerifiableSignature NickRequest where
 -- RemoveFriendRequest
 
 instance Hashable PushRequest where
-    hashWithSalt (PushRequest channelID platform _) = hashWithSalt (channelID, platform)
+    hashWithSalt (PushRequest channelID platform) = hashWithSalt (channelID, platform)
 
 instance VerifiableSignature PushRequest where
     recoverSigner = undefined

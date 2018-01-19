@@ -56,7 +56,7 @@ resubmitHandler txHash = do
 
 
 registerPushHandler :: Address -> PushRequest -> LndrHandler NoContent
-registerPushHandler addr (PushRequest channelID platform) = do
+registerPushHandler addr (PushRequest channelID platform _) = do
     -- TODO verify signature
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool $ Db.insertPushDatum addr channelID platform

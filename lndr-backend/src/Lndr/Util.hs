@@ -18,6 +18,7 @@ import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Numeric (readHex, showHex)
 
+
 hashCreditRecord :: Address -> Nonce -> CreditRecord -> Text
 hashCreditRecord ucacAddr nonce (CreditRecord creditor debtor amount _ _ _ _ _ _ _ _) =
                 let message = T.concat $
@@ -131,3 +132,34 @@ creditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash,
 settlementCreditRowToCreditRecord :: (Address, Address, Integer, Text, Address, Integer, Text, Rational, Text, Rational)
                                   -> CreditRecord
 settlementCreditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, settlementAmount, settlementCurrency, settlementBlockNumber) = CreditRecord creditor debtor amount memo submitter nonce hash "" (Just $ floor settlementAmount) (Just settlementCurrency) (Just $ floor settlementBlockNumber)
+
+-- example input data: 0x0a5b410e000000000000000000000000869a8f2c3d22be392618ed06c8f548d1d5b5aed600000000000000000000000070d71994d0414c19c1f09f1f2946544e8d97c4290000000000000000000000001b5fec5060e51886184d30b3d211d50836087b83000000000000000000000000000000000000000000000000000000000000006481e2e0f119561515281f1c76d64431760a8612305931f5378f3004da3aa6209927b3f24c58888a06da343aa4bf1f3520122e703e6ccf146ee9ac60e2123b10d8000000000000000000000000000000000000000000000000000000000000001bb6ff2d00768200c769018c277d53b2e2a3a3d5f4d740a2acc3e35cb4421dd38a45a02960d1e92cf061a357a819072658a482c02c4a4ee06e01cb58cf66bc3a8f000000000000000000000000000000000000000000000000000000000000001c736f6d657468696e672020202020202020202020202020202020202020202020
+parseIssueCreditInput :: Nonce -> Text -> (IssueCreditLog, Text, Bool, Text, Bool)
+parseIssueCreditInput (Nonce nonce) inputData = ( creditLog
+                                                , creditorSig
+                                                , creditorSigValid
+                                                , debtorSig
+                                                , debtorSigValid
+                                                )
+    where (funcIdText, rest) = T.splitAt 8 $ stripHexPrefix inputData
+          (ucacIdText, rest1) = T.splitAt 64 rest
+          (creditorText', rest2) = T.splitAt 64 rest1
+          creditorText = T.drop 24 creditorText'
+          (debtorText', rest3) = T.splitAt 64 rest2
+          debtorText = T.drop 24 debtorText'
+          (amountText, rest4) = T.splitAt 64 rest3
+          (creditorSig', rest5) = T.splitAt 192 rest4
+          parseSig (x, y) = T.append x $ T.drop 62 y
+          creditorSig = parseSig $ T.splitAt 128 creditorSig'
+          (debtorSig', rest6) = T.splitAt 192 rest5
+          debtorSig = parseSig $ T.splitAt 128 debtorSig'
+          memo = T.decodeUtf8 . fst . BS16.decode $ T.encodeUtf8 $ T.take 32 rest6
+          creditLog = IssueCreditLog (textToAddress $ T.drop 24 ucacIdText)
+                                     (textToAddress creditorText)
+                                     (textToAddress debtorText)
+                                     (hexToInteger amountText)
+                                     nonce
+                                     memo
+          messageHash = EU.hashPersonalMessage $ hashCreditLog creditLog
+          creditorSigValid = Right creditorText == EU.ecrecover creditorSig messageHash
+          debtorSigValid = Right debtorText == EU.ecrecover debtorSig messageHash

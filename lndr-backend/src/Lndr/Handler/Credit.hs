@@ -80,7 +80,6 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
             let fullMsg = T.append msg (fromMaybe "..." nicknameM)
             case pushDataM of
-                -- TODO include nickname in the alert if we intend to use it
                 Just (channelID, platform) -> void . liftIO $
                     sendNotification config (Notification channelID platform fullMsg notifyAction)
                 Nothing -> return ()

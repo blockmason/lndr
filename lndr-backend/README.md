@@ -1,5 +1,25 @@
 # lndr-backend
 
+## Settlement Flow
+
+The settlement endpoints are the same as the normal non-settlement credit
+endpoints, /lend and /borrow. However, a settlement is distinguished from
+a non-settlement by the inclusion of a json key / value pair in the request
+body of the form "settlementCurrency" : "{Currency name}". Currently, the
+server only supports settlements in eth, so { "settlementCurrency" : "ETH" } is
+the only thing you should be adding to the json body of your /lend or /borrow
+requests. Once a unilateral settlement credit is submitted, it assumed the
+"amount" field is given in USD and a corresponding ETH settlement amount is
+determined using the current ETH/USD exchange rate on coinbase. Pending
+settlements will not be returned in /pending calls. Rather, there is a separate
+/pending_settlements endpoint that returns unilateral pending settlement
+credits along with bilateral pending settlements (signed by both parties but
+not yet associated with a ether transfer). Once a unilateral pending settlement
+credit is approved by a counterparty, becoming a bilateral pending settlement,
+the server requires that a txHash of an ether transfer between the two parties
+for the exact eth amount indicated in the /pending_settlements record be
+submitted to the /verify_settlement endpoint.
+
 ## LNDR Server
 
 Web service API

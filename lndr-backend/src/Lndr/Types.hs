@@ -20,11 +20,12 @@ module Lndr.Types
     , IssueCreditLog(IssueCreditLog, ucac, amount)
     , SettlementData(SettlementData)
     , SettlementsResponse(..)
-    , RejectRecord(RejectRecord)
+    , VerifySettlementRequest(..)
+    , RejectRequest(..)
     , Nonce(..)
 
     -- * push notifications-relatd types
-    , PushRequest(PushRequest, pushRequestSignature)
+    , PushRequest(..)
     , Notification(..)
     , NotificationAction(..)
     , DevicePlatform(..)
@@ -104,13 +105,13 @@ data CreditRecord = CreditRecord { creditor :: Address
                                  } deriving (Show, Generic)
 $(deriveJSON (defaultOptions { omitNothingFields = True }) ''CreditRecord)
 
-data RejectRecord = RejectRecord { rejectSig :: Text
-                                 , hash :: Text
-                                 }
-$(deriveJSON defaultOptions ''RejectRecord)
+data RejectRequest = RejectRequest { rejectRequestHash :: Text
+                                   , rejectRequestSignature :: Text
+                                   }
+$(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 13 }) ''RejectRequest)
 
-data NickRequest = NickRequest { addr :: Address
-                               , nick :: Text
+data NickRequest = NickRequest { nickRequestAddr :: Address
+                               , nickRequestNick :: Text
                                , nickRequestSignature :: Text
                                }
 $(deriveJSON defaultOptions ''NickRequest)
@@ -120,9 +121,9 @@ data NickInfo = NickInfo { addr :: Address
                          } deriving (Show, Eq, Generic)
 $(deriveJSON defaultOptions ''NickInfo)
 
-data PushRequest = PushRequest { channelID :: Text
-                               , platform :: Text
-                               , address :: Address
+data PushRequest = PushRequest { pushRequestChannelID :: Text
+                               , pushRequestPlatform :: Text
+                               , pushRequestAddress :: Address
                                , pushRequestSignature :: Text
                                }
 $(deriveJSON defaultOptions ''PushRequest)
@@ -216,8 +217,9 @@ instance FromJSON EthereumPrice where
             ratesObject <- dataObject .: "rates"
             EthereumPrice . read <$> ratesObject .: "USD"
 
-data VerifyRequest = VerifyRequest { creditHash :: Text
-                                   , txHash :: Text
-                                   , creditorAddress :: Address
-                                   , signature :: Text
-                                   }
+data VerifySettlementRequest = VerifySettlementRequest { verifySettlementRequestCreditHash :: Text
+                                                       , verifySettlementRequestTxHash :: Text
+                                                       , verifySettlementRequestCreditorAddress :: Address
+                                                       , verifySettlementRequestSignature :: Text
+                                                       }
+$(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 23 }) ''VerifySettlementRequest)

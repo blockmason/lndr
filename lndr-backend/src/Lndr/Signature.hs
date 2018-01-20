@@ -18,6 +18,7 @@ class VerifiableSignature a where
      generateSignature :: a -> Text -> Either String Text
      generateSignature request = EU.ecsign (generateHash request)
 
+
 instance VerifiableSignature NickRequest where
     extractSignature (NickRequest _ _ sig) = sig
 
@@ -29,8 +30,15 @@ instance VerifiableSignature NickRequest where
 -- AddFriendRequest
 -- RemoveFriendRequest
 
+instance VerifiableSignature VerifySettlementRequest where
+    extractSignature (VerifySettlementRequest _ _ _ sig) = sig
+
+    generateHash (VerifySettlementRequest creditHash txHash creditorAddress _) =
+        EU.hashText . T.concat $
+            stripHexPrefix <$> [ creditHash,  txHash , T.pack (show creditorAddress) ]
+
 instance VerifiableSignature PushRequest where
     extractSignature (PushRequest _ _ _ sig) = sig
 
     generateHash (PushRequest channelID platform addr _) = EU.hashText . T.concat $
-        (stripHexPrefix . bytesEncode) <$> [ channelID,  platform , T.pack (show addr) ]
+        stripHexPrefix <$> [ bytesEncode channelID,  bytesEncode platform , T.pack (show addr) ]

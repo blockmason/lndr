@@ -317,17 +317,22 @@ rejectCredit :: String -> Text -> Text -> IO Int
 rejectCredit url secretKey hash = do
     initReq <- HTTP.parseRequest $ url ++ "/reject"
     let (Right sig) = ecsign hash secretKey
-        rejectRecord = RejectRecord sig hash
+        rejectRecord = RejectRequest hash sig
         req = HTTP.setRequestBodyJSON rejectRecord $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp
 
 
-verifySettlement :: String -> Text -> Text -> IO Int
-verifySettlement url creditHash txHash = do
-    let fullUrl = url ++ "/verify_settlement/" ++ T.unpack creditHash ++ "?txHash=" ++ T.unpack txHash
-    req <- HTTP.setRequestMethod "POST" <$> HTTP.parseRequest fullUrl
+verifySettlement :: String -> Text -> Text -> Text -> IO Int
+verifySettlement url creditHash txHash privateKey = do
+    let address = textToAddress . fromMaybe "" . privateToAddress $ privateKey
+        verifyRequest' = VerifySettlementRequest creditHash txHash address ""
+    initReq <- HTTP.parseRequest $ url ++ "/verify_settlement"
+    let Right signature = generateSignature verifyRequest' privateKey
+        verifyRequest = verifyRequest { verifySettlementRequestSignature = signature }
+        req = HTTP.setRequestBodyJSON verifyRequest $
+            HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp
 

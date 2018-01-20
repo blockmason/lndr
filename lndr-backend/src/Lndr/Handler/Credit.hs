@@ -145,8 +145,8 @@ createBilateralFriendship pool creditor debtor = do
             void . withResource pool $ Db.addFriends debtor [creditor]
 
 
-rejectHandler :: RejectRecord -> LndrHandler NoContent
-rejectHandler(RejectRecord sig hash) = do
+rejectHandler :: RejectRequest -> LndrHandler NoContent
+rejectHandler(RejectRequest hash sig) = do
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
@@ -173,10 +173,9 @@ rejectHandler(RejectRecord sig hash) = do
                             else throwError $ err400 { errBody = "bad rejection sig" }
 
 
--- TODO for now we'll assume 'Just txHash', eventually, the server will be smart
--- enough to look for the tx automatically
-verifyHandler :: Text -> Maybe Text -> LndrHandler NoContent
-verifyHandler creditHash (Just txHash) = do
+verifyHandler :: VerifySettlementRequest -> LndrHandler NoContent
+verifyHandler (VerifySettlementRequest creditHash txHash creditorAddress signature) = do
+    -- TODO check signature
     pool <- dbConnectionPool <$> ask
     recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
     (creditor, debtor, amount) <- case recordM of

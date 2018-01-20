@@ -11,7 +11,7 @@ module Lndr.Types
     , ServerConfig(..)
 
     -- * lndr api types
-    , NickRequest(NickRequest)
+    , NickRequest(NickRequest, nickRequestSignature)
     , NickInfo(..)
     -- TODO clean this up, very unorganized as is
     , CreditRecord( CreditRecord, hash, creditor, debtor, submitter, signature
@@ -111,7 +111,7 @@ $(deriveJSON defaultOptions ''RejectRecord)
 
 data NickRequest = NickRequest { addr :: Address
                                , nick :: Text
-                               , signature :: Text
+                               , nickRequestSignature :: Text
                                }
 $(deriveJSON defaultOptions ''NickRequest)
 
@@ -214,3 +214,9 @@ instance FromJSON EthereumPrice where
             dataObject <- v .: "data"
             ratesObject <- dataObject .: "rates"
             EthereumPrice . read <$> ratesObject .: "USD"
+
+data VerifyRequest = VerifyRequest { creditHash :: Text
+                                   , txHash :: Text
+                                   , creditorAddress :: Address
+                                   , signature :: Text
+                                   }

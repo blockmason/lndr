@@ -73,7 +73,7 @@ nickTest = do
     assertBool "after db reset all nicks are available" (not nickTaken)
     -- set nick for user1
     httpCode <- setNick testUrl (NickRequest testAddress3 testNick1 "")
-    assertEqual "add friend success" 204 httpCode
+    assertEqual "set nick success" 204 httpCode
     -- check that test nick is no longer available
     nickTaken <- takenNick testUrl testNick1
     assertBool "nicks already in db are not available" nickTaken

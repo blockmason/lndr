@@ -131,8 +131,7 @@ runMode (Config url sk ucacAddr) (Borrow friend amount memo) = do
 -- Friend-related Modes
 runMode (Config url sk _) (Nick nick) =
     let userAddr = textToAddress $ userFromSK sk
-        Right signature = generateSignature (NickRequest userAddr nick "") (LT.toStrict sk)
-    in print =<< setNick (LT.unpack url) (NickRequest userAddr nick signature)
+    in print =<< setNick (LT.unpack url) (LT.toStrict sk) (NickRequest userAddr nick "")
 runMode (Config url sk _) (SearchNick nick) =
     let userAddr = textToAddress $ userFromSK sk
     in print =<< searchNick (LT.unpack url) nick
@@ -202,10 +201,11 @@ getGasPrice url = do
         Right b -> b
 
 
-setNick :: String -> NickRequest -> IO Int
-setNick url nickRequest = do
+setNick :: String -> Text -> NickRequest -> IO Int
+setNick url sk nickRequest = do
     initReq <- HTTP.parseRequest $ url ++ "/nick"
-    let req = HTTP.setRequestBodyJSON nickRequest $
+    let Right signature = generateSignature nickRequest sk
+        req = HTTP.setRequestBodyJSON (nickRequest { nickRequestSignature = signature }) $
                 HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 

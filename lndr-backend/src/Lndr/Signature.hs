@@ -21,9 +21,10 @@ class VerifiableSignature a where
 instance VerifiableSignature NickRequest where
     extractSignature (NickRequest _ _ sig) = sig
 
-    generateHash (NickRequest addr nick _) = EU.hashText $ T.concat [ T.pack (show addr)
-                                                                    , bytesEncode nick
-                                                                    ]
+    generateHash (NickRequest addr nick _) = EU.hashText . T.concat $
+                                                stripHexPrefix <$> [ T.pack (show addr)
+                                                                   , bytesEncode nick
+                                                                   ]
 
 -- AddFriendRequest
 -- RemoveFriendRequest
@@ -31,4 +32,5 @@ instance VerifiableSignature NickRequest where
 instance VerifiableSignature PushRequest where
     extractSignature (PushRequest _ _ sig) = sig
 
-    generateHash (PushRequest channelID platform _) = EU.hashText $ T.append channelID platform
+    generateHash (PushRequest channelID platform _) = EU.hashText . T.concat $
+        (stripHexPrefix . bytesEncode) <$> [ channelID,  platform ]

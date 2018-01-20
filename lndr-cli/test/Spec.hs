@@ -222,11 +222,11 @@ basicSettlementTest = do
     threadDelay (10 ^ 7)
 
     -- user5 tries to verify a settlement with an incorrect txHash
-    httpCode <- verifySettlement testUrl creditHash incorrectTxHash
+    httpCode <- verifySettlement testUrl creditHash incorrectTxHash testPrivkey5
     assertEqual "verification failure upon bad txHash submission" 400 httpCode
 
     -- user5 verifies that he has made the settlement credit
-    httpCode <- verifySettlement testUrl creditHash txHash
+    httpCode <- verifySettlement testUrl creditHash txHash testPrivkey5
     assertEqual "verification success" 204 httpCode
 
     (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getSettlements testUrl testAddress5

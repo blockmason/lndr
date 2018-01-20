@@ -31,6 +31,7 @@ import           Lndr.EthereumInterface
 import           Lndr.Handler.Types
 import           Lndr.Notifications
 import           Lndr.NetworkStatistics
+import           Lndr.Signature
 import           Lndr.Types
 import           Lndr.Util
 import qualified Network.Ethereum.Util as EU
@@ -174,8 +175,8 @@ rejectHandler(RejectRequest hash sig) = do
 
 
 verifyHandler :: VerifySettlementRequest -> LndrHandler NoContent
-verifyHandler (VerifySettlementRequest creditHash txHash creditorAddress signature) = do
-    -- TODO check signature
+verifyHandler r@(VerifySettlementRequest creditHash txHash creditorAddress signature) = do
+    unless (Right creditorAddress == recoverSigner r) $ throwError (err400 {errBody = "Bad signature."})
     pool <- dbConnectionPool <$> ask
     recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
     (creditor, debtor, amount) <- case recordM of

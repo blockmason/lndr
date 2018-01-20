@@ -1,7 +1,7 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE TypeOperators             #-}
 
 module Lndr.Server
     ( ServerState
@@ -16,24 +16,24 @@ module Lndr.Server
 import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
-import           Data.ByteString.Lazy (ByteString)
+import           Data.ByteString.Lazy       (ByteString)
 import           Data.Configurator
 import           Data.Configurator.Types
-import           Data.Either (either)
-import qualified Data.HashMap.Strict as H (lookup)
-import           Data.Maybe (fromMaybe)
-import           Data.Pool (createPool, withResource)
-import           Data.Text (Text)
-import qualified Data.Text as T
-import           Data.Text.Lazy.Encoding (encodeUtf8)
-import qualified Data.Text.Lazy as LT
+import           Data.Either                (either)
+import qualified Data.HashMap.Strict        as H (lookup)
+import           Data.Maybe                 (fromMaybe)
+import           Data.Pool                  (createPool, withResource)
+import           Data.Text                  (Text)
+import qualified Data.Text                  as T
+import qualified Data.Text.Lazy             as LT
+import           Data.Text.Lazy.Encoding    (encodeUtf8)
 import qualified Database.PostgreSQL.Simple as DB
-import qualified Lndr.Db as Db
+import qualified Lndr.Db                    as Db
 import           Lndr.Docs
 import           Lndr.EthereumInterface
 import           Lndr.Handler
 import           Lndr.Types
-import           Network.Ethereum.Web3 hiding (convert)
+import           Network.Ethereum.Web3      hiding (convert)
 import           Network.HTTP.Types
 import           Network.Wai
 import           Servant

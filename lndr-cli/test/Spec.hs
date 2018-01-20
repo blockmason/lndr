@@ -274,7 +274,7 @@ blocknumberTest = do
 
 basicNotificationsTest :: Assertion
 basicNotificationsTest = do
-    httpCode <- registerChannel testUrl (PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios" testAddress1 "")
+    httpCode <- registerChannel testUrl testPrivkey1 (PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios" testAddress1 "")
     assertEqual "register channel success" 204 httpCode
 
 

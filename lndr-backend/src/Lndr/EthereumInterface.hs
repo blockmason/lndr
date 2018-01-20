@@ -1,13 +1,13 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE DeriveDataTypeable        #-}
+{-# LANGUAGE DeriveGeneric             #-}
+{-# LANGUAGE DuplicateRecordFields     #-}
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE QuasiQuotes               #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE TupleSections             #-}
 {-# OPTIONS_GHC -fno-cse #-}
 -- | Functions that interact with ethereum blockchain using web3.
 --
@@ -42,24 +42,24 @@ module Lndr.EthereumInterface (
     , unstakeTokens
     ) where
 
-import           Control.Monad.Trans.Maybe
 import           Control.Exception
 import           Control.Monad
-import qualified Data.ByteArray as BA
-import qualified Data.ByteString.Base16 as BS16
+import           Control.Monad.Trans.Maybe
+import qualified Data.ByteArray              as BA
+import qualified Data.ByteString.Base16      as BS16
 import           Data.Default
-import           Data.Either (rights)
-import           Data.List.Safe ((!!))
-import           Data.Text (Text)
-import qualified Data.Text.Encoding as T
+import           Data.Either                 (rights)
+import           Data.List.Safe              ((!!))
+import           Data.Text                   (Text)
+import qualified Data.Text.Encoding          as T
 import           Lndr.NetworkStatistics
 import           Lndr.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3
-import qualified Network.Ethereum.Web3.Eth as Eth
+import qualified Network.Ethereum.Web3.Eth   as Eth
 import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
-import           Prelude hiding (lookup, (!!))
+import           Prelude                     hiding (lookup, (!!))
 
 
 -- Create functions to call CreditProtocol contract.

@@ -1,8 +1,8 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 module Lndr.Types
     (
@@ -37,17 +37,17 @@ module Lndr.Types
     ) where
 
 import           Control.Concurrent.STM.TVar
-import           Control.Lens (over, _head)
+import           Control.Lens                  (over, _head)
 import           Data.Aeson
 import           Data.Aeson.TH
-import           Data.ByteString (ByteString)
-import           Data.Char (toLower)
-import qualified Data.Configurator.Types as Conf
-import           Data.Either.Combinators (mapLeft, fromRight)
+import           Data.ByteString               (ByteString)
+import           Data.Char                     (toLower)
+import qualified Data.Configurator.Types       as Conf
+import           Data.Either.Combinators       (fromRight, mapLeft)
 import           Data.Hashable
 import           Data.Pool
-import           Data.Text (Text)
-import qualified Data.Text as T
+import           Data.Text                     (Text)
+import qualified Data.Text                     as T
 import           Database.PostgreSQL.Simple
 import           GHC.Generics
 import           Network.Ethereum.Web3.Address (Address)
@@ -72,17 +72,17 @@ newtype Nonce = Nonce { unNonce :: Integer } deriving (Show, Generic)
 instance ToJSON Nonce where
     toJSON (Nonce x) = toJSON x
 
-data SettlementData = SettlementData { settlementAmount :: Integer
-                                     , settlementCurrency :: Text
+data SettlementData = SettlementData { settlementAmount      :: Integer
+                                     , settlementCurrency    :: Text
                                      , settlementBlocknumber :: Integer
                                      }
 
-data IssueCreditLog = IssueCreditLog { ucac :: Address
+data IssueCreditLog = IssueCreditLog { ucac     :: Address
                                      , creditor :: Address
-                                     , debtor :: Address
-                                     , amount :: Integer
-                                     , nonce :: Integer
-                                     , memo :: Text
+                                     , debtor   :: Address
+                                     , amount   :: Integer
+                                     , nonce    :: Integer
+                                     , memo     :: Text
                                      } deriving (Show, Generic)
 $(deriveJSON defaultOptions ''IssueCreditLog)
 
@@ -91,27 +91,27 @@ instance Eq IssueCreditLog where
             u1 == u2 && c1 == c2 && d1 == d2 && a1 == a2 && n1 == n2
 
 -- `a` is a phantom type that indicates whether a record has been signed or not
-data CreditRecord = CreditRecord { creditor :: Address
-                                 , debtor :: Address
-                                 , amount :: Integer
-                                 , memo :: Text
-                                 , submitter :: Address
-                                 , nonce :: Integer
-                                 , hash :: Text
-                                 , signature :: Text
-                                 , settlementAmount :: Maybe Integer
-                                 , settlementCurrency :: Maybe Text
+data CreditRecord = CreditRecord { creditor              :: Address
+                                 , debtor                :: Address
+                                 , amount                :: Integer
+                                 , memo                  :: Text
+                                 , submitter             :: Address
+                                 , nonce                 :: Integer
+                                 , hash                  :: Text
+                                 , signature             :: Text
+                                 , settlementAmount      :: Maybe Integer
+                                 , settlementCurrency    :: Maybe Text
                                  , settlementBlocknumber :: Maybe Integer
                                  } deriving (Show, Generic)
 $(deriveJSON (defaultOptions { omitNothingFields = True }) ''CreditRecord)
 
-data RejectRequest = RejectRequest { rejectRequestHash :: Text
+data RejectRequest = RejectRequest { rejectRequestHash      :: Text
                                    , rejectRequestSignature :: Text
                                    }
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 13 }) ''RejectRequest)
 
-data NickRequest = NickRequest { nickRequestAddr :: Address
-                               , nickRequestNick :: Text
+data NickRequest = NickRequest { nickRequestAddr      :: Address
+                               , nickRequestNick      :: Text
                                , nickRequestSignature :: Text
                                }
 $(deriveJSON defaultOptions ''NickRequest)
@@ -122,8 +122,8 @@ data NickInfo = NickInfo { addr :: Address
 $(deriveJSON defaultOptions ''NickInfo)
 
 data PushRequest = PushRequest { pushRequestChannelID :: Text
-                               , pushRequestPlatform :: Text
-                               , pushRequestAddress :: Address
+                               , pushRequestPlatform  :: Text
+                               , pushRequestAddress   :: Address
                                , pushRequestSignature :: Text
                                }
 $(deriveJSON defaultOptions ''PushRequest)
@@ -144,15 +144,15 @@ data DevicePlatform = Ios
                     deriving Show
 
 instance ToJSON DevicePlatform where
-   toJSON Ios = String "ios"
+   toJSON Ios     = String "ios"
    toJSON Android = String "android"
 
 -- This should probably be called 'Push Object' to match the Urban Airship docs
 -- here: https://docs.urbanairship.com/api/ua/#push-object
 data Notification = Notification { channelID :: Text
-                                 , platform :: DevicePlatform
-                                 , message :: Text
-                                 , action :: NotificationAction
+                                 , platform  :: DevicePlatform
+                                 , message   :: Text
+                                 , action    :: NotificationAction
                                  } deriving Show
 
 instance ToJSON Notification where
@@ -167,21 +167,21 @@ instance ToJSON Notification where
                            ]
                , "device_types" .= [ platform ]
                ]
-        where deviceChannel Ios = "ios_channel"
+        where deviceChannel Ios     = "ios_channel"
               deviceChannel Android = "android_channel"
 
-data ServerConfig = ServerConfig { lndrUcacAddr :: !Address
+data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
                                  , creditProtocolAddress :: !Address
-                                 , issueCreditEvent :: !Text
-                                 , scanStartBlock :: !Integer
-                                 , dbUser :: !Text
-                                 , dbUserPassword :: !Text
-                                 , dbName :: !Text
-                                 , executionAddress :: !Address
-                                 , gasPrice :: !Integer
-                                 , maxGas :: !Integer
-                                 , urbanAirshipKey :: !ByteString
-                                 , urbanAirshipSecret :: !ByteString
+                                 , issueCreditEvent      :: !Text
+                                 , scanStartBlock        :: !Integer
+                                 , dbUser                :: !Text
+                                 , dbUserPassword        :: !Text
+                                 , dbName                :: !Text
+                                 , executionAddress      :: !Address
+                                 , gasPrice              :: !Integer
+                                 , maxGas                :: !Integer
+                                 , urbanAirshipKey       :: !ByteString
+                                 , urbanAirshipSecret    :: !ByteString
                                  }
 
 -- 'ConfigResponse' contains all the server data that users have access to via
@@ -198,10 +198,10 @@ data SettlementsResponse = SettlementsResponse { unilateralSettlements :: [Credi
 $(deriveJSON defaultOptions ''SettlementsResponse)
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection
-                               , serverConfig :: TVar ServerConfig
+                               , serverConfig     :: TVar ServerConfig
                                }
 
-data GasStationResponse = GasStationResponse { safeLow :: Double
+data GasStationResponse = GasStationResponse { safeLow     :: Double
                                              , safeLowWait :: Double
                                              } deriving Show
 $(deriveJSON defaultOptions ''GasStationResponse)

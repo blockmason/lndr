@@ -1,6 +1,6 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings     #-}
 
 module Lndr.CLI.Args (
       LndrCmd(..)
@@ -39,33 +39,35 @@ module Lndr.CLI.Args (
     ) where
 
 import           Data.Data
-import           Data.Maybe (fromMaybe)
-import           Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as LT
-import           Lndr.EthereumInterface hiding (getNonce)
+import           Data.Maybe                      (fromMaybe)
+import           Data.Text                       (Text)
+import qualified Data.Text                       as T
+import qualified Data.Text.Lazy                  as LT
 import           Lndr.CLI.Config
-import           Lndr.Types
+import           Lndr.EthereumInterface          hiding (getNonce)
 import           Lndr.Signature
+import           Lndr.Types
 import           Lndr.Util
-import           Network.Ethereum.Util (hashPersonalMessage, ecsign, privateToAddress, hashText)
+import           Network.Ethereum.Util           (ecsign, hashPersonalMessage,
+                                                  hashText, privateToAddress)
 import           Network.Ethereum.Web3
-import qualified Network.Ethereum.Web3.Address as Addr
-import qualified Network.HTTP.Simple as HTTP
-import           System.Console.CmdArgs hiding (def)
-import           System.Console.CmdArgs.Explicit(helpText, HelpFormat(..), modeEmpty)
-import qualified Text.Pretty.Simple as Pr
+import qualified Network.Ethereum.Web3.Address   as Addr
+import qualified Network.HTTP.Simple             as HTTP
+import           System.Console.CmdArgs          hiding (def)
+import           System.Console.CmdArgs.Explicit (HelpFormat (..), helpText,
+                                                  modeEmpty)
+import qualified Text.Pretty.Simple              as Pr
 
 data LndrCmd = Transactions
              | Pending
              | RejectPending
              | Lend { friend :: Text
                     , amount :: Integer
-                    , memo :: Text
+                    , memo   :: Text
                     }
              | Borrow { friend :: Text
                       , amount :: Integer
-                      , memo :: Text
+                      , memo   :: Text
                       }
              | Nick { nick :: Text }
              | SearchNick { nick :: Text }
@@ -197,7 +199,7 @@ getGasPrice url = do
     req <- HTTP.parseRequest $ url ++ "/gas_price"
     resp <- HTTP.getResponseBody <$> HTTP.httpJSONEither req
     return $ case resp of
-        Left a -> -1
+        Left a  -> -1
         Right b -> b
 
 
@@ -214,7 +216,7 @@ getNick url userAddr = do
     req <- HTTP.parseRequest $ url ++ "/nick/" ++ show userAddr
     resp <- HTTP.getResponseBody <$> HTTP.httpJSONEither req
     return $ case resp of
-        Left a -> "nick not found"
+        Left a  -> "nick not found"
         Right b -> b
 
 

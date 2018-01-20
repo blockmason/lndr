@@ -2,12 +2,12 @@
 
 module Lndr.Handler.Types where
 
-import           Control.Monad.Reader
 import           Control.Monad.Except
+import           Control.Monad.Reader
 import           Control.Monad.Trans.Except
-import qualified Data.ByteString.Char8 as B (pack)
-import qualified Data.ByteString.Lazy as B (fromStrict)
-import           Data.Either.Combinators (mapLeft)
+import qualified Data.ByteString.Char8      as B (pack)
+import qualified Data.ByteString.Lazy       as B (fromStrict)
+import           Data.Either.Combinators    (mapLeft)
 import           Lndr.Types
 import           Network.Ethereum.Web3
 import           Servant

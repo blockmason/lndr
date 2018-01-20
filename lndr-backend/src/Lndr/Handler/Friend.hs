@@ -4,10 +4,10 @@ module Lndr.Handler.Friend where
 
 import           Control.Monad.Except
 import           Control.Monad.Reader
-import           Data.Pool (withResource)
-import           Data.Text (Text)
-import qualified Data.Text as T
-import qualified Lndr.Db as Db
+import           Data.Pool             (withResource)
+import           Data.Text             (Text)
+import qualified Data.Text             as T
+import qualified Lndr.Db               as Db
 import           Lndr.Handler.Types
 import           Lndr.Signature
 import           Lndr.Types

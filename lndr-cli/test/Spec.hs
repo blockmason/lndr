@@ -1,23 +1,25 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
 
-import           Control.Concurrent (threadDelay)
+import           Control.Concurrent             (threadDelay)
 import           Control.Monad.Trans.Maybe
-import           Data.Either.Combinators (fromRight)
-import qualified Data.Text.Lazy as LT
+import           Data.Either.Combinators        (fromRight)
+import qualified Data.Text.Lazy                 as LT
 import           Lndr.CLI.Args
 import           Lndr.EthereumInterface
 import           Lndr.NetworkStatistics
-import           Lndr.Util (textToAddress, hashCreditRecord, parseIssueCreditInput)
 import           Lndr.Types
+import           Lndr.Util                      (hashCreditRecord,
+                                                 parseIssueCreditInput,
+                                                 textToAddress)
 import           Network.Ethereum.Web3
+import qualified Network.Ethereum.Web3.Eth      as Eth
 import           Network.Ethereum.Web3.Types
-import qualified Network.Ethereum.Web3.Eth as Eth
 import           Test.Framework
 import           Test.Framework.Providers.HUnit
-import           Test.HUnit hiding (Test)
+import           Test.HUnit                     hiding (Test)
 
 -- TODO get rid of this once version enpoint point works
 ucacAddr = "0x7899b83071d9704af0b132859a04bb1698a3acaf"

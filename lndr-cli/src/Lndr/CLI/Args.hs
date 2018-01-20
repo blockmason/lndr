@@ -46,6 +46,7 @@ import qualified Data.Text.Lazy as LT
 import           Lndr.EthereumInterface hiding (getNonce)
 import           Lndr.CLI.Config
 import           Lndr.Types
+import           Lndr.Signature
 import           Lndr.Util
 import           Network.Ethereum.Util (hashPersonalMessage, ecsign, privateToAddress, hashText)
 import           Network.Ethereum.Web3
@@ -130,11 +131,11 @@ runMode (Config url sk ucacAddr) (Borrow friend amount memo) = do
 -- Friend-related Modes
 runMode (Config url sk _) (Nick nick) =
     let userAddr = textToAddress $ userFromSK sk
-    in print =<< setNick (LT.unpack url) (NickRequest userAddr nick "")
+        Right signature = generateSignature (NickRequest userAddr nick "") (LT.toStrict sk)
+    in print =<< setNick (LT.unpack url) (NickRequest userAddr nick signature)
 runMode (Config url sk _) (SearchNick nick) =
     let userAddr = textToAddress $ userFromSK sk
     in print =<< searchNick (LT.unpack url) nick
-
 
 runMode (Config url sk _) (AddFriend friend) =
     print =<< addFriend (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)

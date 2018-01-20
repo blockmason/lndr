@@ -2,20 +2,22 @@
 
 module Lndr.Handler.Friend where
 
+import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Data.Pool (withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Lndr.Db as Db
 import           Lndr.Handler.Types
+import           Lndr.Signature
 import           Lndr.Types
 import           Network.Ethereum.Web3
-import           Servant.API
+import           Servant
 
 
 nickHandler :: NickRequest -> LndrHandler NoContent
-nickHandler (NickRequest addr nick sig) = do
-    -- TODO verify signature
+nickHandler r@(NickRequest addr nick sig) = do
+    unless (Right addr == recoverSigner r) $ throwError (err400 {errBody = "Bad signature."})
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool . Db.insertNick addr $ T.toLower nick
     return NoContent

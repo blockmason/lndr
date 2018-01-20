@@ -1,25 +1,34 @@
 module Lndr.Signature where
 
-import           Data.Hashable
 import           Data.Text (Text)
+import qualified Data.Text as T
 import           Lndr.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3.Address
+import qualified Network.Ethereum.Util as EU
 
-class Hashable a => VerifiableSignature a where
-     recoverSigner :: a -> Address
+class VerifiableSignature a where
+     recoverSigner :: a -> Either String Address
+     recoverSigner x = fmap textToAddress . EU.ecrecover (extractSignature x) . generateHash $ x
 
-instance Hashable NickRequest where
-    hashWithSalt (NickRequest addr nick _) = hashWithSalt (toText addr, nick)
+     extractSignature :: a -> Text
+
+     generateHash :: a -> Text
+
+     generateSignature :: a -> Text -> Either String Text
+     generateSignature request = EU.ecsign (generateHash request)
 
 instance VerifiableSignature NickRequest where
-    recoverSigner x = undefined
+    extractSignature (NickRequest _ _ sig) = sig
+
+    generateHash (NickRequest addr nick _) = EU.hashText $ T.concat [ T.pack (show addr)
+                                                                    , bytesEncode nick
+                                                                    ]
 
 -- AddFriendRequest
 -- RemoveFriendRequest
 
-instance Hashable PushRequest where
-    hashWithSalt (PushRequest channelID platform) = hashWithSalt (channelID, platform)
-
 instance VerifiableSignature PushRequest where
-    recoverSigner = undefined
+    extractSignature (PushRequest _ _ sig) = sig
+
+    generateHash (PushRequest channelID platform _) = EU.hashText $ T.append channelID platform

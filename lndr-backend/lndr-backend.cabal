@@ -17,6 +17,7 @@ library
                  , Lndr.Server
                  , Lndr.Types
                  , Lndr.Util
+                 , Lndr.Signature
   other-modules: Lndr.Db
                , Lndr.Db.Friendships
                , Lndr.Db.Nicknames

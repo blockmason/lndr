@@ -1,11 +1,11 @@
 module Lndr.Signature where
 
-import           Data.Text (Text)
-import qualified Data.Text as T
+import           Data.Text                     (Text)
+import qualified Data.Text                     as T
 import           Lndr.Types
 import           Lndr.Util
+import qualified Network.Ethereum.Util         as EU
 import           Network.Ethereum.Web3.Address
-import qualified Network.Ethereum.Util as EU
 
 class VerifiableSignature a where
      recoverSigner :: a -> Either String Address
@@ -38,5 +38,4 @@ instance VerifiableSignature PushRequest where
     extractSignature (PushRequest _ _ _ sig) = sig
 
     generateHash (PushRequest channelID platform addr _) = EU.hashText . T.concat $
-        -- TODO replace channelID
-        stripHexPrefix <$> [ bytesEncode platform , T.pack (show addr) ]
+        stripHexPrefix <$> [ bytesEncode platform , bytesEncode channelID , T.pack (show addr) ]

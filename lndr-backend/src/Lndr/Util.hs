@@ -56,7 +56,7 @@ bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
 
 
 bytesEncode :: Text -> Text
-bytesEncode = T.decodeUtf8 . fst . BS16.decode . T.encodeUtf8
+bytesEncode = T.decodeUtf8 . BS16.encode . T.encodeUtf8
 
 
 textToBytesN32 :: Text -> BytesN 32

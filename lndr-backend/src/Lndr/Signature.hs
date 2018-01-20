@@ -27,9 +27,6 @@ instance VerifiableSignature NickRequest where
                                                                    , bytesEncode nick
                                                                    ]
 
--- AddFriendRequest
--- RemoveFriendRequest
-
 instance VerifiableSignature VerifySettlementRequest where
     extractSignature (VerifySettlementRequest _ _ _ sig) = sig
 
@@ -41,4 +38,5 @@ instance VerifiableSignature PushRequest where
     extractSignature (PushRequest _ _ _ sig) = sig
 
     generateHash (PushRequest channelID platform addr _) = EU.hashText . T.concat $
-        stripHexPrefix <$> [ bytesEncode channelID,  bytesEncode platform , T.pack (show addr) ]
+        -- TODO replace channelID
+        stripHexPrefix <$> [ bytesEncode platform , T.pack (show addr) ]

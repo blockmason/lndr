@@ -158,20 +158,20 @@ rejectHandler(RejectRequest hash sig) = do
     case signer of
         Left _ -> throwError $ err400 { errBody = "unable to recover addr from sig" }
         Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
-                            then do liftIO . withResource pool $ Db.deletePending hash True
-                                    let submitterAddress = textToAddress addr
-                                        counterparty = if creditor /= submitterAddress then creditor else debtor
-                                    pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
-                                    nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
-                                    let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
-                                    case pushDataM of
-                                        -- TODO include nickname in the alert if we intend to use it
-                                        Just (channelID, platform) -> void . liftIO $
-                                            sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
-                                        Nothing -> return ()
+            then do liftIO . withResource pool $ Db.deletePending hash True
+                    let submitterAddress = textToAddress addr
+                        counterparty = if creditor /= submitterAddress then creditor else debtor
+                    pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
+                    nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
+                    let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
+                    case pushDataM of
+                        -- TODO include nickname in the alert if we intend to use it
+                        Just (channelID, platform) -> void . liftIO $
+                            sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
+                        Nothing -> return ()
 
-                                    return NoContent
-                            else throwError $ err400 { errBody = "bad rejection sig" }
+                    return NoContent
+            else throwError $ err400 { errBody = "bad rejection sig" }
 
 
 verifyHandler :: VerifySettlementRequest -> LndrHandler NoContent

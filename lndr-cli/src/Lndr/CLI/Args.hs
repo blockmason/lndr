@@ -330,7 +330,7 @@ verifySettlement url creditHash txHash privateKey = do
         verifyRequest' = VerifySettlementRequest creditHash txHash address ""
     initReq <- HTTP.parseRequest $ url ++ "/verify_settlement"
     let Right signature = generateSignature verifyRequest' privateKey
-        verifyRequest = verifyRequest { verifySettlementRequestSignature = signature }
+        verifyRequest = verifyRequest' { verifySettlementRequestSignature = signature }
         req = HTTP.setRequestBodyJSON verifyRequest $
             HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req

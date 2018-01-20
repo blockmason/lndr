@@ -24,7 +24,7 @@ module Lndr.Types
     , Nonce(..)
 
     -- * push notifications-relatd types
-    , PushRequest(PushRequest)
+    , PushRequest(PushRequest, pushRequestSignature)
     , Notification(..)
     , NotificationAction(..)
     , DevicePlatform(..)
@@ -122,7 +122,8 @@ $(deriveJSON defaultOptions ''NickInfo)
 
 data PushRequest = PushRequest { channelID :: Text
                                , platform :: Text
-                               , signature :: Text
+                               , address :: Address
+                               , pushRequestSignature :: Text
                                }
 $(deriveJSON defaultOptions ''PushRequest)
 

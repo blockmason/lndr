@@ -30,7 +30,7 @@ instance VerifiableSignature NickRequest where
 -- RemoveFriendRequest
 
 instance VerifiableSignature PushRequest where
-    extractSignature (PushRequest _ _ sig) = sig
+    extractSignature (PushRequest _ _ _ sig) = sig
 
-    generateHash (PushRequest channelID platform _) = EU.hashText . T.concat $
-        (stripHexPrefix . bytesEncode) <$> [ channelID,  platform ]
+    generateHash (PushRequest channelID platform addr _) = EU.hashText . T.concat $
+        (stripHexPrefix . bytesEncode) <$> [ channelID,  platform , T.pack (show addr) ]

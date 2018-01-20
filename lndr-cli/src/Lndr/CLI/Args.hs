@@ -332,8 +332,10 @@ verifySettlement url creditHash txHash = do
     return $ HTTP.getResponseStatusCode resp
 
 
-registerChannel :: String -> Address -> PushRequest -> IO Int
-registerChannel url addr pushReq = do
-    initReq <- HTTP.parseRequest $ url ++ "/register_push/" ++ show addr
-    let req = HTTP.setRequestBodyJSON pushReq $ HTTP.setRequestMethod "POST" initReq
+registerChannel :: String -> Text -> PushRequest -> IO Int
+registerChannel url privateKey pushReq = do
+    initReq <- HTTP.parseRequest $ url ++ "/register_push"
+    let Right signature = generateSignature pushReq privateKey
+        req = HTTP.setRequestBodyJSON (pushReq {pushRequestSignature = signature }) $
+                    HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req

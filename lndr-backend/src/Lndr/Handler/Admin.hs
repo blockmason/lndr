@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings   #-}
+
 module Lndr.Handler.Admin where
 
 import           Control.Concurrent.STM
@@ -56,8 +58,8 @@ resubmitHandler txHash = do
     pure NoContent
 
 
-registerPushHandler :: Address -> PushRequest -> LndrHandler NoContent
-registerPushHandler addr r@(PushRequest channelID platform _) = do
+registerPushHandler :: PushRequest -> LndrHandler NoContent
+registerPushHandler r@(PushRequest channelID platform addr _) = do
     unless (Right addr == recoverSigner r) $ throwError (err400 {errBody = "Bad signature."})
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool $ Db.insertPushDatum addr channelID platform

@@ -72,7 +72,7 @@ nickTest = do
     nickTaken <- takenNick testUrl testNick1
     assertBool "after db reset all nicks are available" (not nickTaken)
     -- set nick for user1
-    httpCode <- setNick testUrl (NickRequest testAddress3 testNick1 "")
+    httpCode <- setNick testUrl testPrivkey3 (NickRequest testAddress3 testNick1 "")
     assertEqual "set nick success" 204 httpCode
     -- check that test nick is no longer available
     nickTaken <- takenNick testUrl testNick1
@@ -81,17 +81,17 @@ nickTest = do
     queriedNick <- getNick testUrl testAddress3
     assertEqual "nick is set and queryable" queriedNick testNick1
     -- fail to set identical nick for user2
-    httpCode <- setNick testUrl (NickRequest testAddress4 testNick1 "")
+    httpCode <- setNick testUrl testPrivkey4 (NickRequest testAddress4 testNick1 "")
     assertBool "duplicate nick is rejected with user error" (httpCode /= 204)
     -- change user1 nick
-    httpCode <- setNick testUrl (NickRequest testAddress3 testNick2 "")
+    httpCode <- setNick testUrl testPrivkey3 (NickRequest testAddress3 testNick2 "")
     assertEqual "change nick success" 204 httpCode
     -- check that user1's nick was successfully changed
     queriedNick <- getNick testUrl testAddress3
     assertEqual "nick is set and queryable" queriedNick testNick2
 
     -- set user2's nick
-    httpCode <- setNick testUrl (NickRequest testAddress4 testNick1 "")
+    httpCode <- setNick testUrl testPrivkey4 (NickRequest testAddress4 testNick1 "")
     assertEqual "previously used nickname is settable" 204 httpCode
 
     fuzzySearchResults <- searchNick testUrl testSearch
@@ -274,7 +274,7 @@ blocknumberTest = do
 
 basicNotificationsTest :: Assertion
 basicNotificationsTest = do
-    httpCode <- registerChannel testUrl testAddress1 (PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios" "")
+    httpCode <- registerChannel testUrl (PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios" testAddress1 "")
     assertEqual "register channel success" 204 httpCode
 
 

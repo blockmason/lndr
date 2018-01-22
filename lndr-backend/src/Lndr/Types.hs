@@ -114,7 +114,7 @@ data NickRequest = NickRequest { nickRequestAddr      :: Address
                                , nickRequestNick      :: Text
                                , nickRequestSignature :: Text
                                }
-$(deriveJSON defaultOptions ''NickRequest)
+$(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 11 }) ''NickRequest)
 
 data NickInfo = NickInfo { addr :: Address
                          , nick :: Text
@@ -126,8 +126,7 @@ data PushRequest = PushRequest { pushRequestChannelID :: Text
                                , pushRequestAddress   :: Address
                                , pushRequestSignature :: Text
                                }
-$(deriveJSON defaultOptions ''PushRequest)
-
+$(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 11 }) ''PushRequest)
 -- The 'NotificationAction' type enumerates those events upon which a push
 -- notification may be sent.
 data NotificationAction = NewPendingCredit

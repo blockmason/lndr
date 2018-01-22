@@ -194,10 +194,27 @@ runHeartbeat state = forkIO $ heartbeat state
 
 
 heartbeat :: ServerState -> IO ()
-heartbeat (ServerState pool configMVar) = do
+heartbeat state@(ServerState pool configMVar) = do
     config <- atomically $ readTVar configMVar
     -- sleep for time specified in config
     threadDelay (heartbeatInterval config * 10 ^ 6)
     putStrLn "Heartbeat"
+    -- scan settlements table for any settlement eligible for deletion
+    deleteExpiredSettlements state
+    -- try to verify all settlements whose tx_hash column is populated
+    verifySettlementsWithTxHash state
     -- loop
-    heartbeat (ServerState pool configMVar)
+    heartbeat state
+
+
+deleteExpiredSettlements :: ServerState -> IO ()
+deleteExpiredSettlements (ServerState pool configMVar) = do
+    config <- atomically $ readTVar configMVar
+    withResource pool Db.settlementCreditsToVerify
+    return ()
+
+verifySettlementsWithTxHash :: ServerState -> IO ()
+verifySettlementsWithTxHash (ServerState pool configMVar) = do
+    config <- atomically $ readTVar configMVar
+    withResource pool Db.deleteExpiredSettlementsAndAssociatedCredits
+    return ()

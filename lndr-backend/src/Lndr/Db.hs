@@ -23,14 +23,19 @@ module Lndr.Db (
     , insertCredits
     , allCredits
     , lookupCreditByAddress
-    , lookupSettlementCreditByAddress
     , counterpartiesByAddress
     , lookupCreditByHash
-    , lookupPendingSettlementByAddresses
     , verifyCreditByHash
     , userBalance
     , twoPartyBalance
     , twoPartyNonce
+
+    -- * 'settlement'-specific functions
+    , lookupSettlementCreditByAddress
+    , lookupPendingSettlementByAddresses
+    , deleteExpiredSettlementsAndAssociatedCredits
+    , settlementCreditsToVerify
+
 
     -- * 'push_data' table functions
     , insertPushDatum

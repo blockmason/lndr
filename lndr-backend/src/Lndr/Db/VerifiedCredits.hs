@@ -32,6 +32,16 @@ lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
 lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
 
 
+-- TODO finish this implementation
+deleteExpiredSettlementsAndAssociatedCredits :: Connection -> IO Int
+deleteExpiredSettlementsAndAssociatedCredits conn = fromIntegral <$> execute conn "DELETE FROM settlements WHERE created_at > INFINITY" ()
+
+
+-- TODO finish this implementation
+settlementCreditsToVerify :: Connection -> IO [Text]
+settlementCreditsToVerify conn = fmap fromOnly <$> query conn "SELECT tx_hash from settlements" ()
+
+
 lookupSettlementCreditByAddress :: Address -> Connection -> IO [CreditRecord]
 lookupSettlementCreditByAddress addr conn = fmap settlementCreditRowToCreditRecord <$> query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, verified_credits.hash, settlements.amount, settlements.currency, settlements.blocknumber FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
 

@@ -11,8 +11,10 @@ module Lndr.Server
     , freshState
     , updateDbFromLndrLogs
     , app
+    , runHeartbeat
     ) where
 
+import           Control.Concurrent
 import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
@@ -184,3 +186,17 @@ loadConfig = do
                           (loadEntry "maxGas")
                           (loadEntry "urbanAirshipKey")
                           (loadEntry "urbanAirshipSecret")
+
+
+runHeartbeat :: IO ThreadId
+runHeartbeat = forkIO $ schedule heartbeat
+
+
+heartbeat :: IO ()
+heartbeat = putStrLn "Heartbeat"
+
+
+schedule :: IO () -> IO ()
+schedule job = do threadDelay (2 * 60 * 10 ^ 6)
+                  job
+                  schedule job

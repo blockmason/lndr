@@ -9,6 +9,7 @@ main :: IO ()
 main = do
     emptyState <- freshState
     updateDbFromLndrLogs emptyState
+    runHeartbeat
     withStdoutLogger $ \aplogger -> do
         let settings = W.setPort 80 $ W.setLogger aplogger W.defaultSettings
         W.runSettings settings $ app emptyState

@@ -41,5 +41,5 @@ module Lndr.Db (
 import           Lndr.Db.Friendships
 import           Lndr.Db.Nicknames
 import           Lndr.Db.PendingCredits
-import           Lndr.Db.VerifiedCredits
 import           Lndr.Db.PushData
+import           Lndr.Db.VerifiedCredits

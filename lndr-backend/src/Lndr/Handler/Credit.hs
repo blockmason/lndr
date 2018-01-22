@@ -114,7 +114,12 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
 
 finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> Text -> Maybe SettlementData -> IO ()
 finalizeCredit pool storedRecord config creditorSig debtorSig hash settlementM = do
-            finalizeTransaction config creditorSig debtorSig storedRecord
+            -- In case the record is a settlement, delay submitting credit to
+            -- the blockchain until /verify_settlement is called
+            case settlementM of
+                Just _  -> return ()
+                Nothing -> void $ finalizeTransaction config creditorSig debtorSig storedRecord
+
             -- saving transaction record
             withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord
             -- delete pending record after transaction finalization
@@ -177,15 +182,19 @@ rejectHandler(RejectRequest hash sig) = do
 verifyHandler :: VerifySettlementRequest -> LndrHandler NoContent
 verifyHandler r@(VerifySettlementRequest creditHash txHash creditorAddress signature) = do
     unless (Right creditorAddress == recoverSigner r) $ throwError (err400 {errBody = "Bad signature."})
-    pool <- dbConnectionPool <$> ask
+
+    (ServerState pool configTVar) <- ask
+    config <- liftIO . atomically $ readTVar configTVar
+
     recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
-    (creditor, debtor, amount) <- case recordM of
-        Just (CreditRecord creditor debtor _ _ _ _ _ _ (Just amount) _ _, _, _) ->
-            pure (creditor, debtor, amount)
+    (storedRecord, creditor, debtor, amount, creditorSig, debtorSig) <- case recordM of
+        Just (storedRecord@(CreditRecord creditor debtor _ _ _ _ _ _ (Just amount) _ _), creditorSig, debtorSig) ->
+            pure (storedRecord, creditor, debtor, amount, creditorSig, debtorSig)
         _ -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
     verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
     if verified
         then do liftIO . withResource pool $ Db.verifyCreditByHash creditHash
+                liftIO $ finalizeTransaction config creditorSig debtorSig storedRecord
                 return NoContent
         else throwError $ err400 { errBody = "Unable to verify debt settlement" }
 

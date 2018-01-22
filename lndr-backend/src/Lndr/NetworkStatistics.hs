@@ -12,7 +12,7 @@ import           Lndr.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Eth as Eth
-import qualified Network.HTTP.Simple as HTTP
+import qualified Network.HTTP.Simple       as HTTP
 
 
 -- | Sets server's default gasPrice to the current safelow price on

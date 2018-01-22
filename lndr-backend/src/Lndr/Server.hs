@@ -210,8 +210,8 @@ heartbeat state@(ServerState pool configMVar) = do
 deleteExpiredSettlements :: ServerState -> IO ()
 deleteExpiredSettlements (ServerState pool configMVar) = do
     config <- atomically $ readTVar configMVar
-    withResource pool Db.settlementCreditsToVerify
-    return ()
+    void $ withResource pool Db.settlementCreditsToVerify
+
 
 verifySettlementsWithTxHash :: ServerState -> IO ()
 verifySettlementsWithTxHash (ServerState pool configMVar) = do

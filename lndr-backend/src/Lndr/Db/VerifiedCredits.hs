@@ -2,6 +2,7 @@
 
 module Lndr.Db.VerifiedCredits where
 
+import           Control.Monad
 import           Data.Maybe (listToMaybe)
 import           Data.Text (Text)
 import           Data.Scientific
@@ -32,10 +33,11 @@ lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
 lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
 
 
--- TODO finish this implementation
-deleteExpiredSettlementsAndAssociatedCredits :: Connection -> IO Int
-deleteExpiredSettlementsAndAssociatedCredits conn = fromIntegral <$> execute conn "DELETE FROM settlements WHERE created_at > INFINITY" ()
-
+deleteExpiredSettlementsAndAssociatedCredits :: Connection -> IO ()
+deleteExpiredSettlementsAndAssociatedCredits conn = do
+    hashes <- fmap fromOnly <$> query conn "SELECT hash FROM settlements WHERE created_at < now() - interval '2 days'" () :: IO [Text]
+    execute conn "DELETE FROM verified_credits WHERE hash IN ?" (Only $ In hashes)
+    void $ execute conn "DELETE FROM settlments WHERE hash IN ?" (Only $ In hashes)
 
 -- TODO finish this implementation
 settlementCreditsToVerify :: Connection -> IO [Text]

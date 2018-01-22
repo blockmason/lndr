@@ -1,13 +1,13 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TypeOperators         #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Lndr.Docs where
 
-import           Data.Text (Text)
+import           Data.Text                     (Text)
 import           Lndr.Types
 import           Network.Ethereum.Web3.Address
 import           Servant.API
@@ -40,10 +40,10 @@ instance ToSample SettlementsResponse where
 instance ToSample CreditRecord where
     toSamples _ = singleSample crSigned
 
-instance ToSample RejectRecord where
+instance ToSample RejectRequest where
     toSamples _ = singleSample $
-        RejectRecord "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
-                     "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c"
+        RejectRequest "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
+                      "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c"
 
 instance ToSample NickRequest where
     toSamples _ = singleSample $
@@ -65,8 +65,16 @@ instance ToSample IssueCreditLog where
 instance ToSample Address where
     toSamples _ = singleSample "0x11edd217a875063583dd1b638d16810c5d34d54b"
 
+instance ToSample VerifySettlementRequest where
+    toSamples _ = singleSample $ VerifySettlementRequest "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c"
+                                                         "0xf357c689de57464713697787d4c40a78feda913162911e191e545343ff769999"
+                                                         "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
+                                                         "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
+
+
 instance ToSample PushRequest where
-    toSamples _ = singleSample $ PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios" ""
+    toSamples _ = singleSample $ PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios"
+                                             "0x11edd217a875063583dd1b638d16810c5d34d54b" ""
 
 instance ToSample Text where
     toSamples _ = singleSample "aupiff"

@@ -31,6 +31,7 @@ import           Lndr.EthereumInterface
 import           Lndr.Handler.Types
 import           Lndr.Notifications
 import           Lndr.NetworkStatistics
+import           Lndr.Signature
 import           Lndr.Types
 import           Lndr.Util
 import qualified Network.Ethereum.Util as EU
@@ -145,8 +146,8 @@ createBilateralFriendship pool creditor debtor = do
             void . withResource pool $ Db.addFriends debtor [creditor]
 
 
-rejectHandler :: RejectRecord -> LndrHandler NoContent
-rejectHandler(RejectRecord sig hash) = do
+rejectHandler :: RejectRequest -> LndrHandler NoContent
+rejectHandler(RejectRequest hash sig) = do
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
@@ -157,26 +158,25 @@ rejectHandler(RejectRecord sig hash) = do
     case signer of
         Left _ -> throwError $ err400 { errBody = "unable to recover addr from sig" }
         Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
-                            then do liftIO . withResource pool $ Db.deletePending hash True
-                                    let submitterAddress = textToAddress addr
-                                        counterparty = if creditor /= submitterAddress then creditor else debtor
-                                    pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
-                                    nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
-                                    let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
-                                    case pushDataM of
-                                        -- TODO include nickname in the alert if we intend to use it
-                                        Just (channelID, platform) -> void . liftIO $
-                                            sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
-                                        Nothing -> return ()
+            then do liftIO . withResource pool $ Db.deletePending hash True
+                    let submitterAddress = textToAddress addr
+                        counterparty = if creditor /= submitterAddress then creditor else debtor
+                    pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
+                    nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
+                    let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
+                    case pushDataM of
+                        -- TODO include nickname in the alert if we intend to use it
+                        Just (channelID, platform) -> void . liftIO $
+                            sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
+                        Nothing -> return ()
 
-                                    return NoContent
-                            else throwError $ err400 { errBody = "bad rejection sig" }
+                    return NoContent
+            else throwError $ err400 { errBody = "bad rejection sig" }
 
 
--- TODO for now we'll assume 'Just txHash', eventually, the server will be smart
--- enough to look for the tx automatically
-verifyHandler :: Text -> Maybe Text -> LndrHandler NoContent
-verifyHandler creditHash (Just txHash) = do
+verifyHandler :: VerifySettlementRequest -> LndrHandler NoContent
+verifyHandler r@(VerifySettlementRequest creditHash txHash creditorAddress signature) = do
+    unless (Right creditorAddress == recoverSigner r) $ throwError (err400 {errBody = "Bad signature."})
     pool <- dbConnectionPool <$> ask
     recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
     (creditor, debtor, amount) <- case recordM of

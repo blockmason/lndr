@@ -6,13 +6,13 @@ import           Control.Monad
 import           Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Default
-import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy             as LT
 import qualified Dhall
-import           Lndr.CLI.Config
 import           Lndr.CLI.Args
+import           Lndr.CLI.Config
 import           Network.Ethereum.Web3
-import           System.Console.CmdArgs hiding (def)
-import           System.Directory (doesFileExist)
+import           System.Console.CmdArgs     hiding (def)
+import           System.Directory           (doesFileExist)
 
 main :: IO ()
 main = do mode <- cmdArgsRun $ cmdArgsMode programModes

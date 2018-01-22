@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings   #-}
+
 module Lndr.Handler.Admin where
 
 import           Control.Concurrent.STM
@@ -8,10 +10,11 @@ import           Data.Text (Text)
 import qualified Lndr.Db as Db
 import           Lndr.Handler.Types
 import           Lndr.EthereumInterface
+import           Lndr.Signature
 import           Lndr.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3
-import           Servant.API
+import           Servant
 
 
 gasPriceHandler :: LndrHandler Integer
@@ -55,9 +58,9 @@ resubmitHandler txHash = do
     pure NoContent
 
 
-registerPushHandler :: Address -> PushRequest -> LndrHandler NoContent
-registerPushHandler addr (PushRequest channelID platform _) = do
-    -- TODO verify signature
+registerPushHandler :: PushRequest -> LndrHandler NoContent
+registerPushHandler r@(PushRequest channelID platform addr _) = do
+    unless (Right addr == recoverSigner r) $ throwError (err400 {errBody = "Bad signature."})
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool $ Db.insertPushDatum addr channelID platform
     return NoContent

@@ -1,22 +1,22 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Lndr.Util where
 
 import           Control.Exception
-import qualified Data.ByteArray as BA
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Base16 as BS16
-import           Data.Either.Combinators (fromRight, mapLeft)
-import           Data.Monoid ((<>))
-import           Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
+import qualified Data.ByteArray                as BA
+import qualified Data.ByteString               as B
+import qualified Data.ByteString.Base16        as BS16
+import           Data.Either.Combinators       (fromRight, mapLeft)
+import           Data.Monoid                   ((<>))
+import           Data.Text                     (Text)
+import qualified Data.Text                     as T
+import qualified Data.Text.Encoding            as T
 import           Lndr.Types
-import qualified Network.Ethereum.Util as EU
+import qualified Network.Ethereum.Util         as EU
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
-import           Numeric (readHex, showHex)
+import           Numeric                       (readHex, showHex)
 
 
 hashCreditRecord :: Address -> Nonce -> CreditRecord -> Text
@@ -53,6 +53,10 @@ decomposeSig sig = (sigR, sigS, sigV)
 
 bytesDecode :: Text -> BA.Bytes
 bytesDecode = BA.convert . fst . BS16.decode . T.encodeUtf8
+
+
+bytesEncode :: Text -> Text
+bytesEncode = T.decodeUtf8 . BS16.encode . T.encodeUtf8
 
 
 textToBytesN32 :: Text -> BytesN 32

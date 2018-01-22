@@ -1,23 +1,25 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
 
-import           Control.Concurrent (threadDelay)
+import           Control.Concurrent             (threadDelay)
 import           Control.Monad.Trans.Maybe
-import           Data.Either.Combinators (fromRight)
-import qualified Data.Text.Lazy as LT
+import           Data.Either.Combinators        (fromRight)
+import qualified Data.Text.Lazy                 as LT
 import           Lndr.CLI.Args
 import           Lndr.EthereumInterface
 import           Lndr.NetworkStatistics
-import           Lndr.Util (textToAddress, hashCreditRecord, parseIssueCreditInput)
 import           Lndr.Types
+import           Lndr.Util                      (hashCreditRecord,
+                                                 parseIssueCreditInput,
+                                                 textToAddress)
 import           Network.Ethereum.Web3
+import qualified Network.Ethereum.Web3.Eth      as Eth
 import           Network.Ethereum.Web3.Types
-import qualified Network.Ethereum.Web3.Eth as Eth
 import           Test.Framework
 import           Test.Framework.Providers.HUnit
-import           Test.HUnit hiding (Test)
+import           Test.HUnit                     hiding (Test)
 
 -- TODO get rid of this once version enpoint point works
 ucacAddr = "0x7899b83071d9704af0b132859a04bb1698a3acaf"
@@ -72,8 +74,8 @@ nickTest = do
     nickTaken <- takenNick testUrl testNick1
     assertBool "after db reset all nicks are available" (not nickTaken)
     -- set nick for user1
-    httpCode <- setNick testUrl (NickRequest testAddress3 testNick1 "")
-    assertEqual "add friend success" 204 httpCode
+    httpCode <- setNick testUrl testPrivkey3 (NickRequest testAddress3 testNick1 "")
+    assertEqual "set nick success" 204 httpCode
     -- check that test nick is no longer available
     nickTaken <- takenNick testUrl testNick1
     assertBool "nicks already in db are not available" nickTaken
@@ -81,17 +83,17 @@ nickTest = do
     queriedNick <- getNick testUrl testAddress3
     assertEqual "nick is set and queryable" queriedNick testNick1
     -- fail to set identical nick for user2
-    httpCode <- setNick testUrl (NickRequest testAddress4 testNick1 "")
+    httpCode <- setNick testUrl testPrivkey4 (NickRequest testAddress4 testNick1 "")
     assertBool "duplicate nick is rejected with user error" (httpCode /= 204)
     -- change user1 nick
-    httpCode <- setNick testUrl (NickRequest testAddress3 testNick2 "")
+    httpCode <- setNick testUrl testPrivkey3 (NickRequest testAddress3 testNick2 "")
     assertEqual "change nick success" 204 httpCode
     -- check that user1's nick was successfully changed
     queriedNick <- getNick testUrl testAddress3
     assertEqual "nick is set and queryable" queriedNick testNick2
 
     -- set user2's nick
-    httpCode <- setNick testUrl (NickRequest testAddress4 testNick1 "")
+    httpCode <- setNick testUrl testPrivkey4 (NickRequest testAddress4 testNick1 "")
     assertEqual "previously used nickname is settable" 204 httpCode
 
     fuzzySearchResults <- searchNick testUrl testSearch
@@ -222,11 +224,11 @@ basicSettlementTest = do
     threadDelay (10 ^ 7)
 
     -- user5 tries to verify a settlement with an incorrect txHash
-    httpCode <- verifySettlement testUrl creditHash incorrectTxHash
+    httpCode <- verifySettlement testUrl creditHash incorrectTxHash testPrivkey5
     assertEqual "verification failure upon bad txHash submission" 400 httpCode
 
     -- user5 verifies that he has made the settlement credit
-    httpCode <- verifySettlement testUrl creditHash txHash
+    httpCode <- verifySettlement testUrl creditHash txHash testPrivkey5
     assertEqual "verification success" 204 httpCode
 
     (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getSettlements testUrl testAddress5
@@ -274,7 +276,7 @@ blocknumberTest = do
 
 basicNotificationsTest :: Assertion
 basicNotificationsTest = do
-    httpCode <- registerChannel testUrl testAddress1 (PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios" "")
+    httpCode <- registerChannel testUrl testPrivkey1 (PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios" testAddress1 "")
     assertEqual "register channel success" 204 httpCode
 
 

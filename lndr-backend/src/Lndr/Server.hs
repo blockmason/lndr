@@ -1,7 +1,7 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE TypeOperators             #-}
 
 module Lndr.Server
     ( ServerState
@@ -16,24 +16,24 @@ module Lndr.Server
 import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
-import           Data.ByteString.Lazy (ByteString)
+import           Data.ByteString.Lazy       (ByteString)
 import           Data.Configurator
 import           Data.Configurator.Types
-import           Data.Either (either)
-import qualified Data.HashMap.Strict as H (lookup)
-import           Data.Maybe (fromMaybe)
-import           Data.Pool (createPool, withResource)
-import           Data.Text (Text)
-import qualified Data.Text as T
-import           Data.Text.Lazy.Encoding (encodeUtf8)
-import qualified Data.Text.Lazy as LT
+import           Data.Either                (either)
+import qualified Data.HashMap.Strict        as H (lookup)
+import           Data.Maybe                 (fromMaybe)
+import           Data.Pool                  (createPool, withResource)
+import           Data.Text                  (Text)
+import qualified Data.Text                  as T
+import qualified Data.Text.Lazy             as LT
+import           Data.Text.Lazy.Encoding    (encodeUtf8)
 import qualified Database.PostgreSQL.Simple as DB
-import qualified Lndr.Db as Db
+import qualified Lndr.Db                    as Db
 import           Lndr.Docs
 import           Lndr.EthereumInterface
 import           Lndr.Handler
 import           Lndr.Types
-import           Network.Ethereum.Web3 hiding (convert)
+import           Network.Ethereum.Web3      hiding (convert)
 import           Network.HTTP.Types
 import           Network.Wai
 import           Servant
@@ -43,11 +43,12 @@ import           System.FilePath
 type LndrAPI =
         "transactions" :> QueryParam "user" Address :> Get '[JSON] [IssueCreditLog]
    :<|> "pending_settlements" :> Capture "user" Address :> Get '[JSON] SettlementsResponse
-   :<|> "verify_settlement" :> Capture "hash" Text :> QueryParam "txHash" Text :> PostNoContent '[JSON] NoContent
+   :<|> "verify_settlement" :> ReqBody '[JSON] VerifySettlementRequest
+                            :> PostNoContent '[JSON] NoContent
    :<|> "pending" :> Capture "user" Address :> Get '[JSON] [CreditRecord]
    :<|> "lend" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "borrow" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
-   :<|> "reject" :> ReqBody '[JSON] RejectRecord :> PostNoContent '[JSON] NoContent
+   :<|> "reject" :> ReqBody '[JSON] RejectRequest :> PostNoContent '[JSON] NoContent
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
    :<|> "nick" :> Capture "user" Address :> Get '[JSON] Text
@@ -67,8 +68,7 @@ type LndrAPI =
    :<|> "gas_price" :> ReqBody '[JSON] Integer :> PutNoContent '[JSON] NoContent
    :<|> "unsubmitted" :> Get '[JSON] [IssueCreditLog]
    :<|> "resubmit" :> Capture "hash" Text :> PostNoContent '[JSON] NoContent
-   :<|> "register_push" :> Capture "user" Address
-                        :> ReqBody '[JSON] PushRequest
+   :<|> "register_push" :> ReqBody '[JSON] PushRequest
                         :> PostNoContent '[JSON] NoContent
    :<|> "config" :> Get '[JSON] ConfigResponse
    :<|> "docs" :> Raw

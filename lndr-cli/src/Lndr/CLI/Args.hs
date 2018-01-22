@@ -1,6 +1,6 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings     #-}
 
 module Lndr.CLI.Args (
       LndrCmd(..)
@@ -39,32 +39,35 @@ module Lndr.CLI.Args (
     ) where
 
 import           Data.Data
-import           Data.Maybe (fromMaybe)
-import           Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as LT
-import           Lndr.EthereumInterface hiding (getNonce)
+import           Data.Maybe                      (fromMaybe)
+import           Data.Text                       (Text)
+import qualified Data.Text                       as T
+import qualified Data.Text.Lazy                  as LT
 import           Lndr.CLI.Config
+import           Lndr.EthereumInterface          hiding (getNonce)
+import           Lndr.Signature
 import           Lndr.Types
 import           Lndr.Util
-import           Network.Ethereum.Util (hashPersonalMessage, ecsign, privateToAddress, hashText)
+import           Network.Ethereum.Util           (ecsign, hashPersonalMessage,
+                                                  hashText, privateToAddress)
 import           Network.Ethereum.Web3
-import qualified Network.Ethereum.Web3.Address as Addr
-import qualified Network.HTTP.Simple as HTTP
-import           System.Console.CmdArgs hiding (def)
-import           System.Console.CmdArgs.Explicit(helpText, HelpFormat(..), modeEmpty)
-import qualified Text.Pretty.Simple as Pr
+import qualified Network.Ethereum.Web3.Address   as Addr
+import qualified Network.HTTP.Simple             as HTTP
+import           System.Console.CmdArgs          hiding (def)
+import           System.Console.CmdArgs.Explicit (HelpFormat (..), helpText,
+                                                  modeEmpty)
+import qualified Text.Pretty.Simple              as Pr
 
 data LndrCmd = Transactions
              | Pending
              | RejectPending
              | Lend { friend :: Text
                     , amount :: Integer
-                    , memo :: Text
+                    , memo   :: Text
                     }
              | Borrow { friend :: Text
                       , amount :: Integer
-                      , memo :: Text
+                      , memo   :: Text
                       }
              | Nick { nick :: Text }
              | SearchNick { nick :: Text }
@@ -130,11 +133,10 @@ runMode (Config url sk ucacAddr) (Borrow friend amount memo) = do
 -- Friend-related Modes
 runMode (Config url sk _) (Nick nick) =
     let userAddr = textToAddress $ userFromSK sk
-    in print =<< setNick (LT.unpack url) (NickRequest userAddr nick "")
+    in print =<< setNick (LT.unpack url) (LT.toStrict sk) (NickRequest userAddr nick "")
 runMode (Config url sk _) (SearchNick nick) =
     let userAddr = textToAddress $ userFromSK sk
     in print =<< searchNick (LT.unpack url) nick
-
 
 runMode (Config url sk _) (AddFriend friend) =
     print =<< addFriend (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)
@@ -197,14 +199,15 @@ getGasPrice url = do
     req <- HTTP.parseRequest $ url ++ "/gas_price"
     resp <- HTTP.getResponseBody <$> HTTP.httpJSONEither req
     return $ case resp of
-        Left a -> -1
+        Left a  -> -1
         Right b -> b
 
 
-setNick :: String -> NickRequest -> IO Int
-setNick url nickRequest = do
+setNick :: String -> Text -> NickRequest -> IO Int
+setNick url sk nickRequest = do
     initReq <- HTTP.parseRequest $ url ++ "/nick"
-    let req = HTTP.setRequestBodyJSON nickRequest $
+    let Right signature = generateSignature nickRequest sk
+        req = HTTP.setRequestBodyJSON (nickRequest { nickRequestSignature = signature }) $
                 HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 
@@ -213,7 +216,7 @@ getNick url userAddr = do
     req <- HTTP.parseRequest $ url ++ "/nick/" ++ show userAddr
     resp <- HTTP.getResponseBody <$> HTTP.httpJSONEither req
     return $ case resp of
-        Left a -> "nick not found"
+        Left a  -> "nick not found"
         Right b -> b
 
 
@@ -316,23 +319,30 @@ rejectCredit :: String -> Text -> Text -> IO Int
 rejectCredit url secretKey hash = do
     initReq <- HTTP.parseRequest $ url ++ "/reject"
     let (Right sig) = ecsign hash secretKey
-        rejectRecord = RejectRecord sig hash
+        rejectRecord = RejectRequest hash sig
         req = HTTP.setRequestBodyJSON rejectRecord $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp
 
 
-verifySettlement :: String -> Text -> Text -> IO Int
-verifySettlement url creditHash txHash = do
-    let fullUrl = url ++ "/verify_settlement/" ++ T.unpack creditHash ++ "?txHash=" ++ T.unpack txHash
-    req <- HTTP.setRequestMethod "POST" <$> HTTP.parseRequest fullUrl
+verifySettlement :: String -> Text -> Text -> Text -> IO Int
+verifySettlement url creditHash txHash privateKey = do
+    let address = textToAddress . fromMaybe "" . privateToAddress $ privateKey
+        verifyRequest' = VerifySettlementRequest creditHash txHash address ""
+    initReq <- HTTP.parseRequest $ url ++ "/verify_settlement"
+    let Right signature = generateSignature verifyRequest' privateKey
+        verifyRequest = verifyRequest' { verifySettlementRequestSignature = signature }
+        req = HTTP.setRequestBodyJSON verifyRequest $
+            HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp
 
 
-registerChannel :: String -> Address -> PushRequest -> IO Int
-registerChannel url addr pushReq = do
-    initReq <- HTTP.parseRequest $ url ++ "/register_push/" ++ show addr
-    let req = HTTP.setRequestBodyJSON pushReq $ HTTP.setRequestMethod "POST" initReq
+registerChannel :: String -> Text -> PushRequest -> IO Int
+registerChannel url privateKey pushReq = do
+    initReq <- HTTP.parseRequest $ url ++ "/register_push"
+    let Right signature = generateSignature pushReq privateKey
+        req = HTTP.setRequestBodyJSON (pushReq {pushRequestSignature = signature }) $
+                    HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req

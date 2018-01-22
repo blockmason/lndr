@@ -9,10 +9,10 @@ module Lndr.CLI.Config (
 import           Data.Default
 import           Dhall
 import           Network.Ethereum.Web3
-import           System.Directory (getCurrentDirectory)
+import           System.Directory      (getCurrentDirectory)
 
-data Config = Config { url :: Text
-                     , secretKey :: Text
+data Config = Config { url          :: Text
+                     , secretKey    :: Text
                      , lndrUcacAddr :: Text
                      } deriving (Generic, Show)
 

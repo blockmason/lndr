@@ -181,6 +181,7 @@ data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
                                  , maxGas                :: !Integer
                                  , urbanAirshipKey       :: !ByteString
                                  , urbanAirshipSecret    :: !ByteString
+                                 , heartbeatInterval     :: !Int
                                  }
 
 -- 'ConfigResponse' contains all the server data that users have access to via

@@ -10,3 +10,4 @@ gasPrice = 200000000
 maxGas = 250000
 urbanAirshipKey = "4_88888888888mmmmmmmmm"
 urbanAirshipSecret = "rrrrrrrrrrrrrrrrrrrrrr"
+heartbeatInterval = 120

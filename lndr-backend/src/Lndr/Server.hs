@@ -186,6 +186,7 @@ loadConfig = do
                           (loadEntry "maxGas")
                           (loadEntry "urbanAirshipKey")
                           (loadEntry "urbanAirshipSecret")
+                          (loadEntry "heartbeatInterval")
 
 
 runHeartbeat :: ServerState -> IO ThreadId
@@ -196,7 +197,7 @@ heartbeat :: ServerState -> IO ()
 heartbeat (ServerState pool configMVar) = do
     config <- atomically $ readTVar configMVar
     -- sleep for time specified in config
-    threadDelay (10 ^ 6)
+    threadDelay (heartbeatInterval config * 10 ^ 6)
     putStrLn "Heartbeat"
     -- loop
     heartbeat (ServerState pool configMVar)

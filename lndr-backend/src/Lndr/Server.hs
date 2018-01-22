@@ -188,15 +188,15 @@ loadConfig = do
                           (loadEntry "urbanAirshipSecret")
 
 
-runHeartbeat :: IO ThreadId
-runHeartbeat = forkIO $ schedule heartbeat
+runHeartbeat :: ServerState -> IO ThreadId
+runHeartbeat state = forkIO $ heartbeat state
 
 
-heartbeat :: IO ()
-heartbeat = putStrLn "Heartbeat"
-
-
-schedule :: IO () -> IO ()
-schedule job = do threadDelay (2 * 60 * 10 ^ 6)
-                  job
-                  schedule job
+heartbeat :: ServerState -> IO ()
+heartbeat (ServerState pool configMVar) = do
+    config <- atomically $ readTVar configMVar
+    -- sleep for time specified in config
+    threadDelay (10 ^ 6)
+    putStrLn "Heartbeat"
+    -- loop
+    heartbeat (ServerState pool configMVar)

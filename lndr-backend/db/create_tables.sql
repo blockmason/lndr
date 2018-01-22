@@ -26,7 +26,8 @@ CREATE TABLE settlements (
     currency           CHAR(3) NOT NULL,
     blocknumber        NUMERIC(78) NOT NULL,
     verified           BOOLEAN NOT NULL,
-    tx_hash            CHAR(64)
+    tx_hash            CHAR(64),
+    created_at         TIMESTAMP DEFAULT timestamp 'now()' NOT NULL
 );
 
 CREATE TABLE friendships (

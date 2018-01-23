@@ -15,6 +15,9 @@ module Lndr.Handler.Credit (
     , counterpartiesHandler
     , balanceHandler
     , twoPartyBalanceHandler
+
+    -- * settlement verification
+    , verifyIndividualRecord
     ) where
 
 import           Control.Concurrent.STM
@@ -190,18 +193,6 @@ verifyHandler r@(VerifySettlementRequest creditHash txHash creditorAddress signa
     liftIO . withResource pool $ Db.updateSettlementTxHash creditHash txHash
     return NoContent
 
-    -- recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
-    -- (storedRecord, creditor, debtor, amount, creditorSig, debtorSig) <- case recordM of
-    --     Just (storedRecord@(CreditRecord creditor debtor _ _ _ _ _ _ (Just amount) _ _), creditorSig, debtorSig) ->
-    --         pure (storedRecord, creditor, debtor, amount, creditorSig, debtorSig)
-    --     _ -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
-    -- verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
-    -- if verified
-    --     then do liftIO . withResource pool $ Db.verifyCreditByHash creditHash
-    --             liftIO $ finalizeTransaction config creditorSig debtorSig storedRecord
-    --             return NoContent
-    --     else throwError $ err400 { errBody = "Unable to verify debt settlement" }
-
 
 pendingHandler :: Address -> LndrHandler [CreditRecord]
 pendingHandler addr = do
@@ -249,3 +240,19 @@ twoPartyBalanceHandler :: Address -> Address -> LndrHandler Integer
 twoPartyBalanceHandler p1 p2 = do
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool $ Db.twoPartyBalance p1 p2
+
+
+verifyIndividualRecord :: ServerState -> Text -> LndrHandler ()
+verifyIndividualRecord (ServerState pool configTVar) creditHash = do
+    config <- liftIO . atomically $ readTVar configTVar
+    recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
+    (storedRecord, creditor, debtor, amount, creditorSig, debtorSig, txHash) <- case recordM of
+        Just (storedRecord@(CreditRecord creditor debtor _ _ _ _ _ _ (Just amount) _ _), creditorSig, debtorSig, txHash) ->
+            pure (storedRecord, creditor, debtor, amount, creditorSig, debtorSig, txHash)
+        _ -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
+    verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
+    if verified
+        then do liftIO . withResource pool $ Db.verifyCreditByHash creditHash
+                liftIO $ finalizeTransaction config creditorSig debtorSig storedRecord
+                return ()
+        else throwError $ err400 { errBody = "Unable to verify debt settlement" }

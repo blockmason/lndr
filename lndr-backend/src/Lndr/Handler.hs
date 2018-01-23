@@ -14,6 +14,7 @@ module Lndr.Handler (
     , counterpartiesHandler
     , balanceHandler
     , twoPartyBalanceHandler
+    , verifyIndividualRecord
 
     -- * Friend Handlers
     , nickHandler

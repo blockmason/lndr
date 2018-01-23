@@ -2,6 +2,7 @@
 
 module Lndr.Db.VerifiedCredits where
 
+import           Control.Arrow (first)
 import           Control.Monad
 import           Data.Maybe (listToMaybe)
 import           Data.Text (Text)
@@ -39,9 +40,9 @@ deleteExpiredSettlementsAndAssociatedCredits conn = do
     execute conn "DELETE FROM verified_credits WHERE hash IN ?" (Only $ In hashes)
     void $ execute conn "DELETE FROM settlments WHERE hash IN ?" (Only $ In hashes)
 
--- TODO finish this implementation
+
 settlementCreditsToVerify :: Connection -> IO [Text]
-settlementCreditsToVerify conn = fmap fromOnly <$> query conn "SELECT tx_hash from settlements" ()
+settlementCreditsToVerify conn = fmap fromOnly <$> query conn "SELECT tx_hash from settlements WHERE tx_hash IS NOT NULL" ()
 
 
 updateSettlementTxHash :: Text -> Text -> Connection -> IO Int
@@ -57,19 +58,23 @@ counterpartiesByAddress addr conn = fmap fromOnly <$>
     query conn "SELECT creditor FROM verified_credits WHERE debtor = ? UNION SELECT debtor FROM verified_credits WHERE creditor = ?" (addr, addr)
 
 
-lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text))
+lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text, Text))
 lookupCreditByHash hash conn = do
-        settlementAmount <- fmap ((floor :: Rational -> Integer) . fromOnly) . listToMaybe <$> query conn "SELECT amount FROM settlements WHERE hash = ?" (Only hash)
-        let process (creditor, debtor, amount, nonce, memo, sig1, sig2) = ( CreditRecord creditor debtor
-                                                                                         amount memo
-                                                                                         creditor nonce hash sig1
-                                                                                         settlementAmount
-                                                                                         Nothing
-                                                                                         Nothing
-                                                                          , sig1
-                                                                          , sig2
-                                                                          )
-        (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
+        pairM <- fmap (first (floor :: Rational -> Integer)) . listToMaybe <$> query conn "SELECT amount, tx_hash FROM settlements WHERE hash = ?" (Only hash)
+        case pairM of
+            Just (settlementAmount, txHash) -> do
+                let process (creditor, debtor, amount, nonce, memo, sig1, sig2) = ( CreditRecord creditor debtor
+                                                                                                 amount memo
+                                                                                                 creditor nonce hash sig1
+                                                                                                 (Just settlementAmount)
+                                                                                                 Nothing
+                                                                                                 Nothing
+                                                                                  , sig1
+                                                                                  , sig2
+                                                                                  , txHash
+                                                                                  )
+                (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
+            Nothing -> return Nothing
 
 -- Flips verified bit on once a settlement payment has been confirmed
 verifyCreditByHash :: Text -> Connection -> IO Int

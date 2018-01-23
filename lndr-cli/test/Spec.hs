@@ -220,9 +220,6 @@ basicSettlementTest = do
     let txHash = fromRight (error "error sending eth") txHashE
     let incorrectTxHash = fromRight (error "error sending eth") incorrectTxHashE
 
-    -- ensure that tx registers in blockchain w/ a 10 second pause
-    threadDelay (10 ^ 7)
-
     -- TODO update this given new heartbeat-approach to verification
     -- user5 tries to verify a settlement with an incorrect txHash
     -- httpCode <- verifySettlement testUrl creditHash incorrectTxHash testPrivkey5
@@ -231,6 +228,10 @@ basicSettlementTest = do
     -- user5 verifies that he has made the settlement credit
     httpCode <- verifySettlement testUrl creditHash txHash testPrivkey5
     assertEqual "verification success" 204 httpCode
+
+    -- ensure that tx registers in blockchain w/ a 10 second pause and
+    -- heartbeat has time to verify its validity
+    threadDelay (10 ^ 7)
 
     (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getSettlements testUrl testAddress5
     assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)

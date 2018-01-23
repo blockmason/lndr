@@ -190,7 +190,7 @@ verifyHandler r@(VerifySettlementRequest creditHash txHash creditorAddress signa
     config <- liftIO . atomically $ readTVar configTVar
 
     -- write txHash to settlement record
-    liftIO . withResource pool $ Db.updateSettlementTxHash creditHash txHash
+    liftIO . withResource pool . Db.updateSettlementTxHash creditHash $ stripHexPrefix txHash
     return NoContent
 
 

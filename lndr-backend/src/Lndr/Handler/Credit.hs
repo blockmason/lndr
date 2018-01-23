@@ -186,17 +186,21 @@ verifyHandler r@(VerifySettlementRequest creditHash txHash creditorAddress signa
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
 
-    recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
-    (storedRecord, creditor, debtor, amount, creditorSig, debtorSig) <- case recordM of
-        Just (storedRecord@(CreditRecord creditor debtor _ _ _ _ _ _ (Just amount) _ _), creditorSig, debtorSig) ->
-            pure (storedRecord, creditor, debtor, amount, creditorSig, debtorSig)
-        _ -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
-    verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
-    if verified
-        then do liftIO . withResource pool $ Db.verifyCreditByHash creditHash
-                liftIO $ finalizeTransaction config creditorSig debtorSig storedRecord
-                return NoContent
-        else throwError $ err400 { errBody = "Unable to verify debt settlement" }
+    -- write txHash to settlement record
+    liftIO . withResource pool $ Db.updateSettlementTxHash creditHash txHash
+    return NoContent
+
+    -- recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
+    -- (storedRecord, creditor, debtor, amount, creditorSig, debtorSig) <- case recordM of
+    --     Just (storedRecord@(CreditRecord creditor debtor _ _ _ _ _ _ (Just amount) _ _), creditorSig, debtorSig) ->
+    --         pure (storedRecord, creditor, debtor, amount, creditorSig, debtorSig)
+    --     _ -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
+    -- verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
+    -- if verified
+    --     then do liftIO . withResource pool $ Db.verifyCreditByHash creditHash
+    --             liftIO $ finalizeTransaction config creditorSig debtorSig storedRecord
+    --             return NoContent
+    --     else throwError $ err400 { errBody = "Unable to verify debt settlement" }
 
 
 pendingHandler :: Address -> LndrHandler [CreditRecord]

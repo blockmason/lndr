@@ -44,6 +44,10 @@ settlementCreditsToVerify :: Connection -> IO [Text]
 settlementCreditsToVerify conn = fmap fromOnly <$> query conn "SELECT tx_hash from settlements" ()
 
 
+updateSettlementTxHash :: Text -> Text -> Connection -> IO Int
+updateSettlementTxHash hash txHash conn = fromIntegral <$> execute conn "UPDATE settlements SET  tx_hash = ? WHERE hash = ?" (txHash, hash)
+
+
 lookupSettlementCreditByAddress :: Address -> Connection -> IO [CreditRecord]
 lookupSettlementCreditByAddress addr conn = fmap settlementCreditRowToCreditRecord <$> query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, verified_credits.hash, settlements.amount, settlements.currency, settlements.blocknumber FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
 

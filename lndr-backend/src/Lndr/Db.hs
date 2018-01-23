@@ -35,6 +35,7 @@ module Lndr.Db (
     , lookupPendingSettlementByAddresses
     , deleteExpiredSettlementsAndAssociatedCredits
     , settlementCreditsToVerify
+    , updateSettlementTxHash
 
 
     -- * 'push_data' table functions

@@ -198,7 +198,6 @@ heartbeat state@(ServerState pool configMVar) = do
     config <- atomically $ readTVar configMVar
     -- sleep for time specified in config
     threadDelay (heartbeatInterval config * 10 ^ 6)
-    putStrLn "Heartbeat"
     -- scan settlements table for any settlement eligible for deletion
     deleteExpiredSettlements state
     -- try to verify all settlements whose tx_hash column is populated
@@ -217,7 +216,5 @@ verifySettlementsWithTxHash :: ServerState -> IO ()
 verifySettlementsWithTxHash state@(ServerState pool configMVar) = do
     config <- atomically $ readTVar configMVar
     creditHashes <- withResource pool Db.settlementCreditsToVerify
-    putStrLn $ "verifySettlementsWithTxHash" ++ show creditHashes
-    -- TODO make this less ugly
-    mapM_ (runExceptT . flip runReaderT state . runLndr . verifyIndividualRecord state) creditHashes
+    mapM_ (runExceptT . verifyIndividualRecord state) creditHashes
     return ()

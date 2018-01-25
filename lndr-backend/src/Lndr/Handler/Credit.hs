@@ -251,7 +251,7 @@ verifyIndividualRecord (ServerState pool configTVar) creditHash = do
         Just (storedRecord@(CreditRecord creditor debtor _ _ _ _ _ _ (Just amount) _ _), creditorSig, debtorSig, txHash) ->
             pure (storedRecord, creditor, debtor, amount, creditorSig, debtorSig, txHash)
         _ -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
-    verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
+    verified <- liftIO $ verifySettlementPayment txHash creditor debtor amount
     if verified
         then do liftIO . withResource pool $ Db.verifyCreditByHash creditHash
                 liftIO $ finalizeTransaction config creditorSig debtorSig storedRecord

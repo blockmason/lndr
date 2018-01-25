@@ -42,7 +42,7 @@ deleteExpiredSettlementsAndAssociatedCredits conn = do
 
 
 settlementCreditsToVerify :: Connection -> IO [Text]
-settlementCreditsToVerify conn = fmap fromOnly <$> query conn "SELECT hash from settlements WHERE tx_hash IS NOT NULL" ()
+settlementCreditsToVerify conn = fmap fromOnly <$> query conn "SELECT hash from settlements WHERE tx_hash IS NOT NULL AND verified = FALSE" ()
 
 
 updateSettlementTxHash :: Text -> Text -> Connection -> IO Int
@@ -58,26 +58,29 @@ counterpartiesByAddress addr conn = fmap fromOnly <$>
     query conn "SELECT creditor FROM verified_credits WHERE debtor = ? UNION SELECT debtor FROM verified_credits WHERE creditor = ?" (addr, addr)
 
 
--- TODO currently this does not server `resubmitHandler` well, this fucntion
--- should not require settlment data to be present, it should call a more
--- general function that resubmitHandler can use as well
-lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text, Text))
-lookupCreditByHash hash conn = do
+lookupSettlementCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text, Text))
+lookupSettlementCreditByHash hash conn = do
         pairM <- fmap (first (floor :: Rational -> Integer)) . listToMaybe <$> query conn "SELECT amount, tx_hash FROM settlements WHERE hash = ?" (Only hash)
         case pairM of
             Just (settlementAmount, txHash) -> do
-                let process (creditor, debtor, amount, nonce, memo, sig1, sig2) = ( CreditRecord creditor debtor
-                                                                                                 amount memo
-                                                                                                 creditor nonce hash sig1
-                                                                                                 (Just settlementAmount)
-                                                                                                 Nothing
-                                                                                                 Nothing
-                                                                                  , sig1
-                                                                                  , sig2
-                                                                                  , txHash
-                                                                                  )
-                (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
+                Just (cr, sig1, sig2) <- lookupCreditByHash hash conn
+                return $ Just (cr { settlementAmount = Just settlementAmount }, sig1, sig2, txHash)
             Nothing -> return Nothing
+
+
+lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text))
+lookupCreditByHash hash conn = do
+                let process (creditor, debtor, amount, nonce, memo, sig1, sig2) =
+                        ( CreditRecord creditor debtor
+                                       amount memo
+                                       creditor nonce hash sig1
+                                       Nothing
+                                       Nothing
+                                       Nothing
+                        , sig1
+                        , sig2
+                        )
+                (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
 
 
 -- Flips verified bit on once a settlement payment has been confirmed

@@ -53,7 +53,7 @@ resubmitHandler txHash = do
             let creditHash = hashCreditLog creditLog
             crM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
             case crM of
-                Just (cr, sig1, sig2, _) -> void . liftIO $ finalizeTransaction config sig1 sig2 cr
+                Just (cr, sig1, sig2) -> void . liftIO $ finalizeTransaction config sig1 sig2 cr
                 Nothing               -> pure ()
         Nothing -> pure ()
     pure NoContent

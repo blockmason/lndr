@@ -235,7 +235,7 @@ basicSettlementTest = do
 
     -- ensure that tx registers in blockchain w/ a 10 second pause and
     -- heartbeat has time to verify its validity
-    threadDelay (2 * 10 ^ 7)
+    threadDelay (8 * 10 ^ 6)
 
     (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getSettlements testUrl testAddress5
     assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)
@@ -254,7 +254,7 @@ verifySettlementTest = do
                                                     Nothing
     let txHash = fromRight (error "error sending eth") txHashE
 
-    threadDelay (10 ^ 7)
+    threadDelay (5 * 10 ^ 6)
 
     verified <- verifySettlementPayment txHash testAddress4 testAddress1 (10 ^ 18)
     assertBool "payment properly verified" verified

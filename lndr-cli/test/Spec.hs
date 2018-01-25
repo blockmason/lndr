@@ -240,6 +240,8 @@ basicSettlementTest = do
 
 verifySettlementTest :: Assertion
 verifySettlementTest = do
+    -- testAddress1 is the person revieving eth, thus the credit must record
+    -- this address as the debtor.
     txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
                                                     testAddress1
                                                     (Just 21000)
@@ -250,7 +252,7 @@ verifySettlementTest = do
 
     threadDelay (10 ^ 7)
 
-    verified <- verifySettlementPayment txHash testAddress1 testAddress4 (10 ^ 18)
+    verified <- verifySettlementPayment txHash testAddress4 testAddress1 (10 ^ 18)
     assertBool "payment properly verified" verified
 
 

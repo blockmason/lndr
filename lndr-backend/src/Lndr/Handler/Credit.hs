@@ -246,7 +246,7 @@ verifyIndividualRecord :: ServerState -> Text -> LndrHandler ()
 verifyIndividualRecord (ServerState pool configTVar) creditHash = do
     config <- liftIO . atomically $ readTVar configTVar
     recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
-    liftIO $ print recordM
+    liftIO . putStrLn $ "verifyIndividualRecord" ++ show recordM
     (storedRecord, creditor, debtor, amount, creditorSig, debtorSig, txHash) <- case recordM of
         Just (storedRecord@(CreditRecord creditor debtor _ _ _ _ _ _ (Just amount) _ _), creditorSig, debtorSig, txHash) ->
             pure (storedRecord, creditor, debtor, amount, creditorSig, debtorSig, txHash)

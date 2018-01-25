@@ -235,7 +235,7 @@ basicSettlementTest = do
 
     -- ensure that tx registers in blockchain w/ a 10 second pause and
     -- heartbeat has time to verify its validity
-    threadDelay (20 ^ 7)
+    threadDelay (2 * 10 ^ 7)
 
     (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getSettlements testUrl testAddress5
     assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)

@@ -58,6 +58,9 @@ counterpartiesByAddress addr conn = fmap fromOnly <$>
     query conn "SELECT creditor FROM verified_credits WHERE debtor = ? UNION SELECT debtor FROM verified_credits WHERE creditor = ?" (addr, addr)
 
 
+-- TODO currently this does not server `resubmitHandler` well, this fucntion
+-- should not require settlment data to be present, it should call a more
+-- general function that resubmitHandler can use as well
 lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text, Text))
 lookupCreditByHash hash conn = do
         pairM <- fmap (first (floor :: Rational -> Integer)) . listToMaybe <$> query conn "SELECT amount, tx_hash FROM settlements WHERE hash = ?" (Only hash)
@@ -76,9 +79,11 @@ lookupCreditByHash hash conn = do
                 (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
             Nothing -> return Nothing
 
+
 -- Flips verified bit on once a settlement payment has been confirmed
 verifyCreditByHash :: Text -> Connection -> IO Int
 verifyCreditByHash hash conn = fromIntegral <$> execute conn "UPDATE settlements SET verified = TRUE WHERE hash = ?" (Only hash)
+
 
 userBalance :: Address -> Connection -> IO Integer
 userBalance addr conn = do

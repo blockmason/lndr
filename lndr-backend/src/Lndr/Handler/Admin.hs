@@ -41,6 +41,7 @@ unsubmittedHandler = do
     return $ (setUcac (lndrUcacAddr config) <$> dbCredits) \\ blockchainCredits
 
 
+-- TODO of limited utility until lookupCreditByHash is updated
 resubmitHandler :: Text -> LndrHandler NoContent
 resubmitHandler txHash = do
     (ServerState pool configTVar) <- ask

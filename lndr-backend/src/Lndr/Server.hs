@@ -217,6 +217,7 @@ verifySettlementsWithTxHash :: ServerState -> IO ()
 verifySettlementsWithTxHash state@(ServerState pool configMVar) = do
     config <- atomically $ readTVar configMVar
     creditHashes <- withResource pool Db.settlementCreditsToVerify
+    putStrLn $ "verifySettlementsWithTxHash" ++ show creditHashes
     -- TODO make this less ugly
     mapM_ (runExceptT . flip runReaderT state . runLndr . verifyIndividualRecord state) creditHashes
     return ()

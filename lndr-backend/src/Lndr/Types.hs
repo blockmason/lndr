@@ -113,7 +113,7 @@ $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 13
 data NickRequest = NickRequest { nickRequestAddr      :: Address
                                , nickRequestNick      :: Text
                                , nickRequestSignature :: Text
-                               }
+                               } deriving Show
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 11 }) ''NickRequest)
 
 data NickInfo = NickInfo { addr :: Address

@@ -126,7 +126,8 @@ interpretUcacLog change = do
 verifySettlementPayment :: Text -> Address -> Address -> Integer -> IO Bool
 verifySettlementPayment txHash creditor debtor amount = do
     transactionME <- runWeb3 . Eth.getTransactionByHash $ stripHexPrefix txHash
-    putStrLn $ "verifySettlementPayment" ++ show transactionME
+    putStrLn $ "1. verifySettlementPayment" ++ show transactionME
+    putStrLn $ "2. verifySettlementPayment" ++ show (creditor, debtor, amount)
     case transactionME of
         Right (Just transaction) ->
             let fromMatch = txFrom transaction == creditor

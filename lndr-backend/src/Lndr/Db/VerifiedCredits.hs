@@ -38,7 +38,7 @@ deleteExpiredSettlementsAndAssociatedCredits :: Connection -> IO ()
 deleteExpiredSettlementsAndAssociatedCredits conn = do
     hashes <- fmap fromOnly <$> query conn "SELECT hash FROM settlements WHERE created_at < now() - interval '2 days'" () :: IO [Text]
     execute conn "DELETE FROM verified_credits WHERE hash IN ?" (Only $ In hashes)
-    void $ execute conn "DELETE FROM settlments WHERE hash IN ?" (Only $ In hashes)
+    void $ execute conn "DELETE FROM settlements WHERE hash IN ?" (Only $ In hashes)
 
 
 settlementCreditsToVerify :: Connection -> IO [Text]

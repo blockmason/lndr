@@ -25,7 +25,7 @@ insertCredits creditLogs conn =
 
 -- TODO fix this creditor, creditor repetition
 allCredits :: Connection -> IO [IssueCreditLog]
-allCredits conn = query conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits" ()
+allCredits conn = query_ conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits"
 
 -- TODO fix this creditor, creditor repetition
 -- Boolean parameter determines if search is through settlement records or
@@ -36,13 +36,13 @@ lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor,
 
 deleteExpiredSettlementsAndAssociatedCredits :: Connection -> IO ()
 deleteExpiredSettlementsAndAssociatedCredits conn = do
-    hashes <- fmap fromOnly <$> query conn "SELECT hash FROM settlements WHERE created_at < now() - interval '2 days'" () :: IO [Text]
+    hashes <- fmap fromOnly <$> query_ conn "SELECT hash FROM settlements WHERE created_at < now() - interval '2 days'" :: IO [Text]
     execute conn "DELETE FROM verified_credits WHERE hash IN ?" (Only $ In hashes)
     void $ execute conn "DELETE FROM settlements WHERE hash IN ?" (Only $ In hashes)
 
 
 settlementCreditsToVerify :: Connection -> IO [Text]
-settlementCreditsToVerify conn = fmap fromOnly <$> query conn "SELECT hash from settlements WHERE tx_hash IS NOT NULL AND verified = FALSE" ()
+settlementCreditsToVerify conn = fmap fromOnly <$> query_ conn "SELECT hash from settlements WHERE tx_hash IS NOT NULL AND verified = FALSE"
 
 
 updateSettlementTxHash :: Text -> Text -> Connection -> IO Int

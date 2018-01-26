@@ -1,5 +1,39 @@
 # lndr-backend
 
+## Configuration
+
+The `lndr-server` executable expects a configuration file to be located at
+`lndr-backend/data/lndr-server.config`. This configuration file is loaded into
+a server's memory at startup.
+
+## Geth node requirements
+
+The server expects a `geth` node to be running at localhost (127.0.0.1)
+accepting rpc calls on port 8545.
+
+The `geth` node must have its coinbase set and unlocked. This primary ethereum
+account is used to pay for transactions.
+
+### Perpetually unlocking a node's primary address (coinbase)
+
+In geth console:
+
+```
+personal.unlockAccount(address, "password", 300)
+```
+
+From commandline:
+
+```
+geth --unlock "0x407d73d8a49eeb85d32cf465507dd71d507100c1,0,5,e470b1a7d2c9c5c6f03bbaa8fa20db6d404a0c32"
+```
+
+More information available [here](https://github.com/ethereum/go-ethereum/wiki/Managing-your-accounts)
+
+## Postgres Requirements
+
+The `lndr-server` executable expects a postgress db server configured with information matching `lndr-backend/data/lndr-server.config`'s parameters. The db should have a schema identical to what is contained at `lndr-backend/db/create_tables.sql`.
+
 ## Settlement Flow
 
 The settlement endpoints are the same as the normal non-settlement credit
@@ -20,7 +54,7 @@ the server requires that a txHash of an ether transfer between the two parties
 for the exact eth amount indicated in the /pending_settlements record be
 submitted to the /verify_settlement endpoint.
 
-## LNDR Server
+## LNDR Server API
 
 Web service API
 

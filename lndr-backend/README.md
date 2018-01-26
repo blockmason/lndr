@@ -19,13 +19,27 @@ account is used to pay for transactions.
 In geth console:
 
 ```
-personal.unlockAccount(address, "password", 300)
+> personal.unlockAccount(address, "password", 300)
 ```
 
 From commandline:
 
 ```
 geth --unlock "0x407d73d8a49eeb85d32cf465507dd71d507100c1,0,5,e470b1a7d2c9c5c6f03bbaa8fa20db6d404a0c32"
+```
+
+To check if an account is unlocked using the geth console:
+
+```
+> personal.listWallets
+[{
+    accounts: [{
+        address: "0xae9c2ed2209d2228c131cc99569233a5d506770b",
+        url: "..."
+    }],
+    status: "Unlocked",
+    url: "..."
+}]
 ```
 
 More information available [here](https://github.com/ethereum/go-ethereum/wiki/Managing-your-accounts)

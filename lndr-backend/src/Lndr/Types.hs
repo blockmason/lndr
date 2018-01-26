@@ -113,8 +113,8 @@ $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 13
 data NickRequest = NickRequest { nickRequestAddr      :: Address
                                , nickRequestNick      :: Text
                                , nickRequestSignature :: Text
-                               }
-$(deriveJSON defaultOptions ''NickRequest)
+                               } deriving Show
+$(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 11 }) ''NickRequest)
 
 data NickInfo = NickInfo { addr :: Address
                          , nick :: Text
@@ -126,8 +126,7 @@ data PushRequest = PushRequest { pushRequestChannelID :: Text
                                , pushRequestAddress   :: Address
                                , pushRequestSignature :: Text
                                }
-$(deriveJSON defaultOptions ''PushRequest)
-
+$(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 11 }) ''PushRequest)
 -- The 'NotificationAction' type enumerates those events upon which a push
 -- notification may be sent.
 data NotificationAction = NewPendingCredit
@@ -182,6 +181,7 @@ data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
                                  , maxGas                :: !Integer
                                  , urbanAirshipKey       :: !ByteString
                                  , urbanAirshipSecret    :: !ByteString
+                                 , heartbeatInterval     :: !Int
                                  }
 
 -- 'ConfigResponse' contains all the server data that users have access to via

@@ -125,11 +125,11 @@ interpretUcacLog change = do
 -- eth settlment amount.
 verifySettlementPayment :: Text -> Address -> Address -> Integer -> IO Bool
 verifySettlementPayment txHash creditor debtor amount = do
-    transactionME <- runWeb3 $ Eth.getTransactionByHash txHash
+    transactionME <- runWeb3 . Eth.getTransactionByHash $ addHexPrefix txHash
     case transactionME of
         Right (Just transaction) ->
-            let fromMatch = txFrom transaction == debtor
-                toMatch = txTo transaction == Just creditor
+            let fromMatch = txFrom transaction == creditor
+                toMatch = txTo transaction == Just debtor
                 valueMatch = hexToInteger (txValue transaction) == amount
             in return $ fromMatch && toMatch && valueMatch
         _                        -> return False

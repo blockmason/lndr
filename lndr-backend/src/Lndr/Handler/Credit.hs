@@ -18,7 +18,6 @@ module Lndr.Handler.Credit (
     ) where
 
 import           Control.Concurrent.STM
-import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
 import           Data.Maybe (fromMaybe)
@@ -114,7 +113,12 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
 
 finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> Text -> Maybe SettlementData -> IO ()
 finalizeCredit pool storedRecord config creditorSig debtorSig hash settlementM = do
-            finalizeTransaction config creditorSig debtorSig storedRecord
+            -- In case the record is a settlement, delay submitting credit to
+            -- the blockchain until /verify_settlement is called
+            case settlementM of
+                Just _  -> return ()
+                Nothing -> void $ finalizeTransaction config creditorSig debtorSig storedRecord
+
             -- saving transaction record
             withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord
             -- delete pending record after transaction finalization
@@ -177,17 +181,13 @@ rejectHandler(RejectRequest hash sig) = do
 verifyHandler :: VerifySettlementRequest -> LndrHandler NoContent
 verifyHandler r@(VerifySettlementRequest creditHash txHash creditorAddress signature) = do
     unless (Right creditorAddress == recoverSigner r) $ throwError (err400 {errBody = "Bad signature."})
-    pool <- dbConnectionPool <$> ask
-    recordM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
-    (creditor, debtor, amount) <- case recordM of
-        Just (CreditRecord creditor debtor _ _ _ _ _ _ (Just amount) _ _, _, _) ->
-            pure (creditor, debtor, amount)
-        _ -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
-    verified <- liftIO $ verifySettlementPayment txHash debtor creditor amount
-    if verified
-        then do liftIO . withResource pool $ Db.verifyCreditByHash creditHash
-                return NoContent
-        else throwError $ err400 { errBody = "Unable to verify debt settlement" }
+
+    (ServerState pool configTVar) <- ask
+    config <- liftIO . atomically $ readTVar configTVar
+
+    -- write txHash to settlement record
+    liftIO . withResource pool . Db.updateSettlementTxHash creditHash $ stripHexPrefix txHash
+    return NoContent
 
 
 pendingHandler :: Address -> LndrHandler [CreditRecord]

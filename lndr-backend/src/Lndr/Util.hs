@@ -92,7 +92,12 @@ hexToInteger = fst . head . readHex . T.unpack . stripHexPrefix
 
 stripHexPrefix :: Text -> Text
 stripHexPrefix x | T.isPrefixOf "0x" x = T.drop 2 x
-                 | otherwise = x
+                 | otherwise           = x
+
+
+addHexPrefix :: Text -> Text
+addHexPrefix x | T.isPrefixOf "0x" x = x
+               | otherwise           = T.append "0x" x
 
 
 integerToHex :: Integer -> Text

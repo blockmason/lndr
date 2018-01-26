@@ -10,6 +10,7 @@ import qualified Data.Text.Lazy                 as LT
 import           Lndr.CLI.Args
 import           Lndr.EthereumInterface
 import           Lndr.NetworkStatistics
+import           Lndr.Signature
 import           Lndr.Types
 import           Lndr.Util                      (hashCreditRecord,
                                                  parseIssueCreditInput,
@@ -61,6 +62,9 @@ tests = [ testGroup "Nicks"
             ]
         , testGroup "Notifications"
             [ testCase "registerChannel" basicNotificationsTest
+            ]
+        , testGroup "Authentication"
+            [ testCase "nick signing" nickSignTest
             ]
         , testGroup "Utils"
             [ testCase "parseIssueCreditInput" parseCreditInputTest
@@ -220,16 +224,18 @@ basicSettlementTest = do
     let txHash = fromRight (error "error sending eth") txHashE
     let incorrectTxHash = fromRight (error "error sending eth") incorrectTxHashE
 
-    -- ensure that tx registers in blockchain w/ a 10 second pause
-    threadDelay (10 ^ 7)
-
+    -- TODO update this given new heartbeat-approach to verification
     -- user5 tries to verify a settlement with an incorrect txHash
-    httpCode <- verifySettlement testUrl creditHash incorrectTxHash testPrivkey5
-    assertEqual "verification failure upon bad txHash submission" 400 httpCode
+    -- httpCode <- verifySettlement testUrl creditHash incorrectTxHash testPrivkey5
+    -- assertEqual "verification failure upon bad txHash submission" 400 httpCode
 
     -- user5 verifies that he has made the settlement credit
     httpCode <- verifySettlement testUrl creditHash txHash testPrivkey5
     assertEqual "verification success" 204 httpCode
+
+    -- ensure that tx registers in blockchain w/ a 10 second pause and
+    -- heartbeat has time to verify its validity
+    threadDelay (8 * 10 ^ 6)
 
     (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getSettlements testUrl testAddress5
     assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)
@@ -238,6 +244,8 @@ basicSettlementTest = do
 
 verifySettlementTest :: Assertion
 verifySettlementTest = do
+    -- testAddress1 is the person revieving eth, thus the credit must record
+    -- this address as the debtor.
     txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
                                                     testAddress1
                                                     (Just 21000)
@@ -246,9 +254,9 @@ verifySettlementTest = do
                                                     Nothing
     let txHash = fromRight (error "error sending eth") txHashE
 
-    threadDelay (10 ^ 7)
+    threadDelay (5 * 10 ^ 6)
 
-    verified <- verifySettlementPayment txHash testAddress1 testAddress4 (10 ^ 18)
+    verified <- verifySettlementPayment txHash testAddress4 testAddress1 (10 ^ 18)
     assertBool "payment properly verified" verified
 
 
@@ -286,3 +294,10 @@ parseCreditInputTest = do
         assertBool "good creditor sig" goodCreditorSig
         assertBool "good debtor sig" goodDebtorSig
     where (creditLog, _, goodCreditorSig, _, goodDebtorSig) = parseIssueCreditInput (Nonce 0) "0x0a5b410e000000000000000000000000869a8f2c3d22be392618ed06c8f548d1d5b5aed6000000000000000000000000754952bfa2097104a07f4f347e513a1da576ac7a0000000000000000000000003a1ea286e419130d894c9fa0cf49898bc81f9a5a0000000000000000000000000000000000000000000000000000000000000a394988c5614ea5a5807387af10ab3520ed0bb9e8edfcef07924b3630b119dccab12981d3efa478582c5c69a4c9ef5ccb3e019e52cd2b210cc0bc17133799d1f739000000000000000000000000000000000000000000000000000000000000001cd58818da99967a502e7abc5cc74b3569063c7670924d22e25c329b560298cc5566e07b7c87b7a8685f954410480fe2f5cd08dbcb84552dcc3b4475e8469f1b12000000000000000000000000000000000000000000000000000000000000001c6665646578202020202020202020202020202020202020202020202020202020"
+
+
+nickSignTest :: Assertion
+nickSignTest = assertEqual "expected nick request signature" nickSignature (Right "56324c5c3b52210099f12e569e73ee1853524b958cebc60a33ad1cfd32a84cf56caddd36ead0c2c34ebb0188e2a9fbf4591f3c1d34d3ba8bfe5ef2dae513a38a1c")
+    where
+        unsignedNickRequest = NickRequest testAddress1 "testNick" ""
+        nickSignature = generateSignature unsignedNickRequest testPrivkey1

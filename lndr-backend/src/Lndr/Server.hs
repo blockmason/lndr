@@ -11,8 +11,10 @@ module Lndr.Server
     , freshState
     , updateDbFromLndrLogs
     , app
+    , runHeartbeat
     ) where
 
+import           Control.Concurrent
 import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
@@ -184,3 +186,50 @@ loadConfig = do
                           (loadEntry "maxGas")
                           (loadEntry "urbanAirshipKey")
                           (loadEntry "urbanAirshipSecret")
+                          (loadEntry "heartbeatInterval")
+
+
+runHeartbeat :: ServerState -> IO ThreadId
+runHeartbeat state = forkIO $ heartbeat state
+
+
+heartbeat :: ServerState -> IO ()
+heartbeat state@(ServerState pool configMVar) = do
+    config <- atomically $ readTVar configMVar
+    -- sleep for time specified in config
+    threadDelay (heartbeatInterval config * 10 ^ 6)
+    -- scan settlements table for any settlement eligible for deletion
+    deleteExpiredSettlements state
+    -- try to verify all settlements whose tx_hash column is populated
+    verifySettlementsWithTxHash state
+    -- loop
+    heartbeat state
+
+
+deleteExpiredSettlements :: ServerState -> IO ()
+deleteExpiredSettlements (ServerState pool configMVar) = do
+    config <- atomically $ readTVar configMVar
+    void $ withResource pool Db.deleteExpiredSettlementsAndAssociatedCredits
+
+
+verifySettlementsWithTxHash :: ServerState -> IO ()
+verifySettlementsWithTxHash state@(ServerState pool configMVar) = do
+    config <- atomically $ readTVar configMVar
+    creditHashes <- withResource pool Db.settlementCreditsToVerify
+    mapM_ (runExceptT . verifyIndividualRecord state) creditHashes
+    return ()
+
+
+verifyIndividualRecord :: ServerState -> Text -> ExceptT ServantErr IO ()
+verifyIndividualRecord (ServerState pool configTVar) creditHash = do
+    config <- liftIO $ atomically $ readTVar configTVar
+    recordM <- liftIO $ withResource pool $ Db.lookupSettlementCreditByHash creditHash
+    (storedRecord, creditor, debtor, amount, creditorSig, debtorSig, txHash) <- case recordM of
+        Just (storedRecord@(CreditRecord creditor debtor _ _ _ _ _ _ (Just amount) _ _), creditorSig, debtorSig, txHash) ->
+            pure (storedRecord, creditor, debtor, amount, creditorSig, debtorSig, txHash)
+        _ -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
+    verified <- liftIO $ verifySettlementPayment txHash creditor debtor amount
+    if verified
+        then do liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
+                void . liftIO $ finalizeTransaction config creditorSig debtorSig storedRecord
+        else throwError $ err400 { errBody = "Unable to verify debt settlement" }

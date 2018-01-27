@@ -42,7 +42,11 @@ deleteExpiredSettlementsAndAssociatedCredits conn = do
 
 
 settlementCreditsToVerify :: Connection -> IO [Text]
-settlementCreditsToVerify conn = fmap fromOnly <$> query_ conn "SELECT hash from settlements WHERE tx_hash IS NOT NULL AND verified = FALSE"
+settlementCreditsToVerify conn = fmap fromOnly <$> query_ conn "SELECT hash FROM settlements WHERE tx_hash IS NOT NULL AND verified = FALSE"
+
+
+txHashByCreditHash :: Text -> Connection -> IO (Maybe Text)
+txHashByCreditHash creditHash conn = fmap fromOnly . listToMaybe <$> query conn "SELECT tx_hash FROM settlements WHERE hash = ?" (Only creditHash)
 
 
 updateSettlementTxHash :: Text -> Text -> Connection -> IO Int

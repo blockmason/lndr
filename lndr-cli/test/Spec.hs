@@ -241,6 +241,9 @@ basicSettlementTest = do
     assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)
     assertEqual "post-verification: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
 
+    gottenTxHash <- getTxHash testUrl creditHash
+    assertEqual "successful txHash retrieval" txHash (addHexPrefix gottenTxHash)
+
 
 verifySettlementTest :: Assertion
 verifySettlementTest = do

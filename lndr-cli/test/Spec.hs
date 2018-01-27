@@ -14,7 +14,8 @@ import           Lndr.Signature
 import           Lndr.Types
 import           Lndr.Util                      (hashCreditRecord,
                                                  parseIssueCreditInput,
-                                                 textToAddress)
+                                                 textToAddress,
+                                                 addHexPrefix)
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Eth      as Eth
 import           Network.Ethereum.Web3.Types

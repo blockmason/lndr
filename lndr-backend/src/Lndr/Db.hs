@@ -29,6 +29,7 @@ module Lndr.Db (
     , userBalance
     , twoPartyBalance
     , twoPartyNonce
+    , txHashByCreditHash
 
     -- * 'settlement'-specific functions
     , lookupSettlementCreditByAddress

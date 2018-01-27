@@ -10,6 +10,7 @@ module Lndr.Handler.Credit (
     -- * app state-querying handlers
     , pendingHandler
     , pendingSettlementsHandler
+    , txHashHandler
     , transactionsHandler
     , nonceHandler
     , counterpartiesHandler
@@ -212,6 +213,15 @@ pendingSettlementsHandler addr = do
     pending <- liftIO . withResource pool $ Db.lookupPendingByAddress addr True
     verified <- liftIO $ withResource pool $ Db.lookupSettlementCreditByAddress addr
     return $ SettlementsResponse pending verified
+
+
+txHashHandler :: Text -> LndrHandler Text
+txHashHandler creditHash = do
+    pool <- dbConnectionPool <$> ask
+    txHashM <- liftIO . withResource pool $ Db.txHashByCreditHash creditHash
+    case txHashM of
+        (Just txHash) -> return txHash
+        Nothing -> throwError $ err400 { errBody = "Settlement credit not found" }
 
 
 nonceHandler :: Address -> Address -> LndrHandler Nonce

@@ -47,6 +47,7 @@ type LndrAPI =
    :<|> "pending_settlements" :> Capture "user" Address :> Get '[JSON] SettlementsResponse
    :<|> "verify_settlement" :> ReqBody '[JSON] VerifySettlementRequest
                             :> PostNoContent '[JSON] NoContent
+   :<|> "tx_hash" :> Capture "hash" Text :> Get '[JSON] Text
    :<|> "pending" :> Capture "user" Address :> Get '[JSON] [CreditRecord]
    :<|> "lend" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "borrow" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
@@ -80,6 +81,7 @@ server :: ServerT LndrAPI LndrHandler
 server = transactionsHandler
     :<|> pendingSettlementsHandler
     :<|> verifyHandler
+    :<|> txHashHandler
     :<|> pendingHandler
     :<|> lendHandler
     :<|> borrowHandler

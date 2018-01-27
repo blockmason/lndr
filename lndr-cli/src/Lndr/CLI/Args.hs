@@ -32,6 +32,7 @@ module Lndr.CLI.Args (
     , getCounterparties
     , getTransactions
     , getSettlements
+    , getTxHash
     , verifySettlement
 
     -- * notifications-related requests
@@ -279,6 +280,12 @@ getInfo url userAddr = do
 getNonce :: String -> Address -> Address -> IO Integer
 getNonce url addr1 addr2 = do
     req <- HTTP.parseRequest $ url ++ "/nonce/" ++ T.unpack (Addr.toText addr1) ++ "/" ++ T.unpack (Addr.toText addr2)
+    HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
+getTxHash :: String -> Text -> IO Text
+getTxHash url creditHash = do
+    req <- HTTP.parseRequest $ url ++ "/tx_hash/" ++ T.unpack creditHash
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 

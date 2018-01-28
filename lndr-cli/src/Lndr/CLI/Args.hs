@@ -33,6 +33,7 @@ module Lndr.CLI.Args (
     , getTransactions
     , getSettlements
     , getTxHash
+    , getTxHashFail
     , verifySettlement
 
     -- * notifications-related requests
@@ -287,6 +288,13 @@ getTxHash :: String -> Text -> IO Text
 getTxHash url creditHash = do
     req <- HTTP.parseRequest $ url ++ "/tx_hash/" ++ T.unpack creditHash
     HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
+-- TODO how should I handle HTTP errors nicely in these tests?
+getTxHashFail :: String -> Text -> IO Int
+getTxHashFail url creditHash = do
+    req <- HTTP.parseRequest $ url ++ "/tx_hash/" ++ T.unpack creditHash
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 
 
 signCredit :: Text -> Address -> CreditRecord -> CreditRecord

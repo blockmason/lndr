@@ -221,7 +221,7 @@ txHashHandler creditHash = do
     txHashM <- liftIO . withResource pool $ Db.txHashByCreditHash creditHash
     case txHashM of
         (Just txHash) -> return txHash
-        Nothing -> throwError $ err400 { errBody = "Settlement credit not found" }
+        Nothing -> throwError $ err404 { errBody = "Settlement credit not found" }
 
 
 nonceHandler :: Address -> Address -> LndrHandler Nonce

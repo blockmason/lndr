@@ -46,7 +46,7 @@ settlementCreditsToVerify conn = fmap fromOnly <$> query_ conn "SELECT hash FROM
 
 
 txHashByCreditHash :: Text -> Connection -> IO (Maybe Text)
-txHashByCreditHash creditHash conn = fmap fromOnly . listToMaybe <$> query conn "SELECT tx_hash FROM settlements WHERE hash = ?" (Only creditHash)
+txHashByCreditHash creditHash conn = fmap fromOnly . join . listToMaybe <$> query conn "SELECT tx_hash FROM settlements WHERE hash = ?" (Only creditHash)
 
 
 updateSettlementTxHash :: Text -> Text -> Connection -> IO Int

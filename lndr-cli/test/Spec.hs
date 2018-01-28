@@ -230,6 +230,9 @@ basicSettlementTest = do
     -- httpCode <- verifySettlement testUrl creditHash incorrectTxHash testPrivkey5
     -- assertEqual "verification failure upon bad txHash submission" 400 httpCode
 
+    httpCode <- getTxHashFail testUrl creditHash
+    assertEqual "404 upon hash not found error" 404 httpCode
+
     -- user5 verifies that he has made the settlement credit
     httpCode <- verifySettlement testUrl creditHash txHash testPrivkey5
     assertEqual "verification success" 204 httpCode

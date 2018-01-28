@@ -17,7 +17,7 @@ import           Servant
 
 nickHandler :: NickRequest -> LndrHandler NoContent
 nickHandler r@(NickRequest addr nick sig) = do
-    unless (Right addr == recoverSigner r) $ throwError (err400 {errBody = "Bad signature."})
+    unless (Right addr == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool . Db.insertNick addr $ T.toLower nick
     return NoContent

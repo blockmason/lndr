@@ -59,7 +59,7 @@ validSubmission memo submitterAddress creditor debtor sig hash = do
     -- check that submitter signed the tx
     signer <- ioEitherToLndr . return . EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
     unless (textToAddress signer == submitterAddress) $
-        throwError (err400 {errBody = "Bad submitter sig"})
+        throwError (err401 {errBody = "Bad submitter sig"})
 
 
 submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
@@ -161,7 +161,7 @@ rejectHandler(RejectRequest hash sig) = do
     -- recover address from sig
     let signer = EU.ecrecover (stripHexPrefix sig) hash
     case signer of
-        Left _ -> throwError $ err400 { errBody = "unable to recover addr from sig" }
+        Left _ -> throwError $ err401 { errBody = "unable to recover addr from sig" }
         Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
             then do liftIO . withResource pool $ Db.deletePending hash True
                     let submitterAddress = textToAddress addr
@@ -176,12 +176,12 @@ rejectHandler(RejectRequest hash sig) = do
                         Nothing -> return ()
 
                     return NoContent
-            else throwError $ err400 { errBody = "bad rejection sig" }
+            else throwError $ err401 { errBody = "bad rejection sig" }
 
 
 verifyHandler :: VerifySettlementRequest -> LndrHandler NoContent
 verifyHandler r@(VerifySettlementRequest creditHash txHash creditorAddress signature) = do
-    unless (Right creditorAddress == recoverSigner r) $ throwError (err400 {errBody = "Bad signature."})
+    unless (Right creditorAddress == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
 
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar

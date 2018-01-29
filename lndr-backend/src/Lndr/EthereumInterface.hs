@@ -140,6 +140,8 @@ settlementDataFromCreditRecord (CreditRecord _ _ amount _ _ _ _ _ saM scM sbnM) 
     currency <- MaybeT (return scM :: IO (Maybe Text))
     price <- queryEtheruemPrice
     -- assumes USD / ETH settlement for now
-    let settlementAmount = floor $ fromIntegral amount / unPrice price * 10 ^ 18
+    -- 10 ^ 16 instead of 10 ^ 18 because our amounts are stored in cents, not
+    -- dollars, so we have to divide by 100
+    let settlementAmount = floor $ fromIntegral amount / unPrice price * 10 ^ 16
     blockNumber <- currentBlockNumber
     return $ SettlementData settlementAmount currency blockNumber

@@ -196,7 +196,7 @@ runHeartbeat state = forkIO $ heartbeat state
 
 
 heartbeat :: ServerState -> IO ()
-heartbeat state@(ServerState pool configMVar) = do
+heartbeat state@(ServerState _ configMVar) = do
     config <- atomically $ readTVar configMVar
     -- sleep for time specified in config
     threadDelay (heartbeatInterval config * 10 ^ 6)

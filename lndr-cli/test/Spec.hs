@@ -203,7 +203,7 @@ basicSettlementTest = do
     assertEqual "post-confirmation: get pending settlements success" 0 (length pendingSettlements)
     assertEqual "post-confirmation: get bilateral pending settlements success" 1 (length bilateralPendingSettlements)
 
-    let settleAmount = fmap Quantity . settlementAmount $ head bilateralPendingSettlements
+    let settleAmount = fmap Quantity . settlementAmount . settlementCreditRecord $ head bilateralPendingSettlements
 
     -- user5 transfers eth to user6
     txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)

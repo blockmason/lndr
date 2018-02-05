@@ -5,6 +5,7 @@ module Lndr.Db.Types where
 import           Data.Text (Text)
 import           Database.PostgreSQL.Simple
 import           Database.PostgreSQL.Simple.FromField
+import           Database.PostgreSQL.Simple.FromRow
 import           Database.PostgreSQL.Simple.ToField
 import           Lndr.Types
 import           Lndr.Util
@@ -29,3 +30,11 @@ instance FromRow CreditRecord
 instance FromRow IssueCreditLog
 
 instance FromRow NickInfo
+
+instance FromRow SettlementCreditRecord where
+  fromRow = do
+    creditRecord <- CreditRecord <$> field <*> field <*> field <*> field <*> field
+                                 <*> field <*> field <*> field <*> field <*> field
+                                 <*> field
+    txHash <- field
+    return $ SettlementCreditRecord creditRecord txHash

@@ -33,8 +33,10 @@ instance FromRow NickInfo
 
 instance FromRow SettlementCreditRecord where
   fromRow = do
-    creditRecord <- CreditRecord <$> field <*> field <*> field <*> field <*> field
-                                 <*> field <*> field <*> field <*> field <*> field
-                                 <*> field
+    creditRecord <- CreditRecord <$> field <*> field <*> ((floor :: Rational -> Integer) <$> field)
+                                 <*> field <*> field
+                                 <*> ((floor :: Rational -> Integer) <$> field) <*> field <*> field
+                                 <*> (fmap (floor :: Rational -> Integer) <$> field) <*> field
+                                 <*> (fmap (floor :: Rational -> Integer) <$> field)
     txHash <- field
     return $ SettlementCreditRecord creditRecord txHash

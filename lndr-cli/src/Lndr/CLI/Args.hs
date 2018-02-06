@@ -180,13 +180,7 @@ getTransactions url address = do
 getSettlements :: String -> Address -> IO SettlementsResponse
 getSettlements url address = do
     initReq <- HTTP.parseRequest $ url ++ "/pending_settlements/" ++ show address
-    resp <- HTTP.getResponseBody <$> HTTP.httpJSONEither initReq
-    case resp of
-        Left a  -> do print a
-                      return $ SettlementsResponse [] []
-        Right b -> return b
-
-
+    HTTP.getResponseBody <$> HTTP.httpJSON initReq
 
 
 getCounterparties :: String -> Address -> IO [Address]

@@ -180,7 +180,13 @@ getTransactions url address = do
 getSettlements :: String -> Address -> IO SettlementsResponse
 getSettlements url address = do
     initReq <- HTTP.parseRequest $ url ++ "/pending_settlements/" ++ show address
-    HTTP.getResponseBody <$> HTTP.httpJSON initReq
+    resp <- HTTP.getResponseBody <$> HTTP.httpJSONEither initReq
+    case resp of
+        Left a  -> do print a
+                      return $ SettlementsResponse [] []
+        Right b -> return b
+
+
 
 
 getCounterparties :: String -> Address -> IO [Address]
@@ -195,6 +201,7 @@ setGasPrice url addr price = do
     let req = HTTP.setRequestBodyJSON price $
                 HTTP.setRequestMethod "PUT" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+
 
 getGasPrice :: String -> IO Integer
 getGasPrice url = do

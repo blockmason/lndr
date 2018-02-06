@@ -111,7 +111,9 @@ data SettlementCreditRecord =
     SettlementCreditRecord { settlementCreditRecord :: CreditRecord
                            , settlementTxHash       :: Maybe Text
                            }
-$(deriveJSON (defaultOptions { omitNothingFields = True }) ''SettlementCreditRecord)
+$(deriveJSON (defaultOptions { omitNothingFields = True
+                             , fieldLabelModifier = over _head toLower . drop 10
+                             }) ''SettlementCreditRecord)
 
 
 data RejectRequest = RejectRequest { rejectRequestHash      :: Text

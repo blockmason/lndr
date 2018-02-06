@@ -77,8 +77,8 @@ lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text)
 lookupCreditByHash hash conn = do
                 let process (creditor, debtor, amount, nonce, memo, sig1, sig2) =
                         ( CreditRecord creditor debtor
-                                       amount memo
-                                       creditor nonce hash sig1
+                                       ((floor :: Rational -> Integer) amount) memo
+                                       creditor ((floor :: Rational -> Integer) nonce) hash sig1
                                        Nothing
                                        Nothing
                                        Nothing

@@ -27,8 +27,6 @@ instance FromField DevicePlatform where
 
 instance FromRow CreditRecord
 
-instance FromRow IssueCreditLog
-
 instance FromRow NickInfo
 
 instance FromRow SettlementCreditRecord where
@@ -40,3 +38,8 @@ instance FromRow SettlementCreditRecord where
                                  <*> (fmap (floor :: Rational -> Integer) <$> field)
     txHash <- field
     return $ SettlementCreditRecord creditRecord txHash
+
+instance FromRow IssueCreditLog where
+  fromRow =
+    IssueCreditLog <$> field <*> field <*> field <*> ((floor :: Rational -> Integer) <$> field)
+                   <*> ((floor :: Rational -> Integer) <$> field) <*> field

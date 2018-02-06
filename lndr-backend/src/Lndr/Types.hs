@@ -17,6 +17,7 @@ module Lndr.Types
     , CreditRecord( CreditRecord, hash, creditor, debtor, submitter, signature
                   , nonce, settlementAmount
                   )
+    , SettlementCreditRecord(..)
     , IssueCreditLog(IssueCreditLog, ucac, amount)
     , SettlementData(SettlementData)
     , SettlementsResponse(..)
@@ -104,6 +105,16 @@ data CreditRecord = CreditRecord { creditor              :: Address
                                  , settlementBlocknumber :: Maybe Integer
                                  } deriving (Show, Generic)
 $(deriveJSON (defaultOptions { omitNothingFields = True }) ''CreditRecord)
+
+
+data SettlementCreditRecord =
+    SettlementCreditRecord { settlementCreditRecord :: CreditRecord
+                           , settlementTxHash       :: Maybe Text
+                           }
+$(deriveJSON (defaultOptions { omitNothingFields = True
+                             , fieldLabelModifier = over _head toLower . drop 10
+                             }) ''SettlementCreditRecord)
+
 
 data RejectRequest = RejectRequest { rejectRequestHash      :: Text
                                    , rejectRequestSignature :: Text
@@ -193,7 +204,7 @@ data ConfigResponse = ConfigResponse { configResponseLndrAddress :: Address
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 14 }) ''ConfigResponse)
 
 data SettlementsResponse = SettlementsResponse { unilateralSettlements :: [CreditRecord]
-                                               , bilateralSettlements :: [CreditRecord]
+                                               , bilateralSettlements :: [SettlementCreditRecord]
                                                }
 $(deriveJSON defaultOptions ''SettlementsResponse)
 

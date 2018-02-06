@@ -203,7 +203,7 @@ basicSettlementTest = do
     assertEqual "post-confirmation: get pending settlements success" 0 (length pendingSettlements)
     assertEqual "post-confirmation: get bilateral pending settlements success" 1 (length bilateralPendingSettlements)
 
-    let settleAmount = fmap Quantity . settlementAmount $ head bilateralPendingSettlements
+    let settleAmount = fmap Quantity . settlementAmount . settlementCreditRecord $ head bilateralPendingSettlements
 
     -- user5 transfers eth to user6
     txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)
@@ -213,22 +213,7 @@ basicSettlementTest = do
                                                     settleAmount
                                                     Nothing
 
-    -- user4 transfers eth to user1
-    incorrectTxHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
-                                                        testAddress1
-                                                        (Just 21000)
-                                                        Nothing
-                                                        (Just $ 10 ^ 18)
-                                                        Nothing
-
-
     let txHash = fromRight (error "error sending eth") txHashE
-    let incorrectTxHash = fromRight (error "error sending eth") incorrectTxHashE
-
-    -- TODO update this given new heartbeat-approach to verification
-    -- user5 tries to verify a settlement with an incorrect txHash
-    -- httpCode <- verifySettlement testUrl creditHash incorrectTxHash testPrivkey5
-    -- assertEqual "verification failure upon bad txHash submission" 400 httpCode
 
     httpCode <- getTxHashFail testUrl creditHash
     assertEqual "404 upon hash not found error" 404 httpCode

@@ -38,6 +38,7 @@ deleteExpiredSettlementsAndAssociatedCredits :: Connection -> IO ()
 deleteExpiredSettlementsAndAssociatedCredits conn = do
     hashes <- fmap fromOnly <$> query_ conn "SELECT hash FROM settlements WHERE created_at < now() - interval '2 days' AND verified = FALSE" :: IO [Text]
     execute conn "DELETE FROM verified_credits WHERE hash IN ?" (Only $ In hashes)
+    execute conn "DELETE FROM pending_credits WHERE hash IN ?" (Only $ In hashes)
     void $ execute conn "DELETE FROM settlements WHERE hash IN ?" (Only $ In hashes)
 
 
@@ -53,8 +54,8 @@ updateSettlementTxHash :: Text -> Text -> Connection -> IO Int
 updateSettlementTxHash hash txHash conn = fromIntegral <$> execute conn "UPDATE settlements SET  tx_hash = ? WHERE hash = ?" (txHash, hash)
 
 
-lookupSettlementCreditByAddress :: Address -> Connection -> IO [CreditRecord]
-lookupSettlementCreditByAddress addr conn = fmap settlementCreditRowToCreditRecord <$> query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, verified_credits.hash, settlements.amount, settlements.currency, settlements.blocknumber FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
+lookupSettlementCreditByAddress :: Address -> Connection -> IO [SettlementCreditRecord]
+lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, verified_credits.hash, creditor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]

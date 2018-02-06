@@ -192,11 +192,11 @@ loadConfig = do
 
 
 runHeartbeat :: ServerState -> IO ThreadId
-runHeartbeat state = forkIO $ heartbeat state
+runHeartbeat state = forkIO . forever $ heartbeat state
 
 
 heartbeat :: ServerState -> IO ()
-heartbeat state@(ServerState pool configMVar) = do
+heartbeat state@(ServerState _ configMVar) = do
     config <- atomically $ readTVar configMVar
     -- sleep for time specified in config
     threadDelay (heartbeatInterval config * 10 ^ 6)
@@ -204,8 +204,6 @@ heartbeat state@(ServerState pool configMVar) = do
     deleteExpiredSettlements state
     -- try to verify all settlements whose tx_hash column is populated
     verifySettlementsWithTxHash state
-    -- loop
-    heartbeat state
 
 
 deleteExpiredSettlements :: ServerState -> IO ()

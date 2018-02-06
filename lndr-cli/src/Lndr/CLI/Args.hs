@@ -196,6 +196,7 @@ setGasPrice url addr price = do
                 HTTP.setRequestMethod "PUT" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 
+
 getGasPrice :: String -> IO Integer
 getGasPrice url = do
     req <- HTTP.parseRequest $ url ++ "/gas_price"

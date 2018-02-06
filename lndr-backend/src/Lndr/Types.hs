@@ -55,6 +55,12 @@ import           Network.Ethereum.Web3.Address (Address)
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Servant.API
 
+type TransactionHash = Text
+
+type CreditHash = Text
+
+type Signature = Text
+
 instance Conf.Configured Address where
     convert (Conf.String x) = Just . fromRight (error "bad address") . Addr.fromText $ x
     convert _ = Nothing
@@ -98,8 +104,8 @@ data CreditRecord = CreditRecord { creditor              :: Address
                                  , memo                  :: Text
                                  , submitter             :: Address
                                  , nonce                 :: Integer
-                                 , hash                  :: Text
-                                 , signature             :: Text
+                                 , hash                  :: CreditHash
+                                 , signature             :: Signature
                                  , settlementAmount      :: Maybe Integer
                                  , settlementCurrency    :: Maybe Text
                                  , settlementBlocknumber :: Maybe Integer
@@ -109,7 +115,7 @@ $(deriveJSON (defaultOptions { omitNothingFields = True }) ''CreditRecord)
 
 data SettlementCreditRecord =
     SettlementCreditRecord { settlementCreditRecord :: CreditRecord
-                           , settlementTxHash       :: Maybe Text
+                           , settlementTxHash       :: Maybe TransactionHash
                            }
 $(deriveJSON (defaultOptions { omitNothingFields = True
                              , fieldLabelModifier = over _head toLower . drop 10
@@ -228,9 +234,9 @@ instance FromJSON EthereumPrice where
             ratesObject <- dataObject .: "rates"
             EthereumPrice . read <$> ratesObject .: "USD"
 
-data VerifySettlementRequest = VerifySettlementRequest { verifySettlementRequestCreditHash :: Text
-                                                       , verifySettlementRequestTxHash :: Text
+data VerifySettlementRequest = VerifySettlementRequest { verifySettlementRequestCreditHash :: CreditHash
+                                                       , verifySettlementRequestTxHash :: TransactionHash
                                                        , verifySettlementRequestCreditorAddress :: Address
-                                                       , verifySettlementRequestSignature :: Text
+                                                       , verifySettlementRequestSignature :: Signature
                                                        }
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 23 }) ''VerifySettlementRequest)

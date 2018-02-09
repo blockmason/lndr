@@ -9,7 +9,8 @@ import           Database.PostgreSQL.Simple
 import           Lndr.Db.Types
 import           Lndr.Types
 import           Network.Ethereum.Web3
-import           Text.EmailAddress as Email
+import           Text.EmailAddress
+import qualified Text.EmailAddress as Email
 
 
 insertNick :: Address -> Text -> Connection -> IO Int

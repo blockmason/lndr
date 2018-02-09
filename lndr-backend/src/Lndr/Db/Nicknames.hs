@@ -19,7 +19,7 @@ insertNick addr nick conn = fromIntegral <$>
 
 insertEmail :: Address -> Text -> Connection -> IO Int
 insertEmail addr email conn = fromIntegral <$>
-    execute conn "INSERT INTO nicknames (address, email) VALUES (?,?) ON CONFLICT (address) DO UPDATE SET nickname = EXCLUDED.nickname" (addr, email)
+    execute conn "INSERT INTO nicknames (address, email) VALUES (?,?) ON CONFLICT (address) DO UPDATE SET email = EXCLUDED.email" (addr, email)
 
 
 lookupNick :: Address -> Connection -> IO (Maybe Text)

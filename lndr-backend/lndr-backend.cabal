@@ -41,6 +41,7 @@ library
                      , data-default
                      , directory
                      , either
+                     , emailaddress
                      , ethereumhs-util
                      , filepath
                      , hashable

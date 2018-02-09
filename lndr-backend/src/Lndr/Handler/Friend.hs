@@ -13,6 +13,7 @@ import           Lndr.Signature
 import           Lndr.Types
 import           Network.Ethereum.Web3
 import           Servant
+import           Text.EmailAddress
 
 
 nickHandler :: NickRequest -> LndrHandler NoContent
@@ -63,6 +64,16 @@ removeFriendsHandler address removes = do
     return NoContent
 
 
-emailHandler = undefined
+emailHandler :: EmailRequest -> LndrHandler NoContent
+emailHandler r@(EmailRequest addr email sig) = do
+    unless (Right addr == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
+    pool <- dbConnectionPool <$> ask
+    liftIO . withResource pool . Db.insertEmail addr $ toText email
+    return NoContent
+
+
+emailLookupHandler :: Address -> LndrHandler EmailAddress
 emailLookupHandler = undefined
+
+emailTakenHandler :: EmailAddress -> LndrHandler Bool
 emailTakenHandler = undefined

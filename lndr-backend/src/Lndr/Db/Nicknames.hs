@@ -16,6 +16,11 @@ insertNick addr nick conn = fromIntegral <$>
     execute conn "INSERT INTO nicknames (address, nickname) VALUES (?,?) ON CONFLICT (address) DO UPDATE SET nickname = EXCLUDED.nickname" (addr, nick)
 
 
+insertEmail :: Address -> Text -> Connection -> IO Int
+insertEmail addr email conn = fromIntegral <$>
+    execute conn "INSERT INTO nicknames (address, email) VALUES (?,?) ON CONFLICT (address) DO UPDATE SET nickname = EXCLUDED.nickname" (addr, email)
+
+
 lookupNick :: Address -> Connection -> IO (Maybe Text)
 lookupNick addr conn = listToMaybe . fmap fromOnly <$>
     (query conn "SELECT nickname FROM nicknames WHERE address = ?" (Only addr) :: IO [Only Text])

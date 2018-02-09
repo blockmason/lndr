@@ -11,7 +11,8 @@ module Lndr.Types
     , ServerConfig(..)
 
     -- * lndr api types
-    , NickRequest(NickRequest, nickRequestSignature)
+    , NickRequest(..)
+    , EmailRequest(..)
     , NickInfo(..)
     -- TODO clean this up, very unorganized as is
     , CreditRecord( CreditRecord, hash, creditor, debtor, submitter, signature
@@ -54,6 +55,8 @@ import           GHC.Generics
 import           Network.Ethereum.Web3.Address (Address)
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Servant.API
+import           Text.EmailAddress
+
 
 type TransactionHash = Text
 
@@ -132,6 +135,14 @@ data NickRequest = NickRequest { nickRequestAddr      :: Address
                                , nickRequestSignature :: Text
                                } deriving Show
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 11 }) ''NickRequest)
+
+
+data EmailRequest = EmailRequest { emailRequestAddr      :: Address
+                                 , emailRequestEmail     :: EmailAddress
+                                 , emailRequestSignature :: Text
+                                 } deriving Show
+$(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 12 }) ''EmailRequest)
+
 
 data NickInfo = NickInfo { addr :: Address
                          , nick :: Text

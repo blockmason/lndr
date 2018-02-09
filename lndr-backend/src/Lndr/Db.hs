@@ -4,6 +4,7 @@ module Lndr.Db (
     , lookupNick
     , lookupAddressByNick
     , lookupAddressesByFuzzyNick
+    , insertEmail
 
     -- * 'friendships' table functions
     , addFriends

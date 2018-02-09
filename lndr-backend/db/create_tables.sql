@@ -39,7 +39,8 @@ CREATE TABLE friendships (
 
 CREATE TABLE nicknames (
     address     CHAR(40) PRIMARY KEY,
-    nickname    TEXT UNIQUE
+    nickname    TEXT UNIQUE,
+    email       TEXT UNIQUE
 );
 
 CREATE TABLE push_data (

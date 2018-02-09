@@ -41,6 +41,7 @@ import           Network.Wai
 import           Servant
 import           Servant.Docs
 import           System.FilePath
+import           Text.EmailAddress
 
 type LndrAPI =
         "transactions" :> QueryParam "user" Address :> Get '[JSON] [IssueCreditLog]
@@ -57,9 +58,9 @@ type LndrAPI =
    :<|> "nick" :> Capture "user" Address :> Get '[JSON] Text
    :<|> "search_nick" :> Capture "nick" Text :> Get '[JSON] [NickInfo]
    :<|> "taken_nick" :> Capture "nick" Text :> Get '[JSON] Bool
-   :<|> "email" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
-   :<|> "email" :> Capture "user" Address :> Get '[JSON] Text
-   :<|> "taken_email" :> Capture "email" Text :> Get '[JSON] Bool
+   :<|> "email" :> ReqBody '[JSON] EmailRequest :> PostNoContent '[JSON] NoContent
+   :<|> "email" :> Capture "user" Address :> Get '[JSON] EmailAddress
+   :<|> "taken_email" :> Capture "email" EmailAddress :> Get '[JSON] Bool
    :<|> "friends" :> Capture "user" Address :> Get '[JSON] [NickInfo]
    :<|> "add_friends" :> Capture "user" Address
                       :> ReqBody '[JSON] [Address]

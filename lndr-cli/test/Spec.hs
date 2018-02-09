@@ -6,6 +6,7 @@ module Main where
 import           Control.Concurrent             (threadDelay)
 import           Control.Monad.Trans.Maybe
 import           Data.Either.Combinators        (fromRight)
+import           Data.Maybe                     (fromJust)
 import qualified Data.Text.Lazy                 as LT
 import           Lndr.CLI.Args
 import           Lndr.EthereumInterface
@@ -22,6 +23,7 @@ import           Network.Ethereum.Web3.Types
 import           Test.Framework
 import           Test.Framework.Providers.HUnit
 import           Test.HUnit                     hiding (Test)
+import qualified Text.EmailAddress              as Email
 
 -- TODO get rid of this once version enpoint point works
 ucacAddr = "0x7899b83071d9704af0b132859a04bb1698a3acaf"
@@ -42,7 +44,8 @@ testAddress6 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey6
 testSearch = "test"
 testNick1 = "test1"
 testNick2 = "test2"
-
+testEmailText = "tim@blockmason.io"
+testEmail = fromJust $ Email.emailAddressFromText testEmailText
 
 main :: IO ()
 main = defaultMain tests
@@ -50,8 +53,7 @@ main = defaultMain tests
 
 tests :: [Test]
 tests = [ testGroup "Nicks"
-            [ testCase "setting nicks and friends" nickTest
-            ]
+            [ testCase "setting nicks and friends" nickTest ]
         , testGroup "Credits"
             [ testCase "lend money to friend" basicLendTest
             , testCase "verify payment" verifySettlementTest
@@ -117,6 +119,24 @@ nickTest = do
     -- verify that friend has been removed
     friends <- getFriends testUrl testAddress3
     assertEqual "friend properly removed" [] friends
+
+    -- EMAIL TESTS
+
+    -- check that email isn't taken
+    emailTaken <- takenEmail testUrl testEmailText
+    assertBool "after db reset all emails are available" (not emailTaken)
+
+    -- set email for user1
+    httpCode <- setEmail testUrl testPrivkey3 (EmailRequest testAddress3 testEmail "")
+    assertEqual "set email success" 204 httpCode
+
+    -- check that testEmail is no longer available
+    emailTaken <- takenEmail testUrl testEmailText
+    assertBool "emails already in db are not available" emailTaken
+
+    -- check that nick for user3 properly set
+    -- queriedEmail <- fromRight <$> getEmail testUrl testAddress3
+    -- assertEqual "email is set and queryable" queriedEmail testEmail
 
 
 basicLendTest :: Assertion

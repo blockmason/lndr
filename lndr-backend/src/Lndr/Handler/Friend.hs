@@ -73,7 +73,12 @@ emailHandler r@(EmailRequest addr email sig) = do
 
 
 emailLookupHandler :: Address -> LndrHandler EmailAddress
-emailLookupHandler = undefined
+emailLookupHandler addr = do
+    pool <- dbConnectionPool <$> ask
+    ioMaybeToLndr "addr not found in nick db" . withResource pool $ Db.lookupEmail addr
+
 
 emailTakenHandler :: EmailAddress -> LndrHandler Bool
-emailTakenHandler = undefined
+emailTakenHandler email = do
+    pool <- dbConnectionPool <$> ask
+    liftIO . fmap (not . null) . withResource pool . Db.lookupAddressByEmail $ email

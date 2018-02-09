@@ -9,6 +9,7 @@ import           Database.PostgreSQL.Simple
 import           Lndr.Db.Types
 import           Lndr.Types
 import           Network.Ethereum.Web3
+import           Text.EmailAddress as Email
 
 
 insertNick :: Address -> Text -> Connection -> IO Int
@@ -25,9 +26,19 @@ lookupNick :: Address -> Connection -> IO (Maybe Text)
 lookupNick addr conn = listToMaybe . fmap fromOnly <$>
     (query conn "SELECT nickname FROM nicknames WHERE address = ?" (Only addr) :: IO [Only Text])
 
+
+lookupEmail :: Address -> Connection -> IO (Maybe EmailAddress)
+lookupEmail addr conn = listToMaybe . fmap fromOnly <$>
+    (query conn "SELECT email FROM nicknames WHERE address = ?" (Only addr) :: IO [Only EmailAddress])
+
+
 lookupAddressByNick :: Text -> Connection -> IO (Maybe NickInfo)
 lookupAddressByNick nick conn = listToMaybe <$>
     (query conn "SELECT address, nickname FROM nicknames WHERE nickname = ?" (Only nick) :: IO [NickInfo])
+
+lookupAddressByEmail :: EmailAddress -> Connection -> IO (Maybe NickInfo)
+lookupAddressByEmail email conn = listToMaybe <$>
+    (query conn "SELECT address, nickname FROM nicknames WHERE email = ?" (Only $ Email.toText email) :: IO [NickInfo])
 
 
 lookupAddressesByFuzzyNick :: Text -> Connection -> IO [NickInfo]

@@ -57,6 +57,9 @@ type LndrAPI =
    :<|> "nick" :> Capture "user" Address :> Get '[JSON] Text
    :<|> "search_nick" :> Capture "nick" Text :> Get '[JSON] [NickInfo]
    :<|> "taken_nick" :> Capture "nick" Text :> Get '[JSON] Bool
+   :<|> "email" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
+   :<|> "email" :> Capture "user" Address :> Get '[JSON] Text
+   :<|> "taken_email" :> Capture "email" Text :> Get '[JSON] Bool
    :<|> "friends" :> Capture "user" Address :> Get '[JSON] [NickInfo]
    :<|> "add_friends" :> Capture "user" Address
                       :> ReqBody '[JSON] [Address]
@@ -91,6 +94,9 @@ server = transactionsHandler
     :<|> nickLookupHandler
     :<|> nickSearchHandler
     :<|> nickTakenHandler
+    :<|> emailHandler
+    :<|> emailLookupHandler
+    :<|> emailTakenHandler
     :<|> friendHandler
     :<|> addFriendsHandler
     :<|> removeFriendsHandler

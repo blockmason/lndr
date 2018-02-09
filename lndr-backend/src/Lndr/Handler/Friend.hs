@@ -61,3 +61,8 @@ removeFriendsHandler address removes = do
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool $ Db.removeFriends address removes
     return NoContent
+
+
+emailHandler = undefined
+emailLookupHandler = undefined
+emailTakenHandler = undefined

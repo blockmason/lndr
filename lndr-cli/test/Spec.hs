@@ -134,9 +134,9 @@ nickTest = do
     emailTaken <- takenEmail testUrl testEmailText
     assertBool "emails already in db are not available" emailTaken
 
-    -- check that nick for user3 properly set
-    -- queriedEmail <- fromRight <$> getEmail testUrl testAddress3
-    -- assertEqual "email is set and queryable" queriedEmail testEmail
+    -- check that email for user3 properly set
+    queriedEmail <- getEmail testUrl testAddress3
+    assertEqual "email is set and queryable" queriedEmail testEmail
 
 
 basicLendTest :: Assertion

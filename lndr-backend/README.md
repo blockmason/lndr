@@ -365,6 +365,91 @@ Clients must supply the following data
 
 - No response body
 
+## POST /email
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Request:
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+- Example (): `application/json;charset=utf-8`
+
+```javascript
+{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","email":"tim@blockmason.io","signature":"0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"}
+```
+
+- Example (): `application/json`
+
+```javascript
+{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","email":"tim@blockmason.io","signature":"0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"}
+```
+
+#### Response:
+
+- Status code 204
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+
+```
+
+-
+
+```javascript
+
+```
+
+## GET /email/:user
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Captures:
+
+- *user*: the address of the user whose friends will be returned
+
+#### Response:
+
+- Status code 200
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+"tim@blockmason.io"
+```
+
+-
+
+```javascript
+"tim@blockmason.io"
+```
+
 ## GET /friends/:user
 
 #### Authentication
@@ -1016,6 +1101,53 @@ Clients must supply the following data
 
 ```javascript
 [{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"},{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}]
+```
+
+## GET /taken_email/:email
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Captures:
+
+- *email*: the email whose availability is being checked
+
+#### Response:
+
+- Status code 200
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+false
+```
+
+-
+
+```javascript
+false
+```
+
+-
+
+```javascript
+true
+```
+
+-
+
+```javascript
+true
 ```
 
 ## GET /taken_nick/:nick

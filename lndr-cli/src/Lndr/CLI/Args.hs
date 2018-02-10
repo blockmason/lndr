@@ -250,10 +250,10 @@ setEmail url sk emailRequest = do
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 
 
-getEmail :: String -> Address -> IO (Either HTTP.JSONException EmailAddress)
+getEmail :: String -> Address -> IO EmailAddress
 getEmail url userAddr = do
     req <- HTTP.parseRequest $ url ++ "/email/" ++ show userAddr
-    HTTP.getResponseBody <$> HTTP.httpJSONEither req
+    HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
 takenEmail :: String -> Text -> IO Bool

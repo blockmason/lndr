@@ -7,11 +7,13 @@
 
 module Lndr.Docs where
 
+import           Data.Maybe                    (fromJust)
 import           Data.Text                     (Text)
 import           Lndr.Types
 import           Network.Ethereum.Web3.Address
 import           Servant.API
 import           Servant.Docs
+import           Text.EmailAddress as Email
 
 creditHash :: Text
 creditHash = "0x7e2e9ff3a5fc148cf76261755c4c666630bfc3a28d02733cfbe721fc965aca28"
@@ -52,6 +54,14 @@ instance ToSample NickRequest where
     toSamples _ = singleSample $
         NickRequest "0x11edd217a875063583dd1b638d16810c5d34d54b" "aupiff" "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
 
+instance ToSample EmailAddress where
+    toSamples _ = singleSample $
+        fromJust $ Email.emailAddressFromText "tim@blockmason.io"
+
+instance ToSample EmailRequest where
+    toSamples _ = singleSample $
+        EmailRequest "0x11edd217a875063583dd1b638d16810c5d34d54b" (fromJust $ Email.emailAddressFromText "tim@blockmason.io") "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
+
 instance ToSample NickInfo where
     toSamples _ = singleSample $
         NickInfo "0x11edd217a875063583dd1b638d16810c5d34d54b" "aupiff"
@@ -88,6 +98,10 @@ instance ToSample Nonce where
 instance ToSample Integer where
     toSamples _ = singleSample 19
 
+instance ToCapture (Capture "email" EmailAddress) where
+  toCapture _ =
+    DocCapture "email" "the email whose availability is being checked"
+
 instance ToCapture (Capture "p1" Address) where
   toCapture _ =
     DocCapture "p1" "the address of the first party in a credit relationship"
@@ -107,6 +121,10 @@ instance ToCapture (Capture "user" Address) where
 instance ToCapture (Capture "nick" Text) where
   toCapture _ =
     DocCapture "nick" "the nickname to be associated with a particular address"
+
+instance ToCapture (Capture "email" Text) where
+  toCapture _ =
+    DocCapture "email" "the email to be associated with a particular address"
 
 instance ToCapture (Capture "hash" Text) where
   toCapture _ =

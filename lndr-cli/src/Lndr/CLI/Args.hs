@@ -14,6 +14,11 @@ module Lndr.CLI.Args (
     , searchNick
     , takenNick
 
+    -- * email-related requests
+    , getEmail
+    , setEmail
+    , takenEmail
+
     -- * gas-related requests
     , getGasPrice
     , setGasPrice
@@ -58,6 +63,7 @@ import qualified Network.HTTP.Simple             as HTTP
 import           System.Console.CmdArgs          hiding (def)
 import           System.Console.CmdArgs.Explicit (HelpFormat (..), helpText,
                                                   modeEmpty)
+import           Text.EmailAddress
 import qualified Text.Pretty.Simple              as Pr
 
 data LndrCmd = Transactions
@@ -232,6 +238,27 @@ searchNick url nick = do
 takenNick :: String -> Text -> IO Bool
 takenNick url nick = do
     req <- HTTP.parseRequest $ url ++ "/taken_nick/" ++ T.unpack nick
+    HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
+setEmail :: String -> Text -> EmailRequest -> IO Int
+setEmail url sk emailRequest = do
+    initReq <- HTTP.parseRequest $ url ++ "/email"
+    let Right signature = generateSignature emailRequest sk
+        req = HTTP.setRequestBodyJSON (emailRequest { emailRequestSignature = signature }) $
+                HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+
+
+getEmail :: String -> Address -> IO EmailAddress
+getEmail url userAddr = do
+    req <- HTTP.parseRequest $ url ++ "/email/" ++ show userAddr
+    HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
+takenEmail :: String -> Text -> IO Bool
+takenEmail url email = do
+    req <- HTTP.parseRequest $ url ++ "/taken_email/" ++ T.unpack email
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 

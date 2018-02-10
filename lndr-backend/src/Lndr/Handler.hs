@@ -32,6 +32,11 @@ module Lndr.Handler (
     , resubmitHandler
     , registerPushHandler
     , configHandler
+
+    -- * Email Handlers
+    , emailHandler
+    , emailLookupHandler
+    , emailTakenHandler
     ) where
 
 import           Lndr.Handler.Admin

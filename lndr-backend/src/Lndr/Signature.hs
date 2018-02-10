@@ -6,6 +6,7 @@ import           Lndr.Types
 import           Lndr.Util
 import qualified Network.Ethereum.Util         as EU
 import           Network.Ethereum.Web3.Address
+import           Text.EmailAddress as Email
 
 class VerifiableSignature a where
      recoverSigner :: a -> Either String Address
@@ -25,6 +26,14 @@ instance VerifiableSignature NickRequest where
     generateHash (NickRequest addr nick _) = EU.hashText . T.concat $
                                                 stripHexPrefix <$> [ T.pack (show addr)
                                                                    , bytesEncode nick
+                                                                   ]
+
+instance VerifiableSignature EmailRequest where
+    extractSignature (EmailRequest _ _ sig) = sig
+
+    generateHash (EmailRequest addr email _) = EU.hashText . T.concat $
+                                                stripHexPrefix <$> [ T.pack (show addr)
+                                                                   , bytesEncode $ Email.toText email
                                                                    ]
 
 instance VerifiableSignature VerifySettlementRequest where

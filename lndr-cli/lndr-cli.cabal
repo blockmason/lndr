@@ -23,6 +23,7 @@ library
                      , data-default
                      , dhall
                      , directory
+                     , emailaddress
                      , ethereumhs-util
                      , http-conduit
                      , lndr-backend
@@ -45,6 +46,7 @@ executable lndr
                      , dhall
                      , directory
                      , either
+                     , emailaddress
                      , listsafe
                      , memory
                      , text
@@ -60,6 +62,7 @@ test-suite server-cli-integration
                      , lndr-cli
                      , lndr-backend
                      , either
+                     , emailaddress
                      , HUnit
                      , test-framework
                      , test-framework-hunit

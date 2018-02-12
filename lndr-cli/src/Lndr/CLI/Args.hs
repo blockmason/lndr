@@ -258,8 +258,9 @@ getEmail url userAddr = do
 
 takenEmail :: String -> Text -> IO Bool
 takenEmail url email = do
-    req <- HTTP.parseRequest $ url ++ "/taken_email/" ++ T.unpack email
-    HTTP.getResponseBody <$> HTTP.httpJSON req
+    req <- HTTP.parseRequest $ url ++ "/user?email=" ++ T.unpack email
+    httpCode <- HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+    return $ httpCode == 200
 
 
 addFriend :: String -> Address -> Address -> IO Int

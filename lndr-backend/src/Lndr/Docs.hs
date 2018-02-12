@@ -153,3 +153,11 @@ instance ToParam (QueryParam "email" EmailAddress) where
                   , "michael@blockmason.io" ]
                   "email whose corresponding user address is requested"
                   Normal
+
+instance ToParam (QueryParam "nick" Nick) where
+  toParam _ =
+    DocQueryParam "nick"
+                  [ "aupiff"
+                  , "willbach" ]
+                  "nickname whose corresponding user address is requested"
+                  Normal

@@ -36,6 +36,7 @@ nickSearchHandler nick = do
     liftIO . withResource pool . Db.lookupAddressesByFuzzyNick $ T.toLower nick
 
 
+-- TODO remove when will says so
 nickTakenHandler :: Text -> LndrHandler Bool
 nickTakenHandler nick = do
     pool <- dbConnectionPool <$> ask
@@ -48,14 +49,20 @@ friendHandler addr = do
     liftIO . withResource pool $ Db.lookupFriendsWithNick addr
 
 
-userHandler :: Maybe EmailAddress -> LndrHandler NickInfo
-userHandler (Just email) = do
+userHandler :: Maybe EmailAddress -> Maybe Nick -> LndrHandler NickInfo
+userHandler (Just email) _ = do
     pool <- dbConnectionPool <$> ask
     nickInfoM <- liftIO . withResource pool . Db.lookupAddressByEmail $ email
     case nickInfoM of
         Just nickInfo -> return nickInfo
-        Nothing -> throwError (err404 {errBody = "No corresponding user found."})
-userHandler Nothing = throwError (err400 {errBody = "No identifying information specified."})
+        Nothing -> throwError (err404 {errBody = "No corresponding user found based on provided email."})
+userHandler _ (Just nick) = do
+    pool <- dbConnectionPool <$> ask
+    nickInfoM <- liftIO . withResource pool . Db.lookupAddressByNick $ T.toLower nick
+    case nickInfoM of
+        Just nickInfo -> return nickInfo
+        Nothing -> throwError (err404 {errBody = "No corresponding user found based on provided nick."})
+userHandler Nothing Nothing = throwError (err400 {errBody = "No identifying information specified."})
 
 
 addFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
@@ -86,9 +93,3 @@ emailLookupHandler :: Address -> LndrHandler EmailAddress
 emailLookupHandler addr = do
     pool <- dbConnectionPool <$> ask
     ioMaybeToLndr "addr not found in nick db" . withResource pool $ Db.lookupEmail addr
-
-
-emailTakenHandler :: EmailAddress -> LndrHandler Bool
-emailTakenHandler email = do
-    pool <- dbConnectionPool <$> ask
-    liftIO . fmap (not . null) . withResource pool . Db.lookupAddressByEmail $ email

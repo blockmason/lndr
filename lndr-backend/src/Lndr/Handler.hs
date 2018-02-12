@@ -37,7 +37,6 @@ module Lndr.Handler (
     -- * Email Handlers
     , emailHandler
     , emailLookupHandler
-    , emailTakenHandler
     ) where
 
 import           Lndr.Handler.Admin

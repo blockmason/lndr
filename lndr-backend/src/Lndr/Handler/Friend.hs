@@ -48,6 +48,16 @@ friendHandler addr = do
     liftIO . withResource pool $ Db.lookupFriendsWithNick addr
 
 
+userHandler :: Maybe EmailAddress -> LndrHandler NickInfo
+userHandler (Just email) = do
+    pool <- dbConnectionPool <$> ask
+    nickInfoM <- liftIO . withResource pool . Db.lookupAddressByEmail $ email
+    case nickInfoM of
+        Just nickInfo -> return nickInfo
+        Nothing -> throwError (err404 {errBody = "No corresponding user found."})
+userHandler Nothing = throwError (err400 {errBody = "No identifying information specified."})
+
+
 addFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
 addFriendsHandler address adds = do
     -- TODO verify signature

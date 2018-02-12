@@ -1337,6 +1337,44 @@ Clients must supply the following data
 [{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"},{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]
 ```
 
+## GET /user
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### GET Parameters:
+
+- email
+     - **Values**: *tim@blockmason.io, michael@blockmason.io*
+     - **Description**: email whose corresponding user address is requested
+
+
+#### Response:
+
+- Status code 200
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}
+```
+
+-
+
+```javascript
+{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}
+```
+
 ## POST /verify_settlement
 
 #### Authentication

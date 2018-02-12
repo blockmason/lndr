@@ -145,3 +145,11 @@ instance ToParam (QueryParam "txHash" Text) where
                   , "0x5c0dede3096ec95edaadc2cd258514ee837c45a55a71b05273837c123947ba0d" ]
                   "address of user whose records to display"
                   Normal
+
+instance ToParam (QueryParam "email" EmailAddress) where
+  toParam _ =
+    DocQueryParam "email"
+                  [ "tim@blockmason.io"
+                  , "michael@blockmason.io" ]
+                  "email whose corresponding user address is requested"
+                  Normal

@@ -14,6 +14,7 @@ module Lndr.Types
     , NickRequest(..)
     , EmailRequest(..)
     , NickInfo(..)
+    , Nick
     -- TODO clean this up, very unorganized as is
     , CreditRecord( CreditRecord, hash, creditor, debtor, submitter, signature
                   , nonce, settlementAmount
@@ -63,6 +64,8 @@ type TransactionHash = Text
 type CreditHash = Text
 
 type Signature = Text
+
+type Nick = Text
 
 instance Conf.Configured Address where
     convert (Conf.String x) = Just . fromRight (error "bad address") . Addr.fromText $ x

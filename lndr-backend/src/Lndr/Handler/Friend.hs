@@ -11,6 +11,7 @@ import qualified Lndr.Db               as Db
 import           Lndr.Handler.Types
 import           Lndr.Signature
 import           Lndr.Types
+import           Lndr.Util
 import           Network.Ethereum.Web3
 import           Servant
 import           Text.EmailAddress
@@ -93,3 +94,11 @@ emailLookupHandler :: Address -> LndrHandler EmailAddress
 emailLookupHandler addr = do
     pool <- dbConnectionPool <$> ask
     ioMaybeToLndr "addr not found in nick db" . withResource pool $ Db.lookupEmail addr
+
+
+photoUploadHandler :: ProfilePhotoRequest -> LndrHandler NoContent
+photoUploadHandler r@(ProfilePhotoRequest x y) =
+    do let address = recoverSigner r
+           elementName = stripHexPrefix . T.pack $ show address ++ ".jpeg"
+       -- Aws.pureAws cfg s3cfg mgr $ S3.putObject bucketName elementName body
+       return NoContent

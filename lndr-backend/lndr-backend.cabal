@@ -34,6 +34,7 @@ library
                , Lndr.Notifications
   build-depends:       base >= 4.7 && < 5
                      , aeson
+                     , aws
                      , base16-bytestring
                      , bytestring
                      , configurator

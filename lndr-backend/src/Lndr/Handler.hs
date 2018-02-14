@@ -25,6 +25,7 @@ module Lndr.Handler (
     , addFriendsHandler
     , removeFriendsHandler
     , userHandler
+    , photoUploadHandler
 
     -- * Admin Handlers
     , gasPriceHandler

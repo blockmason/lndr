@@ -15,6 +15,7 @@ module Lndr.Types
     , EmailRequest(..)
     , NickInfo(..)
     , Nick
+    , ProfilePhotoRequest(..)
     -- TODO clean this up, very unorganized as is
     , CreditRecord( CreditRecord, hash, creditor, debtor, submitter, signature
                   , nonce, settlementAmount
@@ -158,6 +159,13 @@ data PushRequest = PushRequest { pushRequestChannelID :: Text
                                , pushRequestSignature :: Text
                                }
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 11 }) ''PushRequest)
+
+data ProfilePhotoRequest = ProfilePhotoRequest { photoRequestImage :: Text
+                                               , photoRequestSignature :: Text
+                                               }
+$(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 12 }) ''ProfilePhotoRequest)
+
+
 -- The 'NotificationAction' type enumerates those events upon which a push
 -- notification may be sent.
 data NotificationAction = NewPendingCredit

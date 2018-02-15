@@ -843,6 +843,56 @@ Clients must supply the following data
 {"unilateralSettlements":[{"creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"memo":"test memo","submitter":"0x11edd217a875063583dd1b638d16810c5d34d54b","nonce":0,"hash":"0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c","signature":"0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"}],"bilateralSettlements":[{"txHash":"0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c","creditRecord":{"creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"memo":"test memo","submitter":"0x11edd217a875063583dd1b638d16810c5d34d54b","nonce":0,"hash":"0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c","signature":"0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"}}]}
 ```
 
+## POST /profile_photo
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
+
+#### Request:
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+- Example (): `application/json;charset=utf-8`
+
+```javascript
+{"image":"2394","signature":"239048"}
+```
+
+- Example (): `application/json`
+
+```javascript
+{"image":"2394","signature":"239048"}
+```
+
+#### Response:
+
+- Status code 204
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+-
+
+```javascript
+
+```
+
+-
+
+```javascript
+
+```
+
 ## POST /register_push
 
 #### Authentication
@@ -1103,53 +1153,6 @@ Clients must supply the following data
 [{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"},{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}]
 ```
 
-## GET /taken_email/:email
-
-#### Authentication
-
-
-
-Clients must supply the following data
-
-
-#### Captures:
-
-- *email*: the email whose availability is being checked
-
-#### Response:
-
-- Status code 200
-- Headers: []
-
-- Supported content types are:
-
-    - `application/json;charset=utf-8`
-    - `application/json`
-
--
-
-```javascript
-false
-```
-
--
-
-```javascript
-false
-```
-
--
-
-```javascript
-true
-```
-
--
-
-```javascript
-true
-```
-
 ## GET /taken_nick/:nick
 
 #### Authentication
@@ -1351,6 +1354,10 @@ Clients must supply the following data
 - email
      - **Values**: *tim@blockmason.io, michael@blockmason.io*
      - **Description**: email whose corresponding user address is requested
+
+- nick
+     - **Values**: *aupiff, willbach*
+     - **Description**: nickname whose corresponding user address is requested
 
 
 #### Response:

@@ -34,7 +34,8 @@ library
                , Lndr.Notifications
   build-depends:       base >= 4.7 && < 5
                      , aeson
-                     , aws
+                     , amazonka
+                     , amazonka-s3
                      , base16-bytestring
                      , base64-bytestring
                      , bytestring
@@ -56,6 +57,7 @@ library
                      , memory
                      , mtl
                      , postgresql-simple
+                     , resourcet
                      , resource-pool
                      , scientific
                      , servant

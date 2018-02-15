@@ -2,23 +2,24 @@
 
 module Lndr.Handler.Friend where
 
-import qualified Aws
-import qualified Aws.Core as Aws
-import qualified Aws.S3 as S3
 import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
-import qualified Data.ByteString.Base64 as B64
-import qualified Data.ByteString.Lazy as LBS
-import           Data.Pool             (withResource)
-import           Data.Text             (Text)
-import qualified Data.Text             as T
-import qualified Data.Text.Encoding    as T
-import qualified Lndr.Db               as Db
+import           Control.Monad.Trans.Resource
+import qualified Data.ByteString.Base64  as B64
+import qualified Data.ByteString.Lazy    as LBS
+import           Data.Pool               (withResource)
+import           Data.Text               (Text)
+import qualified Data.Text               as T
+import qualified Data.Text.Encoding      as T
+import qualified Lndr.Db                 as Db
 import           Lndr.Handler.Types
 import           Lndr.Signature
 import           Lndr.Types
 import           Lndr.Util
+import qualified Network.AWS              as Aws
+import qualified Network.AWS.S3.PutObject as Aws
+import qualified Network.AWS.S3.Types     as Aws
 import           Network.Ethereum.Web3
 import           Network.HTTP.Client
 import           Servant
@@ -106,20 +107,15 @@ emailLookupHandler addr = do
 
 photoUploadHandler :: ProfilePhotoRequest -> LndrHandler NoContent
 photoUploadHandler r@(ProfilePhotoRequest photo sig) = do
-        configTVar <- serverConfig <$> ask
-        config <- liftIO . atomically $ readTVar configTVar
-        let address = recoverSigner r
-            elementName = stripHexPrefix . T.pack $ show address ++ ".jpeg"
-            body = RequestBodyBS . B64.decodeLenient $ T.encodeUtf8 photo
-            s3cfg = Aws.defServiceConfig :: S3.S3Configuration Aws.NormalQuery
-            accessKeyId = awsAccessKeyID config
-            secretAccessKey = awsSecrtAccessKey config
-            bucket = awsPhotoBucket config
-        credentials <- liftIO $ Aws.makeCredentials accessKeyId secretAccessKey
-        let cfgWithCredentials = Aws.Configuration { Aws.timeInfo = Aws.Timestamp
-                                                   , Aws.credentials = credentials
-                                                   , Aws.logger = Aws.defaultLog Aws.Warning
-                                                   , Aws.proxy = Nothing
-                                                   }
-        Aws.simpleAws cfgWithCredentials s3cfg $ S3.putObject bucket elementName body
-        return NoContent
+    configTVar <- serverConfig <$> ask
+    config <- liftIO . atomically $ readTVar configTVar
+    let address = recoverSigner r
+        elementName = Aws.ObjectKey . stripHexPrefix . T.pack $ show address ++ ".jpeg"
+        body = Aws.toBody . B64.decodeLenient $ T.encodeUtf8 photo
+        accessKeyId = awsAccessKeyID config
+        secretAccessKey = awsSecrtAccessKey config
+        bucket = Aws.BucketName $ awsPhotoBucket config
+    env <- liftIO . Aws.newEnv $ Aws.FromKeys (Aws.AccessKey accessKeyId) (Aws.SecretKey secretAccessKey)
+    liftIO . runResourceT $ Aws.runAWS env $
+        Aws.send (Aws.putObject bucket elementName body)
+    return NoContent

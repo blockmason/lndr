@@ -36,6 +36,7 @@ library
                      , aeson
                      , aws
                      , base16-bytestring
+                     , base64-bytestring
                      , bytestring
                      , configurator
                      , cryptonite

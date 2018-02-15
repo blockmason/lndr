@@ -2,17 +2,23 @@
 
 module Lndr.Handler.Friend where
 
+import qualified Aws
+import qualified Aws.S3 as S3
 import           Control.Monad.Except
 import           Control.Monad.Reader
+import qualified Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Lazy as LBS
 import           Data.Pool             (withResource)
 import           Data.Text             (Text)
 import qualified Data.Text             as T
+import qualified Data.Text.Encoding    as T
 import qualified Lndr.Db               as Db
 import           Lndr.Handler.Types
 import           Lndr.Signature
 import           Lndr.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3
+import           Network.HTTP.Client
 import           Servant
 import           Text.EmailAddress
 
@@ -96,9 +102,20 @@ emailLookupHandler addr = do
     ioMaybeToLndr "addr not found in nick db" . withResource pool $ Db.lookupEmail addr
 
 
+awsConfig :: IO ( Aws.Configuration
+                , S3.S3Configuration Aws.NormalQuery
+                )
+awsConfig = do  -- Set up AWS credentials and the default configuration
+    cfg <- Aws.baseConfiguration
+    let s3cfg = Aws.defServiceConfig :: S3.S3Configuration Aws.NormalQuery
+    return (cfg, s3cfg)
+
+
 photoUploadHandler :: ProfilePhotoRequest -> LndrHandler NoContent
-photoUploadHandler r@(ProfilePhotoRequest x y) =
+photoUploadHandler r@(ProfilePhotoRequest photo sig) =
     do let address = recoverSigner r
            elementName = stripHexPrefix . T.pack $ show address ++ ".jpeg"
-       -- Aws.pureAws cfg s3cfg mgr $ S3.putObject bucketName elementName body
+           body = RequestBodyBS . B64.decodeLenient $ T.encodeUtf8 photo
+       (cfg, s3cfg) <- liftIO awsConfig
+       Aws.simpleAws cfg s3cfg $ S3.putObject "lndr-avatars" elementName body
        return NoContent

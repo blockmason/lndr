@@ -36,7 +36,6 @@ instance VerifiableSignature EmailRequest where
                                                                    , bytesEncode $ Email.toText email
                                                                    ]
 
-
 instance VerifiableSignature ProfilePhotoRequest where
     extractSignature (ProfilePhotoRequest _ sig) = sig
 

@@ -221,6 +221,9 @@ data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
                                  , urbanAirshipKey       :: !ByteString
                                  , urbanAirshipSecret    :: !ByteString
                                  , heartbeatInterval     :: !Int
+                                 , awsPhotoBucket        :: !Text
+                                 , awsAccessKeyID        :: !ByteString
+                                 , awsSecrtAccessKey     :: !ByteString
                                  }
 
 -- 'ConfigResponse' contains all the server data that users have access to via

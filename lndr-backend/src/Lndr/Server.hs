@@ -201,6 +201,9 @@ loadConfig = do
                           (loadEntry "urbanAirshipKey")
                           (loadEntry "urbanAirshipSecret")
                           (loadEntry "heartbeatInterval")
+                          (loadEntry "awsPhotoBucket")
+                          (loadEntry "accessKeyId")
+                          (loadEntry "secretAccessKey")
 
 
 runHeartbeat :: ServerState -> IO ThreadId

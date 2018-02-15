@@ -11,3 +11,6 @@ maxGas = 250000
 urbanAirshipKey = "4_88888888888mmmmmmmmm"
 urbanAirshipSecret = "rrrrrrrrrrrrrrrrrrrrrr"
 heartbeatInterval = 120
+awsPhotoBucket = "lndr-avatars"
+accessKeyId = "AAAAAAAAAAAAAAAAAAAA"
+secretAccessKey = "6444444444444444444444444444444444444444"

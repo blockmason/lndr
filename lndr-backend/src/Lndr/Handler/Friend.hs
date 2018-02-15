@@ -3,7 +3,9 @@
 module Lndr.Handler.Friend where
 
 import qualified Aws
+import qualified Aws.Core as Aws
 import qualified Aws.S3 as S3
+import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
 import qualified Data.ByteString.Base64 as B64
@@ -102,20 +104,19 @@ emailLookupHandler addr = do
     ioMaybeToLndr "addr not found in nick db" . withResource pool $ Db.lookupEmail addr
 
 
-awsConfig :: IO ( Aws.Configuration
-                , S3.S3Configuration Aws.NormalQuery
-                )
-awsConfig = do  -- Set up AWS credentials and the default configuration
-    cfg <- Aws.baseConfiguration
-    let s3cfg = Aws.defServiceConfig :: S3.S3Configuration Aws.NormalQuery
-    return (cfg, s3cfg)
-
-
 photoUploadHandler :: ProfilePhotoRequest -> LndrHandler NoContent
-photoUploadHandler r@(ProfilePhotoRequest photo sig) =
-    do let address = recoverSigner r
-           elementName = stripHexPrefix . T.pack $ show address ++ ".jpeg"
-           body = RequestBodyBS . B64.decodeLenient $ T.encodeUtf8 photo
-       (cfg, s3cfg) <- liftIO awsConfig
-       Aws.simpleAws cfg s3cfg $ S3.putObject "lndr-avatars" elementName body
-       return NoContent
+photoUploadHandler r@(ProfilePhotoRequest photo sig) = do
+        configTVar <- serverConfig <$> ask
+        config <- liftIO . atomically $ readTVar configTVar
+        let address = recoverSigner r
+            elementName = stripHexPrefix . T.pack $ show address ++ ".jpeg"
+            body = RequestBodyBS . B64.decodeLenient $ T.encodeUtf8 photo
+            s3cfg = Aws.defServiceConfig :: S3.S3Configuration Aws.NormalQuery
+            accessKeyId = awsAccessKeyID config
+            secretAccessKey = awsSecrtAccessKey config
+            bucket = awsPhotoBucket config
+        credentials <- liftIO $ Aws.makeCredentials accessKeyId secretAccessKey
+        cfg <- Aws.baseConfiguration
+        let cfgWithCredentials = cfg { Aws.credentials = credentials }
+        Aws.simpleAws cfgWithCredentials s3cfg $ S3.putObject bucket elementName body
+        return NoContent

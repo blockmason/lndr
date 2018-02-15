@@ -27,6 +27,7 @@ module Lndr.CLI.Args (
     , addFriend
     , getFriends
     , removeFriend
+    , setProfilePhoto
 
     -- * credit-related requests
     , checkPending
@@ -45,10 +46,13 @@ module Lndr.CLI.Args (
     , registerChannel
     ) where
 
+import qualified Data.ByteString                 as B
+import qualified Data.ByteString.Base64          as B64
 import           Data.Data
 import           Data.Maybe                      (fromMaybe)
 import           Data.Text                       (Text)
 import qualified Data.Text                       as T
+import qualified Data.Text.Encoding              as T
 import qualified Data.Text.Lazy                  as LT
 import           Lndr.CLI.Config
 import           Lndr.EthereumInterface          hiding (getNonce)
@@ -82,6 +86,7 @@ data LndrCmd = Transactions
              | GetNonce { friend :: Text }
              | AddFriend { friend :: Text }
              | RemoveFriend { friend :: Text }
+             | SetPhoto { photoPath :: String }
              | GasPrice
              | SetGasPrice { price :: Integer }
              | Info
@@ -105,6 +110,7 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
                      , GetNonce "0x198e13017d2333712bd942d8b028610b95c363da"
                      , AddFriend "0x198e13017d2333712bd942d8b028610b95c363da"
                      , RemoveFriend "0x198e13017d2333712bd942d8b028610b95c363da"
+                     , SetPhoto "image.jpeg"
                      , GasPrice
                      , SetGasPrice 2000000
                      , Unsubmitted &= help "prints txs that are in lndr db but not yet on the blockchain"
@@ -151,6 +157,9 @@ runMode (Config url sk _) (AddFriend friend) =
 
 runMode (Config url sk _) (RemoveFriend friend) =
     print =<< removeFriend (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)
+
+runMode (Config url sk _) (SetPhoto photoPath) =
+    print =<< setProfilePhoto (LT.unpack url) (LT.toStrict sk) photoPath
 
 runMode (Config url sk _) GasPrice = print =<< getGasPrice (LT.unpack url)
 
@@ -388,5 +397,17 @@ registerChannel url privateKey pushReq = do
     initReq <- HTTP.parseRequest $ url ++ "/register_push"
     let Right signature = generateSignature pushReq privateKey
         req = HTTP.setRequestBodyJSON (pushReq {pushRequestSignature = signature }) $
+                    HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+
+
+setProfilePhoto :: String -> Text -> FilePath -> IO Int
+setProfilePhoto url privateKey photoPath = do
+    imageData <- T.decodeUtf8 . B64.encode <$> B.readFile photoPath
+    initReq <- HTTP.parseRequest $ url ++ "/profile_photo"
+    let photoRequest = ProfilePhotoRequest imageData ""
+        (Right sig) = generateSignature photoRequest privateKey
+        signedPhotoRequest = photoRequest { photoRequestSignature = sig }
+        req = HTTP.setRequestBodyJSON signedPhotoRequest $
                     HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req

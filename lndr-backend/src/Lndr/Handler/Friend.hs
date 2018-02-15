@@ -116,7 +116,10 @@ photoUploadHandler r@(ProfilePhotoRequest photo sig) = do
             secretAccessKey = awsSecrtAccessKey config
             bucket = awsPhotoBucket config
         credentials <- liftIO $ Aws.makeCredentials accessKeyId secretAccessKey
-        cfg <- Aws.baseConfiguration
-        let cfgWithCredentials = cfg { Aws.credentials = credentials }
+        let cfgWithCredentials = Aws.Configuration { Aws.timeInfo = Aws.Timestamp
+                                                   , Aws.credentials = credentials
+                                                   , Aws.logger = Aws.defaultLog Aws.Warning
+                                                   , Aws.proxy = Nothing
+                                                   }
         Aws.simpleAws cfgWithCredentials s3cfg $ S3.putObject bucket elementName body
         return NoContent

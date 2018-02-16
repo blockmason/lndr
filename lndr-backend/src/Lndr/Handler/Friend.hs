@@ -3,6 +3,7 @@
 module Lndr.Handler.Friend where
 
 import           Control.Concurrent.STM
+import           Control.Lens
 import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Resource
@@ -117,5 +118,5 @@ photoUploadHandler r@(ProfilePhotoRequest photo sig) = do
         bucket = Aws.BucketName $ awsPhotoBucket config
     env <- liftIO . Aws.newEnv $ Aws.FromKeys (Aws.AccessKey accessKeyId) (Aws.SecretKey secretAccessKey)
     liftIO . runResourceT . Aws.runAWS env . Aws.within Aws.Oregon $
-        Aws.send (Aws.putObject bucket elementName body)
+        Aws.send (set Aws.poACL (Just Aws.OPublicRead) $ Aws.putObject bucket elementName body)
     return NoContent

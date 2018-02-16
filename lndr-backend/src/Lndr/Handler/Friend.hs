@@ -2,16 +2,27 @@
 
 module Lndr.Handler.Friend where
 
+import           Control.Concurrent.STM
+import           Control.Lens
 import           Control.Monad.Except
 import           Control.Monad.Reader
-import           Data.Pool             (withResource)
-import           Data.Text             (Text)
-import qualified Data.Text             as T
-import qualified Lndr.Db               as Db
+import           Control.Monad.Trans.Resource
+import qualified Data.ByteString.Base64  as B64
+import qualified Data.ByteString.Lazy    as LBS
+import           Data.Pool               (withResource)
+import           Data.Text               (Text)
+import qualified Data.Text               as T
+import qualified Data.Text.Encoding      as T
+import qualified Lndr.Db                 as Db
 import           Lndr.Handler.Types
 import           Lndr.Signature
 import           Lndr.Types
+import           Lndr.Util
+import qualified Network.AWS              as Aws
+import qualified Network.AWS.S3.PutObject as Aws
+import qualified Network.AWS.S3.Types     as Aws
 import           Network.Ethereum.Web3
+import           Network.HTTP.Client
 import           Servant
 import           Text.EmailAddress
 
@@ -93,3 +104,19 @@ emailLookupHandler :: Address -> LndrHandler EmailAddress
 emailLookupHandler addr = do
     pool <- dbConnectionPool <$> ask
     ioMaybeToLndr "addr not found in nick db" . withResource pool $ Db.lookupEmail addr
+
+
+photoUploadHandler :: ProfilePhotoRequest -> LndrHandler NoContent
+photoUploadHandler r@(ProfilePhotoRequest photo sig) = do
+    configTVar <- serverConfig <$> ask
+    config <- liftIO . atomically $ readTVar configTVar
+    let Right address = recoverSigner r
+        elementName = Aws.ObjectKey . stripHexPrefix . T.pack $ show address ++ ".jpeg"
+        body = Aws.toBody . B64.decodeLenient $ T.encodeUtf8 photo
+        accessKeyId = awsAccessKeyID config
+        secretAccessKey = awsSecrtAccessKey config
+        bucket = Aws.BucketName $ awsPhotoBucket config
+    env <- liftIO . Aws.newEnv $ Aws.FromKeys (Aws.AccessKey accessKeyId) (Aws.SecretKey secretAccessKey)
+    liftIO . runResourceT . Aws.runAWS env . Aws.within Aws.Oregon $
+        Aws.send (set Aws.poACL (Just Aws.OPublicRead) $ Aws.putObject bucket elementName body)
+    return NoContent

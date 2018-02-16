@@ -60,6 +60,8 @@ type LndrAPI =
    :<|> "taken_nick" :> Capture "nick" Text :> Get '[JSON] Bool
    :<|> "email" :> ReqBody '[JSON] EmailRequest :> PostNoContent '[JSON] NoContent
    :<|> "email" :> Capture "user" Address :> Get '[JSON] EmailAddress
+   :<|> "profile_photo" :> ReqBody '[JSON] ProfilePhotoRequest
+                        :> PostNoContent '[JSON] NoContent
    :<|> "user" :> QueryParam "email" EmailAddress
                :> QueryParam "nick" Nick
                :> Get '[JSON] NickInfo
@@ -99,6 +101,7 @@ server = transactionsHandler
     :<|> nickTakenHandler
     :<|> emailHandler
     :<|> emailLookupHandler
+    :<|> photoUploadHandler
     :<|> userHandler
     :<|> friendHandler
     :<|> addFriendsHandler
@@ -198,6 +201,9 @@ loadConfig = do
                           (loadEntry "urbanAirshipKey")
                           (loadEntry "urbanAirshipSecret")
                           (loadEntry "heartbeatInterval")
+                          (loadEntry "awsPhotoBucket")
+                          (loadEntry "accessKeyId")
+                          (loadEntry "secretAccessKey")
 
 
 runHeartbeat :: ServerState -> IO ThreadId

@@ -19,6 +19,8 @@ library
                      , Lndr.CLI.Config
 
   build-depends:       base >= 4.7 && < 5
+                     , base64-bytestring
+                     , bytestring
                      , cmdargs
                      , data-default
                      , dhall

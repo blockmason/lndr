@@ -109,7 +109,7 @@ photoUploadHandler :: ProfilePhotoRequest -> LndrHandler NoContent
 photoUploadHandler r@(ProfilePhotoRequest photo sig) = do
     configTVar <- serverConfig <$> ask
     config <- liftIO . atomically $ readTVar configTVar
-    let address = recoverSigner r
+    let Right address = recoverSigner r
         elementName = Aws.ObjectKey . stripHexPrefix . T.pack $ show address ++ ".jpeg"
         body = Aws.toBody . B64.decodeLenient $ T.encodeUtf8 photo
         accessKeyId = awsAccessKeyID config

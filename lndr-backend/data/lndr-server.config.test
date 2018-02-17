@@ -1,16 +1,37 @@
+# lndr-USD address
 lndrUcacAddr = "0x7899b83071d9704af0b132859a04bb1698a3acaf"
+
+# Credit Protocol contract address, called for 'issueCredit' among others
 creditProtocolAddress = "0xd5ec73eac35fc9dd6c3f440bce314779fed09f60"
+
+# the signature of the issue credit event, used when scanning logs
 issueCreditEvent = "0xcbc85a9af1e8adce13cbeff2e71299b0f3243d7ef1eaec93a9a281e939aceb7b"
+
+# on startup, the server scans the blockchain for cp records. If any records
+# are missing from the db, rows are added so that user balances are properly
+# displayed. 'scanStartBlock' defines where the scan should begin; setting the
+# value equal to the block in which CP was created is a logical choice.
 scanStartBlock = 0
+
+# postgres db creds
 dbUser = "test"
 dbUserPassword = "test"
 dbName = "lndrtest"
+
+# configuration used for calling CP's 'issueCredit' function
 executionAddress = "0x198e13017d2333712bd942d8b028610b95c363da"
 gasPrice = 200000000
 maxGas = 250000
+
+# urban airship credentials used for push notifications
 urbanAirshipKey = "4_88888888888mmmmmmmmm"
 urbanAirshipSecret = "rrrrrrrrrrrrrrrrrrrrrr"
+
+# how often to run the heartbeat function in seconds. The heartbeat is
+# responsible for confirming settlement transactions.
 heartbeatInterval = 5
+
+# aws config and credentials
 awsPhotoBucket = "lndr-avatars"
-accessKeyId=AAAAAAAAAAAAAAAAAAAA
-secretAccessKey=6444444444444444444444444444444444444444
+accessKeyId = "AAAAAAAAAAAAAAAAAAAA"
+secretAccessKey= "6444444444444444444444444444444444444444"

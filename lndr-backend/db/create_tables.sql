@@ -6,7 +6,7 @@ CREATE TABLE pending_credits (
     debtor      CHAR(40),
     amount      NUMERIC(78),
     memo        CHAR(32),
-    signature   CHAR(130)
+    signature   CHAR(130),
     ucac        CHAR(40)
 );
 
@@ -18,7 +18,7 @@ CREATE TABLE verified_credits (
     amount             NUMERIC(78),
     memo               CHAR(32),
     creditor_signature CHAR(130),
-    debtor_signature   CHAR(130)
+    debtor_signature   CHAR(130),
     ucac               CHAR(40)
 );
 

@@ -36,10 +36,11 @@ instance VerifiableSignature EmailRequest where
                                                                    , bytesEncode $ Email.toText email
                                                                    ]
 
+
 instance VerifiableSignature ProfilePhotoRequest where
     extractSignature (ProfilePhotoRequest _ sig) = sig
 
-    generateHash (ProfilePhotoRequest image _) = EU.hashText image
+    generateHash (ProfilePhotoRequest image _) = EU.hashText . bytesEncode $ image
 
 
 instance VerifiableSignature VerifySettlementRequest where

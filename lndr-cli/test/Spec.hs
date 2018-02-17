@@ -198,9 +198,9 @@ basicLendTest = do
 
 basicSettlementTest :: Assertion
 basicSettlementTest = do
-    priceM <- runMaybeT queryEtheruemPrice
-    case priceM of
-        Just price -> assertBool "nonzero eth price retrieved from coinbase" (unPrice price > 0)
+    pricesM <- runMaybeT queryEtheruemPrices
+    case pricesM of
+        Just prices -> assertBool "nonzero eth price retrieved from coinbase" (usd prices > 0)
         Nothing -> return ()
 
     let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" "" Nothing (Just "ETH") Nothing

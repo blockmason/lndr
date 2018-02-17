@@ -35,8 +35,8 @@ safelowUpdate config configTVar = do
         margin = 1.3 -- multiplier for  additional assurance that tx will make it into blockchain
 
 -- | Queries the coinbase api and returns price in USD per 1 eth.
-queryEtheruemPrice :: MaybeT IO EthereumPrice
-queryEtheruemPrice = do
+queryEtheruemPrices :: MaybeT IO EthereumPrices
+queryEtheruemPrices = do
     req <- lift $ HTTP.parseRequest "https://api.coinbase.com/v2/exchange-rates?currency=ETH"
     MaybeT $ rightToMaybe . HTTP.getResponseBody <$> HTTP.httpJSONEither req
 

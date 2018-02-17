@@ -35,7 +35,7 @@ module Lndr.Types
     , DevicePlatform(..)
 
     -- * network statistics api response types
-    , EthereumPrice(..)
+    , EthereumPrices(..)
     , GasStationResponse(..)
     , ConfigResponse(..)
     ) where
@@ -255,13 +255,19 @@ $(deriveJSON defaultOptions ''GasStationResponse)
 -- A newtype wrapper is used for this 'Double' value which holds an Ethereum
 -- price expressed in USD. This is necessary in order to have easy decoding
 -- from the JSON response of the coinbase API.
-newtype EthereumPrice = EthereumPrice { unPrice :: Double } deriving (Show, Generic)
+data EthereumPrices = EthereumPrices { usd :: Double
+                                     , jpy :: Double
+                                     , krw :: Double
+                                     } deriving (Show, Generic)
 
-instance FromJSON EthereumPrice where
+instance FromJSON EthereumPrices where
         parseJSON (Object v) = do
             dataObject <- v .: "data"
             ratesObject <- dataObject .: "rates"
-            EthereumPrice . read <$> ratesObject .: "USD"
+            usd <- read <$> ratesObject .: "USD"
+            jpy <- read <$> ratesObject .: "JPY"
+            krw <- read <$> ratesObject .: "KRW"
+            return $ EthereumPrices usd jpy krw
 
 data VerifySettlementRequest = VerifySettlementRequest { verifySettlementRequestCreditHash :: CreditHash
                                                        , verifySettlementRequestTxHash :: TransactionHash

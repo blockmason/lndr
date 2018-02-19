@@ -13,7 +13,9 @@ issueCreditEvent = "0xcbc85a9af1e8adce13cbeff2e71299b0f3243d7ef1eaec93a9a281e939
 # value equal to the block in which CP was created is a logical choice.
 scanStartBlock = 0
 
-# postgres db creds
+# postgres config
+dbHost = "localhost"
+dbPort = 5432
 dbUser = "test"
 dbUserPassword = "test"
 dbName = "lndrtest"
@@ -33,13 +35,8 @@ heartbeatInterval = 5
 
 # aws config and credentials
 awsPhotoBucket = "lndr-avatars"
-accessKeyId = "AAAAAAAAAAAAAAAAAAAA"
-secretAccessKey= "6444444444444444444444444444444444444444"
-
-# postgres config
-postgresHost = "localhost"
-postgresPort = 5432
+awsAccessKeyId = "AAAAAAAAAAAAAAAAAAAA"
+awsSecretAccessKey= "6444444444444444444444444444444444444444"
 
 # ethereum node config
-web3Host = "http://localhost"
-web3Port = 8545
+web3Url = "http://localhost:8545"

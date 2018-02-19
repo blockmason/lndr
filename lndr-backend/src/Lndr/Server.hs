@@ -173,8 +173,8 @@ freshState :: IO ServerState
 freshState = do
     serverConfig <- loadConfig
     setEnvironmentConfigs serverConfig
-    let dbConfig = DB.defaultConnectInfo { DB.connectHost = postgresHost serverConfig
-                                         , DB.connectPort = postgresPort serverConfig
+    let dbConfig = DB.defaultConnectInfo { DB.connectHost = dbHost serverConfig
+                                         , DB.connectPort = dbPort serverConfig
                                          , DB.connectUser = T.unpack $ dbUser serverConfig
                                          , DB.connectPassword = T.unpack $ dbUserPassword serverConfig
                                          , DB.connectDatabase = T.unpack $ dbName serverConfig

@@ -18,14 +18,14 @@ library
                  , Lndr.Types
                  , Lndr.Util
                  , Lndr.Signature
-  other-modules: Lndr.Db
+  other-modules: Lndr.Config
+               , Lndr.Db
                , Lndr.Db.Friendships
                , Lndr.Db.Nicknames
                , Lndr.Db.PendingCredits
                , Lndr.Db.PushData
                , Lndr.Db.Types
                , Lndr.Db.VerifiedCredits
-               , Lndr.Config
                , Lndr.Docs
                , Lndr.Handler
                , Lndr.Handler.Admin

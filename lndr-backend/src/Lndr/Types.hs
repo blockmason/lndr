@@ -216,6 +216,8 @@ data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
                                  , dbUser                :: !Text
                                  , dbUserPassword        :: !Text
                                  , dbName                :: !Text
+                                 , dbHost                :: !String
+                                 , dbPort                :: !Word16
                                  , executionAddress      :: !Address
                                  , gasPrice              :: !Integer
                                  , maxGas                :: !Integer
@@ -224,11 +226,8 @@ data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
                                  , heartbeatInterval     :: !Int
                                  , awsPhotoBucket        :: !Text
                                  , awsAccessKeyID        :: !ByteString
-                                 , awsSecrtAccessKey     :: !ByteString
-                                 , postgresHost          :: !String
-                                 , postgresPort          :: !Word16
-                                 , web3Host              :: !String
-                                 , web3Port              :: !Word16
+                                 , awsSecretAccessKey    :: !ByteString
+                                 , web3Url               :: !String
                                  }
 
 -- 'ConfigResponse' contains all the server data that users have access to via

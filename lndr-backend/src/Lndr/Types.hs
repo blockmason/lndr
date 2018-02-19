@@ -225,7 +225,7 @@ data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
                                  , urbanAirshipSecret    :: !ByteString
                                  , heartbeatInterval     :: !Int
                                  , awsPhotoBucket        :: !Text
-                                 , awsAccessKeyID        :: !ByteString
+                                 , awsAccessKeyId        :: !ByteString
                                  , awsSecretAccessKey    :: !ByteString
                                  , web3Url               :: !String
                                  }

@@ -224,6 +224,10 @@ data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
                                  , awsPhotoBucket        :: !Text
                                  , awsAccessKeyID        :: !ByteString
                                  , awsSecrtAccessKey     :: !ByteString
+                                 , postgresHost          :: !String
+                                 , postgresPort          :: !String
+                                 , web3Host              :: !String
+                                 , web3Port              :: !String
                                  }
 
 -- 'ConfigResponse' contains all the server data that users have access to via

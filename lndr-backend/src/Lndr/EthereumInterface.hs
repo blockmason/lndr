@@ -55,6 +55,7 @@ import qualified Data.Text.Encoding          as T
 import           Lndr.NetworkStatistics
 import           Lndr.Types
 import           Lndr.Util
+import           Lndr.Web3
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Eth   as Eth
 import           Network.Ethereum.Web3.TH
@@ -65,7 +66,6 @@ import           Prelude                     hiding (lookup, (!!))
 -- Create functions to call CreditProtocol contract.
 [abiFrom|data/CreditProtocol.abi|]
 
-
 -- | Submit a bilateral credit record to the Credit Protocol smart contract.
 finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord
                     -> IO (Either Web3Error TxHash)
@@ -74,7 +74,7 @@ finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _
           (sig2r, sig2s, sig2v) = decomposeSig sig2
           encodedMemo :: BytesN 32
           encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
-      runWeb3 $ issueCredit callVal
+      runLndrWeb3 $ issueCredit callVal
                             (lndrUcacAddr config)
                             creditor debtor amount
                             [ sig1r, sig1s, sig1v ]
@@ -125,7 +125,7 @@ interpretUcacLog change = do
 -- eth settlment amount.
 verifySettlementPayment :: Text -> Address -> Address -> Integer -> IO Bool
 verifySettlementPayment txHash creditor debtor amount = do
-    transactionME <- runWeb3 . Eth.getTransactionByHash $ addHexPrefix txHash
+    transactionME <- runLndrWeb3 . Eth.getTransactionByHash $ addHexPrefix txHash
     case transactionME of
         Right (Just transaction) ->
             let fromMatch = txFrom transaction == creditor

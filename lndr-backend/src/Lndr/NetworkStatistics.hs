@@ -10,6 +10,7 @@ import           Control.Monad.Trans.Maybe
 import           Data.Either.Combinators
 import           Lndr.Types
 import           Lndr.Util
+import           Lndr.Web3
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Eth as Eth
 import qualified Network.HTTP.Simple       as HTTP
@@ -43,7 +44,7 @@ queryEtheruemPrice = do
 -- | Queries the blockchain for current blocknumber.
 currentBlockNumber :: MaybeT IO Integer
 currentBlockNumber = do
-    blockNumberTextE <- runWeb3 Eth.blockNumber
+    blockNumberTextE <- runLndrWeb3 Eth.blockNumber
     return $ case blockNumberTextE of
         Right numText -> hexToInteger numText
         Left _        -> 0

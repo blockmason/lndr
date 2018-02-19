@@ -9,6 +9,7 @@ import qualified Data.ByteString.Char8      as B (pack)
 import qualified Data.ByteString.Lazy       as B (fromStrict)
 import           Data.Either.Combinators    (mapLeft)
 import           Lndr.Types
+import           Lndr.Web3
 import           Network.Ethereum.Web3
 import           Servant
 
@@ -17,8 +18,8 @@ newtype LndrHandler a = LndrHandler {
 } deriving (Functor, Applicative, Monad, MonadReader ServerState, MonadError ServantErr, MonadIO)
 
 
-lndrWeb3 :: Web3 DefaultProvider b -> LndrHandler b
-lndrWeb3 = ioEitherToLndr . runWeb3
+lndrWeb3 :: Web3 LndrProvider b -> LndrHandler b
+lndrWeb3 = ioEitherToLndr . runLndrWeb3
 
 
 ioEitherToLndr :: Show a => IO (Either a b) -> LndrHandler b

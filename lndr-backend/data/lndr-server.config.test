@@ -37,9 +37,9 @@ accessKeyId = "AAAAAAAAAAAAAAAAAAAA"
 secretAccessKey= "6444444444444444444444444444444444444444"
 
 # postgres config
-postgresHost = "http://localhost"
-postgresPort = "5432"
+postgresHost = "localhost"
+postgresPort = 5432
 
-# ethereum config
-ethereumHost = "http://localhost"
-ethereumPort = "8545"
+# ethereum node config
+web3Host = "http://localhost"
+web3Port = "8545"

@@ -14,3 +14,7 @@ heartbeatInterval = 120
 awsPhotoBucket = "lndr-avatars"
 accessKeyId = "AAAAAAAAAAAAAAAAAAAA"
 secretAccessKey = "6444444444444444444444444444444444444444"
+postgresHost = ""
+postgresPort = ""
+ethereumHost = ""
+ethereumPort = ""

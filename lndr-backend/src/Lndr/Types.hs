@@ -228,7 +228,7 @@ data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
                                  , postgresHost          :: !String
                                  , postgresPort          :: !Word16
                                  , web3Host              :: !String
-                                 , web3Port              :: !String
+                                 , web3Port              :: !Word16
                                  }
 
 -- 'ConfigResponse' contains all the server data that users have access to via

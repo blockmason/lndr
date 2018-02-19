@@ -37,4 +37,4 @@ loadConfig = do
                           (loadEntry "web3Port")
 
 
-setEnvironmentConfigs config = setEnv "WEB3_PROVIDER" (web3Host config ++ ":" ++ web3Port config)
+setEnvironmentConfigs config = setEnv "WEB3_PROVIDER" (web3Host config ++ ":" ++ show (web3Port config))

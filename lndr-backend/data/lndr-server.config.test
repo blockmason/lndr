@@ -42,4 +42,4 @@ postgresPort = 5432
 
 # ethereum node config
 web3Host = "http://localhost"
-web3Port = "8545"
+web3Port = 8545

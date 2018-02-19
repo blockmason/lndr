@@ -38,7 +38,6 @@ import           Network.HTTP.Types
 import           Network.Wai
 import           Servant
 import           Servant.Docs
-import           System.FilePath
 import           Text.EmailAddress
 
 type LndrAPI =
@@ -173,7 +172,9 @@ updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
 freshState :: IO ServerState
 freshState = do
     serverConfig <- loadConfig
-    let dbConfig = DB.defaultConnectInfo { DB.connectUser = T.unpack $ dbUser serverConfig
+    let dbConfig = DB.defaultConnectInfo { DB.connectHost = postgresHost serverConfig
+                                         , DB.connectPort = postgresPort serverConfig
+                                         , DB.connectUser = T.unpack $ dbUser serverConfig
                                          , DB.connectPassword = T.unpack $ dbUserPassword serverConfig
                                          , DB.connectDatabase = T.unpack $ dbName serverConfig
                                          }

@@ -52,6 +52,7 @@ import           Data.Hashable
 import           Data.Pool
 import           Data.Text                     (Text)
 import qualified Data.Text                     as T
+import           Data.Word
 import           Database.PostgreSQL.Simple
 import           GHC.Generics
 import           Network.Ethereum.Web3.Address (Address)
@@ -225,7 +226,7 @@ data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
                                  , awsAccessKeyID        :: !ByteString
                                  , awsSecrtAccessKey     :: !ByteString
                                  , postgresHost          :: !String
-                                 , postgresPort          :: !String
+                                 , postgresPort          :: !Word16
                                  , web3Host              :: !String
                                  , web3Port              :: !String
                                  }

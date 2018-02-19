@@ -114,7 +114,7 @@ photoUploadHandler r@(ProfilePhotoRequest photo sig) = do
         elementName = Aws.ObjectKey . stripHexPrefix . T.pack $ show address ++ ".jpeg"
         body = Aws.toBody . B64.decodeLenient $ T.encodeUtf8 photo
         accessKeyId = awsAccessKeyID config
-        secretAccessKey = awsSecrtAccessKey config
+        secretAccessKey = awsSecretAccessKey config
         bucket = Aws.BucketName $ awsPhotoBucket config
     env <- liftIO . Aws.newEnv $ Aws.FromKeys (Aws.AccessKey accessKeyId) (Aws.SecretKey secretAccessKey)
     liftIO . runResourceT . Aws.runAWS env . Aws.within Aws.Oregon $

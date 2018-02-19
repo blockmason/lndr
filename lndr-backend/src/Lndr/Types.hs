@@ -52,6 +52,7 @@ import           Data.Hashable
 import           Data.Pool
 import           Data.Text                     (Text)
 import qualified Data.Text                     as T
+import           Data.Word
 import           Database.PostgreSQL.Simple
 import           GHC.Generics
 import           Network.Ethereum.Web3.Address (Address)
@@ -215,6 +216,8 @@ data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
                                  , dbUser                :: !Text
                                  , dbUserPassword        :: !Text
                                  , dbName                :: !Text
+                                 , dbHost                :: !String
+                                 , dbPort                :: !Word16
                                  , executionAddress      :: !Address
                                  , gasPrice              :: !Integer
                                  , maxGas                :: !Integer
@@ -223,7 +226,8 @@ data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
                                  , heartbeatInterval     :: !Int
                                  , awsPhotoBucket        :: !Text
                                  , awsAccessKeyID        :: !ByteString
-                                 , awsSecrtAccessKey     :: !ByteString
+                                 , awsSecretAccessKey    :: !ByteString
+                                 , web3Url               :: !String
                                  }
 
 -- 'ConfigResponse' contains all the server data that users have access to via

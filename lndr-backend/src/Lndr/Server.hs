@@ -19,28 +19,25 @@ import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Data.ByteString.Lazy       (ByteString)
-import           Data.Configurator
-import           Data.Configurator.Types
 import           Data.Either                (either)
-import qualified Data.HashMap.Strict        as H (lookup)
-import           Data.Maybe                 (fromMaybe)
 import           Data.Pool                  (createPool, withResource)
 import           Data.Text                  (Text)
 import qualified Data.Text                  as T
 import qualified Data.Text.Lazy             as LT
 import           Data.Text.Lazy.Encoding    (encodeUtf8)
 import qualified Database.PostgreSQL.Simple as DB
+import           Lndr.Config
 import qualified Lndr.Db                    as Db
 import           Lndr.Docs
 import           Lndr.EthereumInterface
 import           Lndr.Handler
 import           Lndr.Types
+import           Lndr.Web3
 import           Network.Ethereum.Web3      hiding (convert)
 import           Network.HTTP.Types
 import           Network.Wai
 import           Servant
 import           Servant.Docs
-import           System.FilePath
 import           Text.EmailAddress
 
 type LndrAPI =
@@ -166,7 +163,7 @@ app state = serve lndrAPI (readerServer state)
 updateDbFromLndrLogs :: ServerState -> IO ()
 updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
     config <- atomically $ readTVar configMVar
-    logs <- runWeb3 $ lndrLogs config Nothing Nothing
+    logs <- runLndrWeb3 $ lndrLogs config Nothing Nothing
     withResource pool . Db.insertCredits $ either (const []) id logs
 
 
@@ -175,35 +172,16 @@ updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
 freshState :: IO ServerState
 freshState = do
     serverConfig <- loadConfig
-    let dbConfig = DB.defaultConnectInfo { DB.connectUser = T.unpack $ dbUser serverConfig
+    setEnvironmentConfigs serverConfig
+    let dbConfig = DB.defaultConnectInfo { DB.connectHost = dbHost serverConfig
+                                         , DB.connectPort = dbPort serverConfig
+                                         , DB.connectUser = T.unpack $ dbUser serverConfig
                                          , DB.connectPassword = T.unpack $ dbUserPassword serverConfig
                                          , DB.connectDatabase = T.unpack $ dbName serverConfig
                                          }
 
     ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
                 <*> newTVarIO serverConfig
-
-
-loadConfig :: IO ServerConfig
-loadConfig = do
-    config <- getMap =<< load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
-    let loadEntry x = fromMaybe (error $ T.unpack x) $ convert =<< H.lookup x config
-    return $ ServerConfig (loadEntry "lndrUcacAddr")
-                          (loadEntry "creditProtocolAddress")
-                          (loadEntry "issueCreditEvent")
-                          (loadEntry "scanStartBlock")
-                          (loadEntry "dbUser")
-                          (loadEntry "dbUserPassword")
-                          (loadEntry "dbName")
-                          (loadEntry "executionAddress")
-                          (loadEntry "gasPrice")
-                          (loadEntry "maxGas")
-                          (loadEntry "urbanAirshipKey")
-                          (loadEntry "urbanAirshipSecret")
-                          (loadEntry "heartbeatInterval")
-                          (loadEntry "awsPhotoBucket")
-                          (loadEntry "accessKeyId")
-                          (loadEntry "secretAccessKey")
 
 
 runHeartbeat :: ServerState -> IO ThreadId

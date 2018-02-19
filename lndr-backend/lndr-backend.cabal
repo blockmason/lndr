@@ -18,7 +18,8 @@ library
                  , Lndr.Types
                  , Lndr.Util
                  , Lndr.Signature
-  other-modules: Lndr.Db
+  other-modules: Lndr.Config
+               , Lndr.Db
                , Lndr.Db.Friendships
                , Lndr.Db.Nicknames
                , Lndr.Db.PendingCredits
@@ -32,6 +33,7 @@ library
                , Lndr.Handler.Friend
                , Lndr.Handler.Types
                , Lndr.Notifications
+               , Lndr.Web3
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , amazonka

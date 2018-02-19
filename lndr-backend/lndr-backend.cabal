@@ -25,6 +25,7 @@ library
                , Lndr.Db.PushData
                , Lndr.Db.Types
                , Lndr.Db.VerifiedCredits
+               , Lndr.Config
                , Lndr.Docs
                , Lndr.Handler
                , Lndr.Handler.Admin
@@ -32,6 +33,7 @@ library
                , Lndr.Handler.Friend
                , Lndr.Handler.Types
                , Lndr.Notifications
+               , Lndr.Web3
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , amazonka

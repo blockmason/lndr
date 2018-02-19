@@ -172,6 +172,7 @@ updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
 freshState :: IO ServerState
 freshState = do
     serverConfig <- loadConfig
+    setEnvironmentConfigs serverConfig
     let dbConfig = DB.defaultConnectInfo { DB.connectHost = postgresHost serverConfig
                                          , DB.connectPort = postgresPort serverConfig
                                          , DB.connectUser = T.unpack $ dbUser serverConfig

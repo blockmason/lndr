@@ -8,6 +8,7 @@ import qualified Data.HashMap.Strict     as H (lookup)
 import           Data.Maybe                 (fromMaybe)
 import qualified Data.Text               as T
 import           Lndr.Types
+import           System.Environment      (setEnv)
 import           System.FilePath
 
 loadConfig :: IO ServerConfig
@@ -34,3 +35,6 @@ loadConfig = do
                           (loadEntry "postgresPort")
                           (loadEntry "web3Host")
                           (loadEntry "web3Port")
+
+
+setEnvironmentConfigs config = setEnv "WEB3_PROVIDER" (web3Host config ++ ":" ++ web3Port config)

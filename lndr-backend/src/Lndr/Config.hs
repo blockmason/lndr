@@ -36,4 +36,9 @@ loadConfig = do
                           (loadEntry "web3Url")
 
 
-setEnvironmentConfigs config = setEnv "WEB3_PROVIDER" (web3Url config)
+web3ProviderEnvVariable :: String
+web3ProviderEnvVariable = "WEB3_PROVIDER"
+
+
+setEnvironmentConfigs :: ServerConfig -> IO ()
+setEnvironmentConfigs config = setEnv web3ProviderEnvVariable (web3Url config)

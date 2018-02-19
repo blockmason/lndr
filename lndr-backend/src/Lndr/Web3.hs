@@ -10,8 +10,8 @@ import           System.Environment      (lookupEnv)
 data LndrProvider
 
 instance Provider LndrProvider where
-    rpcUri = liftIO (fromMaybe "http://localhost:8545" <$> lookupEnv "WEB3_PROVIDER")
-
+    rpcUri = liftIO (errorOnNothing <$> lookupEnv web3ProviderEnvVariable)
+        where errorOnNothing = fromMaybe (error "WEB3_PROVIDER env variable not set.")
 
 runLndrWeb3 :: MonadIO m => Web3 LndrProvider a -> m (Either Web3Error a)
 runLndrWeb3 = runWeb3'

@@ -28,10 +28,6 @@ jobs:
         command: |
           stack setup
     - run:
-        name: stack build
-        command: |
-          stack build
-    - run:
         name: stack install
         command: |
           stack install

@@ -24,15 +24,15 @@ jobs:
         keys:
         - v2-{{ checksum "stack.yaml" }}
     - run:
-        name: Setup
+        name: stack setup
         command: |
           stack setup
     - run:
-        name: Build
+        name: stack build
         command: |
           stack build
     - run:
-        name: Install
+        name: stack install
         command: |
           stack install
     - save_cache:

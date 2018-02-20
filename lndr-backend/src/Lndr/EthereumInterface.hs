@@ -69,13 +69,13 @@ import           Prelude                     hiding (lookup, (!!))
 -- | Submit a bilateral credit record to the Credit Protocol smart contract.
 finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord
                     -> IO (Either Web3Error TxHash)
-finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _ _ _ _ _ _ _) = do
+finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _ _ _ _ ucac _ _ _) = do
       let (sig1r, sig1s, sig1v) = decomposeSig sig1
           (sig2r, sig2s, sig2v) = decomposeSig sig2
           encodedMemo :: BytesN 32
           encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
       runLndrWeb3 $ issueCredit callVal
-                            (lndrUcacAddr config)
+                            ucac
                             creditor debtor amount
                             [ sig1r, sig1s, sig1v ]
                             [ sig2r, sig2s, sig2v ]
@@ -136,7 +136,7 @@ verifySettlementPayment txHash creditor debtor amount = do
 
 
 settlementDataFromCreditRecord :: CreditRecord -> MaybeT IO SettlementData
-settlementDataFromCreditRecord (CreditRecord _ _ amount _ _ _ _ _ saM scM sbnM) = do
+settlementDataFromCreditRecord (CreditRecord _ _ amount _ _ _ _ _ _ saM scM sbnM) = do
     currency <- MaybeT (return scM :: IO (Maybe Text))
     prices <- queryEtheruemPrices
     -- assumes USD / ETH settlement for now

@@ -51,5 +51,5 @@ insertPending creditRecord settlementDataM conn = do
 
 creditRecordToPendingTuple :: CreditRecord
                            -> (Address, Address, Integer, Text, Address, Integer, Text, Text)
-creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig _ _ _) =
+creditRecordToPendingTuple (CreditRecord creditor debtor amount memo submitter nonce hash sig _ _ _ _) =
     (creditor, debtor, amount, memo, submitter, nonce, hash, sig)

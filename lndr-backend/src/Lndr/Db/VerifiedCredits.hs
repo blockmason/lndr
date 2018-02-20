@@ -14,8 +14,17 @@ import           Lndr.Util
 import           Network.Ethereum.Web3
 
 insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
-insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _ _ _ _) conn =
-    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig)
+insertCredit creditorSig debtorSig creditRecord conn =
+    let query = "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)"
+    in fromIntegral <$> execute conn query ( creditor creditRecord
+                                           , debtor creditRecord
+                                           , amount creditRecord
+                                           , memo creditRecord
+                                           , nonce creditRecord
+                                           , hash creditRecord
+                                           , creditorSig
+                                           , debtorSig
+                                           )
 
 
 insertCredits :: [IssueCreditLog] -> Connection -> IO Int
@@ -75,17 +84,18 @@ lookupSettlementCreditByHash hash conn = do
 
 lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text))
 lookupCreditByHash hash conn = do
-                let process (creditor, debtor, amount, nonce, memo, sig1, sig2) =
+                let process (creditor, debtor, amount, nonce, memo, sig1, sig2, ucac) =
                         ( CreditRecord creditor debtor
                                        ((floor :: Rational -> Integer) amount) memo
                                        creditor ((floor :: Rational -> Integer) nonce) hash sig1
+                                       ucac
                                        Nothing
                                        Nothing
                                        Nothing
                         , sig1
                         , sig2
                         )
-                (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
+                (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature, ucac FROM verified_credits WHERE hash = ?" (Only hash)
 
 
 -- Flips verified bit on once a settlement payment has been confirmed

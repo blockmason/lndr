@@ -27,6 +27,7 @@ crSigned = CreditRecord "0x11edd217a875063583dd1b638d16810c5d34d54b"
                         0
                         "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c"
                         "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
+                        "0x718d7217a875063583dd1b638d16810c5d34d54b"
                         Nothing
                         Nothing
                         Nothing

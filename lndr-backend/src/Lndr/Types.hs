@@ -17,11 +17,9 @@ module Lndr.Types
     , Nick
     , ProfilePhotoRequest(..)
     -- TODO clean this up, very unorganized as is
-    , CreditRecord( CreditRecord, hash, creditor, debtor, submitter, signature
-                  , nonce, settlementAmount
-                  )
+    , CreditRecord(..)
     , SettlementCreditRecord(..)
-    , IssueCreditLog(IssueCreditLog, ucac, amount)
+    , IssueCreditLog(..)
     , SettlementData(SettlementData)
     , SettlementsResponse(..)
     , VerifySettlementRequest(..)
@@ -41,7 +39,7 @@ module Lndr.Types
     ) where
 
 import           Control.Concurrent.STM.TVar
-import           Control.Lens                  (over, _head)
+import           Control.Lens                  (over, _head, makeLenses)
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.ByteString               (ByteString)
@@ -92,13 +90,14 @@ data SettlementData = SettlementData { settlementAmount      :: Integer
                                      , settlementBlocknumber :: Integer
                                      }
 
-data IssueCreditLog = IssueCreditLog { ucac     :: Address
-                                     , creditor :: Address
-                                     , debtor   :: Address
-                                     , amount   :: Integer
-                                     , nonce    :: Integer
-                                     , memo     :: Text
+data IssueCreditLog = IssueCreditLog { _ucac     :: Address
+                                     , _creditor :: Address
+                                     , _debtor   :: Address
+                                     , _amount   :: Integer
+                                     , _nonce    :: Integer
+                                     , _memo     :: Text
                                      } deriving (Show, Generic)
+$(makeLenses ''IssueCreditLog)
 $(deriveJSON defaultOptions ''IssueCreditLog)
 
 instance Eq IssueCreditLog where
@@ -114,6 +113,7 @@ data CreditRecord = CreditRecord { creditor              :: Address
                                  , nonce                 :: Integer
                                  , hash                  :: CreditHash
                                  , signature             :: Signature
+                                 , ucac                  :: Address
                                  , settlementAmount      :: Maybe Integer
                                  , settlementCurrency    :: Maybe Text
                                  , settlementBlocknumber :: Maybe Integer

@@ -1,25 +1,14 @@
 defaults: &defaults
   working_directory: ~
   docker:
-  - image: debian:stretch
+  - image: blockmason/lndr-circleci:1.0.0.0
 
 version: 2
 jobs:
   build:
     <<: *defaults
     steps:
-    - run:
-        name: Install system dependencies
-        command: |
-          apt-get update
-          apt-get install build-essential curl dh-autoreconf git libpq-dev postgresql postgresql-client -y
-          apt-get --purge autoremove
-          apt-get clean
     - checkout
-    - run:
-        name: Install the Haskell tool stack
-        command: |
-          curl -sSL https://get.haskellstack.org/ | sh
     - restore_cache:
         keys:
         - v2-{{ checksum "stack.yaml" }}

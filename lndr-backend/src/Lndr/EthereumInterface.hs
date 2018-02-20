@@ -50,6 +50,7 @@ import qualified Data.ByteString.Base16      as BS16
 import           Data.Default
 import           Data.Either                 (rights)
 import           Data.List.Safe              ((!!))
+import qualified Data.Map                    as M
 import           Data.Text                   (Text)
 import qualified Data.Text.Encoding          as T
 import           Lndr.NetworkStatistics
@@ -96,7 +97,7 @@ lndrLogs :: Provider a => ServerConfig -> Maybe Address -> Maybe Address
 lndrLogs config creditorM debtorM = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just $ creditProtocolAddress config)
                         (Just [ Just (issueCreditEvent config)
-                              , Just (addressToBytes32 $ snd . head $ lndrUcacAddrs config)
+                              , addressToBytes32 <$> M.lookup "USD" (lndrUcacAddrs config)
                               , addressToBytes32 <$> creditorM
                               , addressToBytes32 <$> debtorM ])
                         (Just . integerToHex' $ scanStartBlock config)

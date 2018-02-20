@@ -8,12 +8,13 @@
 module Lndr.Docs where
 
 import           Data.Maybe                    (fromJust)
+import qualified Data.Map                      as M
 import           Data.Text                     (Text)
 import           Lndr.Types
 import           Network.Ethereum.Web3.Address
 import           Servant.API
 import           Servant.Docs
-import           Text.EmailAddress as Email
+import           Text.EmailAddress             as Email
 
 creditHash :: Text
 creditHash = "0x7e2e9ff3a5fc148cf76261755c4c666630bfc3a28d02733cfbe721fc965aca28"
@@ -37,7 +38,7 @@ crSettleSigned = SettlementCreditRecord crSigned (Just "0x4358c649de5746c9167337
 
 instance ToSample ConfigResponse where
     toSamples _ = singleSample $
-        ConfigResponse [("USD", "0x11edd217a875063583dd1b638d16810c5d34d54b")]
+        ConfigResponse (M.fromList [("USD", "0x7899b83071d9704af0b132859a04bb1698a3acaf")])
                        "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
 
 instance ToSample SettlementsResponse where

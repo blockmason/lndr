@@ -47,6 +47,7 @@ import           Data.Char                     (toLower)
 import qualified Data.Configurator.Types       as Conf
 import           Data.Either.Combinators       (fromRight, mapLeft)
 import           Data.Hashable
+import qualified Data.Map                      as M
 import           Data.Pool
 import           Data.Text                     (Text)
 import qualified Data.Text                     as T
@@ -98,8 +99,7 @@ data IssueCreditLog = IssueCreditLog { _ucac     :: Address
                                      , _memo     :: Text
                                      } deriving (Show, Generic)
 $(makeLenses ''IssueCreditLog)
--- TODO update
-$(deriveJSON defaultOptions ''IssueCreditLog)
+$(deriveJSON defaultOptions { fieldLabelModifier = drop 1 } ''IssueCreditLog)
 
 instance Eq IssueCreditLog where
     (==) (IssueCreditLog u1 c1 d1 a1 n1 _) (IssueCreditLog u2 c2 d2 a2 n2 _) =
@@ -210,7 +210,7 @@ instance ToJSON Notification where
         where deviceChannel Ios     = "ios_channel"
               deviceChannel Android = "android_channel"
 
-data ServerConfig = ServerConfig { lndrUcacAddrs         :: [(Text, Address)]
+data ServerConfig = ServerConfig { lndrUcacAddrs         :: M.Map Text Address
                                  , creditProtocolAddress :: !Address
                                  , issueCreditEvent      :: !Text
                                  , scanStartBlock        :: !Integer
@@ -234,7 +234,7 @@ data ServerConfig = ServerConfig { lndrUcacAddrs         :: [(Text, Address)]
 -- 'ConfigResponse' contains all the server data that users have access to via
 -- the /config endpoint. By and large, this endpoint is used by clients to
 -- ensure their configuratoins match the server's.
-data ConfigResponse = ConfigResponse { lndrAddresses :: [(Text, Address)]
+data ConfigResponse = ConfigResponse { configResponseLndrAddresses :: M.Map Text Address
                                      , configResponseCreditProtocolAddress :: Address
                                      }
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 14 }) ''ConfigResponse)

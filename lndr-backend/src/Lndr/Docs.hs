@@ -36,8 +36,9 @@ crSettleSigned :: SettlementCreditRecord
 crSettleSigned = SettlementCreditRecord crSigned (Just "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c")
 
 instance ToSample ConfigResponse where
-    toSamples _ = singleSample $ ConfigResponse "0x11edd217a875063583dd1b638d16810c5d34d54b"
-                                                "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
+    toSamples _ = singleSample $
+        ConfigResponse [("USD", "0x11edd217a875063583dd1b638d16810c5d34d54b")]
+                       "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
 
 instance ToSample SettlementsResponse where
     toSamples _ = singleSample $ SettlementsResponse [crSigned] [crSettleSigned]

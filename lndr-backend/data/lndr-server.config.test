@@ -1,8 +1,8 @@
 # lndr addresses
 lndr-ucacs {
     usd = "0x7899b83071d9704af0b132859a04bb1698a3acaf"
-    jpy  = "0x0000000000000000000000009a04bb1698a3acf6"
-    krw = "0x0000000000000000000000009a04bb1698a3aceb"
+    jpy  = "0x9d9462f70067f506ac26bd523222f4f8020924d4"
+    krw = "0x9945a5b005a898a435adf30fe88f2818ccc0ba5c"
 }
 
 # Credit Protocol contract address, called for 'issueCredit' among others

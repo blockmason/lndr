@@ -96,7 +96,7 @@ lndrLogs :: Provider a => ServerConfig -> Maybe Address -> Maybe Address
 lndrLogs config creditorM debtorM = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just $ creditProtocolAddress config)
                         (Just [ Just (issueCreditEvent config)
-                              , Just (addressToBytes32 $ lndrUcacAddr config)
+                              , Just (addressToBytes32 $ snd . head $ lndrUcacAddrs config)
                               , addressToBytes32 <$> creditorM
                               , addressToBytes32 <$> debtorM ])
                         (Just . integerToHex' $ scanStartBlock config)

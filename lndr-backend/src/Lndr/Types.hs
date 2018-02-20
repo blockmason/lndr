@@ -210,7 +210,7 @@ instance ToJSON Notification where
         where deviceChannel Ios     = "ios_channel"
               deviceChannel Android = "android_channel"
 
-data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
+data ServerConfig = ServerConfig { lndrUcacAddrs         :: [(Text, Address)]
                                  , creditProtocolAddress :: !Address
                                  , issueCreditEvent      :: !Text
                                  , scanStartBlock        :: !Integer
@@ -234,7 +234,7 @@ data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
 -- 'ConfigResponse' contains all the server data that users have access to via
 -- the /config endpoint. By and large, this endpoint is used by clients to
 -- ensure their configuratoins match the server's.
-data ConfigResponse = ConfigResponse { configResponseLndrAddress :: Address
+data ConfigResponse = ConfigResponse { lndrAddresses :: [(Text, Address)]
                                      , configResponseCreditProtocolAddress :: Address
                                      }
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 14 }) ''ConfigResponse)

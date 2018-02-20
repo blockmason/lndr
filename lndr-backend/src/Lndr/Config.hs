@@ -15,7 +15,9 @@ loadConfig :: IO ServerConfig
 loadConfig = do
     config <- getMap =<< load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
     let loadEntry x = fromMaybe (error $ T.unpack x) $ convert =<< H.lookup x config
-    return $ ServerConfig (loadEntry "lndr-ucacs.usd")
+    return $ ServerConfig [ ("USD", loadEntry "lndr-ucacs.usd")
+                          , ("JPY", loadEntry "lndr-ucacs.jpy")
+                          , ("KRW", loadEntry "lndr-ucacs.krw") ]
                           (loadEntry "creditProtocolAddress")
                           (loadEntry "issueCreditEvent")
                           (loadEntry "scanStartBlock")

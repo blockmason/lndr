@@ -22,7 +22,7 @@ jobs:
           curl -sSL https://get.haskellstack.org/ | sh
     - restore_cache:
         keys:
-        - v1-{{ checksum "stack.yaml" }}
+        - v2-{{ checksum "stack.yaml" }}
     - run:
         name: Setup
         command: |
@@ -36,7 +36,7 @@ jobs:
         command: |
           stack install
     - save_cache:
-        key: v1-{{ checksum "stack.yaml" }}
+        key: v2-{{ checksum "stack.yaml" }}
         paths:
         - ~/.ghc
         - ~/.cabal

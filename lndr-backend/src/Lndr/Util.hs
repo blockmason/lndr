@@ -133,9 +133,9 @@ configToResponse :: ServerConfig -> ConfigResponse
 configToResponse config = ConfigResponse (lndrUcacAddr config) (creditProtocolAddress config)
 
 
-creditRowToCreditRecord :: (Address, Address, Rational, Text, Address, Rational, Text, Text)
+creditRowToCreditRecord :: (Address, Address, Rational, Text, Address, Rational, Text, Text, Address)
                         -> CreditRecord
-creditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, signature) = CreditRecord creditor debtor (floor amount) memo submitter (floor nonce) hash signature creditor {- TODO -} Nothing Nothing Nothing
+creditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac) = CreditRecord creditor debtor (floor amount) memo submitter (floor nonce) hash signature ucac Nothing Nothing Nothing
 
 
 -- TODO the signature is excluded here to keep number of parameters below 10

@@ -98,6 +98,7 @@ data IssueCreditLog = IssueCreditLog { _ucac     :: Address
                                      , _memo     :: Text
                                      } deriving (Show, Generic)
 $(makeLenses ''IssueCreditLog)
+-- TODO update
 $(deriveJSON defaultOptions ''IssueCreditLog)
 
 instance Eq IssueCreditLog where

@@ -12,14 +12,15 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules: Lndr.EthereumInterface
+  exposed-modules: Lndr.Config
+                 , Lndr.EthereumInterface
                  , Lndr.NetworkStatistics
                  , Lndr.Server
                  , Lndr.Types
                  , Lndr.Util
                  , Lndr.Signature
-  other-modules: Lndr.Config
-               , Lndr.Db
+                 , Lndr.Web3
+  other-modules: Lndr.Db
                , Lndr.Db.Friendships
                , Lndr.Db.Nicknames
                , Lndr.Db.PendingCredits
@@ -33,7 +34,6 @@ library
                , Lndr.Handler.Friend
                , Lndr.Handler.Types
                , Lndr.Notifications
-               , Lndr.Web3
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , amazonka

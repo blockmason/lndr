@@ -9,6 +9,7 @@ import           Data.Either.Combinators        (fromRight)
 import           Data.Maybe                     (fromJust)
 import qualified Data.Text.Lazy                 as LT
 import           Lndr.CLI.Args
+import           Lndr.Config
 import           Lndr.EthereumInterface
 import           Lndr.NetworkStatistics
 import           Lndr.Signature
@@ -17,6 +18,7 @@ import           Lndr.Util                      (hashCreditRecord,
                                                  parseIssueCreditInput,
                                                  textToAddress,
                                                  addHexPrefix)
+import           Lndr.Web3
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Eth      as Eth
 import           Network.Ethereum.Web3.Types
@@ -24,6 +26,8 @@ import           Test.Framework
 import           Test.Framework.Providers.HUnit
 import           Test.HUnit                     hiding (Test)
 import qualified Text.EmailAddress              as Email
+import           System.Environment      (setEnv)
+import           System.Directory
 
 -- TODO get rid of this once version enpoint point works
 ucacAddr = "0x7899b83071d9704af0b132859a04bb1698a3acaf"
@@ -48,7 +52,9 @@ testEmailText = "tim@blockmason.io"
 testEmail = fromJust $ Email.emailAddressFromText testEmailText
 
 main :: IO ()
-main = defaultMain tests
+main = do
+    setEnv web3ProviderEnvVariable "http://localhost:8545"
+    defaultMain tests
 
 
 tests :: [Test]
@@ -226,12 +232,12 @@ basicSettlementTest = do
     let settleAmount = fmap Quantity . settlementAmount . settlementCreditRecord $ head bilateralPendingSettlements
 
     -- user5 transfers eth to user6
-    txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)
-                                                    testAddress6
-                                                    (Just 21000)
-                                                    Nothing
-                                                    settleAmount
-                                                    Nothing
+    txHashE <- runLndrWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)
+                                                        testAddress6
+                                                        (Just 21000)
+                                                        Nothing
+                                                        settleAmount
+                                                        Nothing
 
     let txHash = fromRight (error "error sending eth") txHashE
 
@@ -258,12 +264,12 @@ verifySettlementTest :: Assertion
 verifySettlementTest = do
     -- testAddress1 is the person revieving eth, thus the credit must record
     -- this address as the debtor.
-    txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
-                                                    testAddress1
-                                                    (Just 21000)
-                                                    Nothing
-                                                    (Just $ 10 ^ 18)
-                                                    Nothing
+    txHashE <- runLndrWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
+                                                        testAddress1
+                                                        (Just 21000)
+                                                        Nothing
+                                                        (Just $ 10 ^ 18)
+                                                        Nothing
     let txHash = fromRight (error "error sending eth") txHashE
 
     threadDelay (5 * 10 ^ 6)

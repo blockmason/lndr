@@ -63,6 +63,7 @@ test-suite server-cli-integration
   build-depends:       base
                      , lndr-cli
                      , lndr-backend
+                     , directory
                      , either
                      , emailaddress
                      , HUnit

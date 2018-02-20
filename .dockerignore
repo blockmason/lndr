@@ -1,0 +1,8 @@
+# By default, ignore everything.
+*
+
+# Required by the entry point
+!/docker-entrypoint.sh
+
+# Required by the entry point to configure the container
+!/lndr-backend/data/lndr-server.config.j2

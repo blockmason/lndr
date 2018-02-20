@@ -157,6 +157,7 @@ rejectHandler(RejectRequest hash sig) = do
     config <- liftIO . atomically $ readTVar configTVar
     pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
     let hashNotFound = throwError $ err404 { errBody = "credit hash does not refer to pending record" }
+    -- TODO clean this up
     (CreditRecord creditor debtor _ _ _ _ _ _ _ _ _ _) <- maybe hashNotFound pure pendingRecordM
     -- recover address from sig
     let signer = EU.ecrecover (stripHexPrefix sig) hash

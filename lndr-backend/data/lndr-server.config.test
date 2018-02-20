@@ -1,5 +1,9 @@
-# lndr-USD address
-lndrUcacAddr = "0x7899b83071d9704af0b132859a04bb1698a3acaf"
+# lndr addresses
+lndr-ucacs {
+    usd = "0x7899b83071d9704af0b132859a04bb1698a3acaf"
+    jpy  = "0x0000000000000000000000009a04bb1698a3acf6"
+    krw = "0x0000000000000000000000009a04bb1698a3aceb"
+}
 
 # Credit Protocol contract address, called for 'issueCredit' among others
 creditProtocolAddress = "0xd5ec73eac35fc9dd6c3f440bce314779fed09f60"
@@ -14,11 +18,13 @@ issueCreditEvent = "0xcbc85a9af1e8adce13cbeff2e71299b0f3243d7ef1eaec93a9a281e939
 scanStartBlock = 0
 
 # postgres config
-dbHost = "localhost"
-dbPort = 5432
-dbUser = "test"
-dbUserPassword = "test"
-dbName = "lndrtest"
+db {
+    host = "localhost"
+    port = 5432
+    user = "test"
+    userPassword = "test"
+    name = "lndrtest"
+}
 
 # configuration used for calling CP's 'issueCredit' function
 executionAddress = "0x198e13017d2333712bd942d8b028610b95c363da"
@@ -26,17 +32,21 @@ gasPrice = 200000000
 maxGas = 250000
 
 # urban airship credentials used for push notifications
-urbanAirshipKey = "4_88888888888mmmmmmmmm"
-urbanAirshipSecret = "rrrrrrrrrrrrrrrrrrrrrr"
+urban-airship {
+    key = "4_88888888888mmmmmmmmm"
+    secret = "rrrrrrrrrrrrrrrrrrrrrr"
+}
 
 # how often to run the heartbeat function in seconds. The heartbeat is
 # responsible for confirming settlement transactions.
 heartbeatInterval = 5
 
 # aws config and credentials
-awsPhotoBucket = "lndr-avatars"
-awsAccessKeyId = "AAAAAAAAAAAAAAAAAAAA"
-awsSecretAccessKey= "6444444444444444444444444444444444444444"
+aws {
+    photoBucket = "lndr-avatars"
+    accessKeyId = "AAAAAAAAAAAAAAAAAAAA"
+    secretAccessKey= "6444444444444444444444444444444444444444"
+}
 
 # ethereum node config
 web3Url = "http://localhost:8545"

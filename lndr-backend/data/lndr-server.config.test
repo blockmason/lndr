@@ -6,30 +6,30 @@ lndr-ucacs {
 }
 
 # Credit Protocol contract address, called for 'issueCredit' among others
-creditProtocolAddress = "0xd5ec73eac35fc9dd6c3f440bce314779fed09f60"
+credit-protocol-address = "0xd5ec73eac35fc9dd6c3f440bce314779fed09f60"
 
 # the signature of the issue credit event, used when scanning logs
-issueCreditEvent = "0xcbc85a9af1e8adce13cbeff2e71299b0f3243d7ef1eaec93a9a281e939aceb7b"
+issue-credit-event = "0xcbc85a9af1e8adce13cbeff2e71299b0f3243d7ef1eaec93a9a281e939aceb7b"
 
 # on startup, the server scans the blockchain for cp records. If any records
 # are missing from the db, rows are added so that user balances are properly
 # displayed. 'scanStartBlock' defines where the scan should begin; setting the
 # value equal to the block in which CP was created is a logical choice.
-scanStartBlock = 0
+scan-start-block = 0
 
 # postgres config
 db {
     host = "localhost"
     port = 5432
     user = "test"
-    userPassword = "test"
+    user-password = "test"
     name = "lndrtest"
 }
 
 # configuration used for calling CP's 'issueCredit' function
-executionAddress = "0x198e13017d2333712bd942d8b028610b95c363da"
-gasPrice = 200000000
-maxGas = 250000
+execution-address = "0x198e13017d2333712bd942d8b028610b95c363da"
+gas-price = 200000000
+max-gas = 250000
 
 # urban airship credentials used for push notifications
 urban-airship {
@@ -39,14 +39,14 @@ urban-airship {
 
 # how often to run the heartbeat function in seconds. The heartbeat is
 # responsible for confirming settlement transactions.
-heartbeatInterval = 5
+heartbeat-interval = 5
 
 # aws config and credentials
 aws {
-    photoBucket = "lndr-avatars"
-    accessKeyId = "AAAAAAAAAAAAAAAAAAAA"
-    secretAccessKey= "6444444444444444444444444444444444444444"
+    photo-bucket = "lndr-avatars"
+    access-key-id = "AAAAAAAAAAAAAAAAAAAA"
+    secret-access-key= "6444444444444444444444444444444444444444"
 }
 
 # ethereum node config
-web3Url = "http://localhost:8545"
+web3-url = "http://localhost:8545"

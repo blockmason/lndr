@@ -15,7 +15,7 @@ import           Network.Ethereum.Web3
 
 insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
 insertCredit creditorSig debtorSig creditRecord conn =
-    let query = "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)"
+    let query = "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac) VALUES (?,?,?,?,?,?,?,?,?)"
     in fromIntegral <$> execute conn query ( creditor creditRecord
                                            , debtor creditRecord
                                            , amount creditRecord
@@ -24,23 +24,21 @@ insertCredit creditorSig debtorSig creditRecord conn =
                                            , hash creditRecord
                                            , creditorSig
                                            , debtorSig
+                                           , ucac creditRecord
                                            )
 
 
 insertCredits :: [IssueCreditLog] -> Connection -> IO Int
 insertCredits creditLogs conn =
-    fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING" (creditLogToCreditTuple <$> creditLogs)
+    fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING" (creditLogToCreditTuple <$> creditLogs)
 
 
--- TODO fix this creditor, creditor repetition
 allCredits :: Connection -> IO [IssueCreditLog]
-allCredits conn = query_ conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits"
+allCredits conn = query_ conn "SELECT ucac, creditor, debtor, amount, nonce, memo FROM verified_credits"
 
--- TODO fix this creditor, creditor repetition
--- Boolean parameter determines if search is through settlement records or
--- non-settlement records
+
 lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
-lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
+lookupCreditByAddress addr conn = query conn "SELECT ucac, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
 
 
 deleteExpiredSettlementsAndAssociatedCredits :: Connection -> IO ()
@@ -64,7 +62,7 @@ updateSettlementTxHash hash txHash conn = fromIntegral <$> execute conn "UPDATE 
 
 
 lookupSettlementCreditByAddress :: Address -> Connection -> IO [SettlementCreditRecord]
-lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, verified_credits.hash, creditor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
+lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, verified_credits.hash, creditor_signature, ucac, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]
@@ -123,6 +121,6 @@ twoPartyNonce addr counterparty conn = do
 -- utility functions
 
 creditLogToCreditTuple :: IssueCreditLog
-                       -> (Address, Address, Integer, Text, Integer, Text, Text, Text)
-creditLogToCreditTuple cl@(IssueCreditLog _ creditor debtor amount nonce memo) =
-    (creditor, debtor, amount, memo, nonce, hashCreditLog cl, "", "")
+                       -> (Address, Address, Integer, Text, Integer, Text, Text, Text, Address)
+creditLogToCreditTuple cl@(IssueCreditLog ucac creditor debtor amount nonce memo) =
+    (creditor, debtor, amount, memo, nonce, hashCreditLog cl, "", "", ucac)

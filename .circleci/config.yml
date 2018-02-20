@@ -20,6 +20,9 @@ jobs:
         name: Install the Haskell tool stack
         command: |
           curl -sSL https://get.haskellstack.org/ | sh
+    - restore_cache:
+        keys:
+        - v1-{{ checksum "stack.yaml" }}
     - run:
         name: Setup
         command: |
@@ -32,6 +35,12 @@ jobs:
         name: Install
         command: |
           stack install
+    - save_cache:
+        key: v1-{{ checksum "stack.yaml" }}
+        paths:
+        - "${HOME}/.ghc"
+        - "${HOME}/.cabal"
+        - "${HOME}/.stack"
     - run:
         name: Prepare artifacts
         command: |

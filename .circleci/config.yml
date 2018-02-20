@@ -38,9 +38,9 @@ jobs:
     - save_cache:
         key: v1-{{ checksum "stack.yaml" }}
         paths:
-        - "${HOME}/.ghc"
-        - "${HOME}/.cabal"
-        - "${HOME}/.stack"
+        - ~/.ghc
+        - ~/.cabal
+        - ~/.stack
     - run:
         name: Prepare artifacts
         command: |

@@ -170,7 +170,6 @@ rejectHandler(RejectRequest hash sig) = do
                     nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
                     let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
                     case pushDataM of
-                        -- TODO include nickname in the alert if we intend to use it
                         Just (channelID, platform) -> void . liftIO $
                             sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
                         Nothing -> return ()

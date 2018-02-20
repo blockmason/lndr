@@ -1,0 +1,48 @@
+defaults: &defaults
+  working_directory: ~
+  docker:
+  - image: debian:stretch
+
+version: 2
+jobs:
+  build:
+    <<: *defaults
+    steps:
+    - run:
+        name: Install system dependencies
+        command: |
+          apt-get update
+          apt-get install build-essential curl dh-autoreconf git libpq-dev postgresql postgresql-client -y
+          apt-get --purge autoremove
+          apt-get clean
+    - checkout
+    - run:
+        name: Install the Haskell tool stack
+        command: |
+          curl -sSL https://get.haskellstack.org/ | sh
+    - restore_cache:
+        keys:
+        - v2-{{ checksum "stack.yaml" }}
+    - run:
+        name: stack setup
+        command: |
+          stack setup
+    - run:
+        name: stack install
+        command: |
+          stack install
+    - save_cache:
+        key: v2-{{ checksum "stack.yaml" }}
+        paths:
+        - ~/.ghc
+        - ~/.cabal
+        - ~/.stack
+    - run:
+        name: Prepare artifacts
+        command: |
+          mkdir artifacts
+          for artifact in lndr lndr-server; do
+            cp "${HOME}/.local/bin/${artifact}" artifacts/
+          done
+    - store_artifacts:
+        path: artifacts

@@ -42,6 +42,7 @@ library
                      , base64-bytestring
                      , bytestring
                      , configurator
+                     , containers
                      , cryptonite
                      , data-default
                      , directory

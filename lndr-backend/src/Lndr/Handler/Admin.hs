@@ -39,7 +39,7 @@ unsubmittedHandler = do
     blockchainCreditsE <- liftIO . runLndrWeb3 $ lndrLogs config Nothing Nothing
     let blockchainCredits = either (const []) id blockchainCreditsE
     dbCredits <- liftIO $ withResource pool Db.allCredits
-    return $ (setUcac (lndrUcacAddr config) <$> dbCredits) \\ blockchainCredits
+    return $ dbCredits \\ blockchainCredits
 
 
 resubmitHandler :: Text -> LndrHandler NoContent

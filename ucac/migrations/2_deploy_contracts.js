@@ -20,11 +20,11 @@ module.exports = async function (deployer, network, accounts) {
 
         await deployer.deploy(CPToken,{from: web3.eth.accounts[0]})
         cpTokenContract = await CPToken.deployed();;
-        return deployer.deploy( CreditProtocol
-                              , cpTokenContract.address
-                              , web3.toBigNumber(2 * 10 ** 9)
-                              , web3.toBigNumber(1)
-                              , {from: web3.eth.accounts[0]});
+        await deployer.deploy( CreditProtocol
+                             , cpTokenContract.address
+                             , web3.toBigNumber(2 * 10 ** 9)
+                             , web3.toBigNumber(1)
+                             , {from: web3.eth.accounts[0]});
         creditProtocolContract = await CreditProtocol.deployed();
         await deployer.deploy(Lndr, {from: web3.eth.accounts[0]});
         await deployer.deploy(LndrJPY, {from: web3.eth.accounts[0]});

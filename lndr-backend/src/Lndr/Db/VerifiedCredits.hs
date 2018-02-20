@@ -14,24 +14,31 @@ import           Lndr.Util
 import           Network.Ethereum.Web3
 
 insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
-insertCredit creditorSig debtorSig (CreditRecord creditor debtor amount memo _ nonce hash _ _ _ _) conn =
-    fromIntegral <$> execute conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?)" (creditor, debtor, amount, memo, nonce, hash, creditorSig, debtorSig)
+insertCredit creditorSig debtorSig creditRecord conn =
+    let query = "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac) VALUES (?,?,?,?,?,?,?,?,?)"
+    in fromIntegral <$> execute conn query ( creditor creditRecord
+                                           , debtor creditRecord
+                                           , amount creditRecord
+                                           , memo creditRecord
+                                           , nonce creditRecord
+                                           , hash creditRecord
+                                           , creditorSig
+                                           , debtorSig
+                                           , ucac creditRecord
+                                           )
 
 
 insertCredits :: [IssueCreditLog] -> Connection -> IO Int
 insertCredits creditLogs conn =
-    fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING" (creditLogToCreditTuple <$> creditLogs)
+    fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING" (creditLogToCreditTuple <$> creditLogs)
 
 
--- TODO fix this creditor, creditor repetition
 allCredits :: Connection -> IO [IssueCreditLog]
-allCredits conn = query_ conn "SELECT creditor, creditor, debtor, amount, nonce, memo FROM verified_credits"
+allCredits conn = query_ conn "SELECT ucac, creditor, debtor, amount, nonce, memo FROM verified_credits"
 
--- TODO fix this creditor, creditor repetition
--- Boolean parameter determines if search is through settlement records or
--- non-settlement records
+
 lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
-lookupCreditByAddress addr conn = query conn "SELECT creditor, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
+lookupCreditByAddress addr conn = query conn "SELECT ucac, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
 
 
 deleteExpiredSettlementsAndAssociatedCredits :: Connection -> IO ()
@@ -55,7 +62,7 @@ updateSettlementTxHash hash txHash conn = fromIntegral <$> execute conn "UPDATE 
 
 
 lookupSettlementCreditByAddress :: Address -> Connection -> IO [SettlementCreditRecord]
-lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, verified_credits.hash, creditor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
+lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, verified_credits.hash, creditor_signature, ucac, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]
@@ -75,17 +82,18 @@ lookupSettlementCreditByHash hash conn = do
 
 lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text))
 lookupCreditByHash hash conn = do
-                let process (creditor, debtor, amount, nonce, memo, sig1, sig2) =
+                let process (creditor, debtor, amount, nonce, memo, sig1, sig2, ucac) =
                         ( CreditRecord creditor debtor
                                        ((floor :: Rational -> Integer) amount) memo
                                        creditor ((floor :: Rational -> Integer) nonce) hash sig1
+                                       ucac
                                        Nothing
                                        Nothing
                                        Nothing
                         , sig1
                         , sig2
                         )
-                (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?" (Only hash)
+                (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature, ucac FROM verified_credits WHERE hash = ?" (Only hash)
 
 
 -- Flips verified bit on once a settlement payment has been confirmed
@@ -113,6 +121,6 @@ twoPartyNonce addr counterparty conn = do
 -- utility functions
 
 creditLogToCreditTuple :: IssueCreditLog
-                       -> (Address, Address, Integer, Text, Integer, Text, Text, Text)
-creditLogToCreditTuple cl@(IssueCreditLog _ creditor debtor amount nonce memo) =
-    (creditor, debtor, amount, memo, nonce, hashCreditLog cl, "", "")
+                       -> (Address, Address, Integer, Text, Integer, Text, Text, Text, Address)
+creditLogToCreditTuple cl@(IssueCreditLog ucac creditor debtor amount nonce memo) =
+    (creditor, debtor, amount, memo, nonce, hashCreditLog cl, "", "", ucac)

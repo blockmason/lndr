@@ -8,12 +8,13 @@
 module Lndr.Docs where
 
 import           Data.Maybe                    (fromJust)
+import qualified Data.Map                      as M
 import           Data.Text                     (Text)
 import           Lndr.Types
 import           Network.Ethereum.Web3.Address
 import           Servant.API
 import           Servant.Docs
-import           Text.EmailAddress as Email
+import           Text.EmailAddress             as Email
 
 creditHash :: Text
 creditHash = "0x7e2e9ff3a5fc148cf76261755c4c666630bfc3a28d02733cfbe721fc965aca28"
@@ -27,6 +28,7 @@ crSigned = CreditRecord "0x11edd217a875063583dd1b638d16810c5d34d54b"
                         0
                         "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c"
                         "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
+                        "0x718d7217a875063583dd1b638d16810c5d34d54b"
                         Nothing
                         Nothing
                         Nothing
@@ -35,8 +37,9 @@ crSettleSigned :: SettlementCreditRecord
 crSettleSigned = SettlementCreditRecord crSigned (Just "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c")
 
 instance ToSample ConfigResponse where
-    toSamples _ = singleSample $ ConfigResponse "0x11edd217a875063583dd1b638d16810c5d34d54b"
-                                                "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
+    toSamples _ = singleSample $
+        ConfigResponse (M.fromList [("USD", "0x7899b83071d9704af0b132859a04bb1698a3acaf")])
+                       "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
 
 instance ToSample SettlementsResponse where
     toSamples _ = singleSample $ SettlementsResponse [crSigned] [crSettleSigned]

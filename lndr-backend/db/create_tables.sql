@@ -6,7 +6,9 @@ CREATE TABLE pending_credits (
     debtor      CHAR(40),
     amount      NUMERIC(78),
     memo        CHAR(32),
-    signature   CHAR(130)
+    signature   CHAR(130),
+    ucac        CHAR(40),
+    created_at  TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE verified_credits (
@@ -17,7 +19,9 @@ CREATE TABLE verified_credits (
     amount             NUMERIC(78),
     memo               CHAR(32),
     creditor_signature CHAR(130),
-    debtor_signature   CHAR(130)
+    debtor_signature   CHAR(130),
+    ucac               CHAR(40),
+    created_at         TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE settlements (
@@ -27,7 +31,7 @@ CREATE TABLE settlements (
     blocknumber        NUMERIC(78) NOT NULL,
     verified           BOOLEAN NOT NULL,
     tx_hash            CHAR(64),
-    created_at         TIMESTAMP DEFAULT now() NOT NULL
+    created_at         TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE friendships (
@@ -40,7 +44,8 @@ CREATE TABLE friendships (
 CREATE TABLE nicknames (
     address     CHAR(40) PRIMARY KEY,
     nickname    TEXT UNIQUE,
-    email       TEXT UNIQUE
+    email       TEXT UNIQUE,
+    created_at  TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE push_data (

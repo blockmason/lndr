@@ -50,6 +50,7 @@ import qualified Data.ByteString.Base16      as BS16
 import           Data.Default
 import           Data.Either                 (rights)
 import           Data.List.Safe              ((!!))
+import qualified Data.Map                    as M
 import           Data.Text                   (Text)
 import qualified Data.Text.Encoding          as T
 import           Lndr.NetworkStatistics
@@ -69,13 +70,13 @@ import           Prelude                     hiding (lookup, (!!))
 -- | Submit a bilateral credit record to the Credit Protocol smart contract.
 finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord
                     -> IO (Either Web3Error TxHash)
-finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _ _ _ _ _ _ _) = do
+finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _ _ _ _ ucac _ _ _) = do
       let (sig1r, sig1s, sig1v) = decomposeSig sig1
           (sig2r, sig2s, sig2v) = decomposeSig sig2
           encodedMemo :: BytesN 32
           encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
       runLndrWeb3 $ issueCredit callVal
-                            (lndrUcacAddr config)
+                            ucac
                             creditor debtor amount
                             [ sig1r, sig1s, sig1v ]
                             [ sig2r, sig2s, sig2v ]
@@ -96,7 +97,7 @@ lndrLogs :: Provider a => ServerConfig -> Maybe Address -> Maybe Address
 lndrLogs config creditorM debtorM = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just $ creditProtocolAddress config)
                         (Just [ Just (issueCreditEvent config)
-                              , Just (addressToBytes32 $ lndrUcacAddr config)
+                              , addressToBytes32 <$> M.lookup "USD" (lndrUcacAddrs config)
                               , addressToBytes32 <$> creditorM
                               , addressToBytes32 <$> debtorM ])
                         (Just . integerToHex' $ scanStartBlock config)
@@ -136,7 +137,7 @@ verifySettlementPayment txHash creditor debtor amount = do
 
 
 settlementDataFromCreditRecord :: CreditRecord -> MaybeT IO SettlementData
-settlementDataFromCreditRecord (CreditRecord _ _ amount _ _ _ _ _ saM scM sbnM) = do
+settlementDataFromCreditRecord (CreditRecord _ _ amount _ _ _ _ _ _ saM scM sbnM) = do
     currency <- MaybeT (return scM :: IO (Maybe Text))
     prices <- queryEtheruemPrices
     -- assumes USD / ETH settlement for now

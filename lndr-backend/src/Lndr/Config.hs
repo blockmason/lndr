@@ -5,6 +5,7 @@ module Lndr.Config where
 import           Data.Configurator
 import           Data.Configurator.Types
 import qualified Data.HashMap.Strict     as H (lookup)
+import           Data.Map                as M
 import           Data.Maybe                 (fromMaybe)
 import qualified Data.Text               as T
 import           Lndr.Types
@@ -15,24 +16,26 @@ loadConfig :: IO ServerConfig
 loadConfig = do
     config <- getMap =<< load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
     let loadEntry x = fromMaybe (error $ T.unpack x) $ convert =<< H.lookup x config
-    return $ ServerConfig (loadEntry "lndrUcacAddr")
+    return $ ServerConfig (M.fromList [ ("USD", loadEntry "lndr-ucacs.usd")
+                                      , ("JPY", loadEntry "lndr-ucacs.jpy")
+                                      , ("KRW", loadEntry "lndr-ucacs.krw") ])
                           (loadEntry "creditProtocolAddress")
                           (loadEntry "issueCreditEvent")
                           (loadEntry "scanStartBlock")
-                          (loadEntry "dbUser")
-                          (loadEntry "dbUserPassword")
-                          (loadEntry "dbName")
-                          (loadEntry "dbHost")
-                          (loadEntry "dbPort")
+                          (loadEntry "db.user")
+                          (loadEntry "db.userPassword")
+                          (loadEntry "db.name")
+                          (loadEntry "db.host")
+                          (loadEntry "db.port")
                           (loadEntry "executionAddress")
                           (loadEntry "gasPrice")
                           (loadEntry "maxGas")
-                          (loadEntry "urbanAirshipKey")
-                          (loadEntry "urbanAirshipSecret")
+                          (loadEntry "urban-airship.key")
+                          (loadEntry "urban-airship.secret")
                           (loadEntry "heartbeatInterval")
-                          (loadEntry "awsPhotoBucket")
-                          (loadEntry "awsAccessKeyId")
-                          (loadEntry "awsSecretAccessKey")
+                          (loadEntry "aws.photoBucket")
+                          (loadEntry "aws.accessKeyId")
+                          (loadEntry "aws.secretAccessKey")
                           (loadEntry "web3Url")
 
 

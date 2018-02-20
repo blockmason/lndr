@@ -17,11 +17,9 @@ module Lndr.Types
     , Nick
     , ProfilePhotoRequest(..)
     -- TODO clean this up, very unorganized as is
-    , CreditRecord( CreditRecord, hash, creditor, debtor, submitter, signature
-                  , nonce, settlementAmount
-                  )
+    , CreditRecord(..)
     , SettlementCreditRecord(..)
-    , IssueCreditLog(IssueCreditLog, ucac, amount)
+    , IssueCreditLog(..)
     , SettlementData(SettlementData)
     , SettlementsResponse(..)
     , VerifySettlementRequest(..)
@@ -41,7 +39,7 @@ module Lndr.Types
     ) where
 
 import           Control.Concurrent.STM.TVar
-import           Control.Lens                  (over, _head)
+import           Control.Lens                  (over, _head, makeLenses)
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.ByteString               (ByteString)
@@ -49,6 +47,7 @@ import           Data.Char                     (toLower)
 import qualified Data.Configurator.Types       as Conf
 import           Data.Either.Combinators       (fromRight, mapLeft)
 import           Data.Hashable
+import qualified Data.Map                      as M
 import           Data.Pool
 import           Data.Text                     (Text)
 import qualified Data.Text                     as T
@@ -92,14 +91,15 @@ data SettlementData = SettlementData { settlementAmount      :: Integer
                                      , settlementBlocknumber :: Integer
                                      }
 
-data IssueCreditLog = IssueCreditLog { ucac     :: Address
-                                     , creditor :: Address
-                                     , debtor   :: Address
-                                     , amount   :: Integer
-                                     , nonce    :: Integer
-                                     , memo     :: Text
+data IssueCreditLog = IssueCreditLog { _ucac     :: Address
+                                     , _creditor :: Address
+                                     , _debtor   :: Address
+                                     , _amount   :: Integer
+                                     , _nonce    :: Integer
+                                     , _memo     :: Text
                                      } deriving (Show, Generic)
-$(deriveJSON defaultOptions ''IssueCreditLog)
+$(makeLenses ''IssueCreditLog)
+$(deriveJSON defaultOptions { fieldLabelModifier = drop 1 } ''IssueCreditLog)
 
 instance Eq IssueCreditLog where
     (==) (IssueCreditLog u1 c1 d1 a1 n1 _) (IssueCreditLog u2 c2 d2 a2 n2 _) =
@@ -114,6 +114,7 @@ data CreditRecord = CreditRecord { creditor              :: Address
                                  , nonce                 :: Integer
                                  , hash                  :: CreditHash
                                  , signature             :: Signature
+                                 , ucac                  :: Address
                                  , settlementAmount      :: Maybe Integer
                                  , settlementCurrency    :: Maybe Text
                                  , settlementBlocknumber :: Maybe Integer
@@ -209,7 +210,7 @@ instance ToJSON Notification where
         where deviceChannel Ios     = "ios_channel"
               deviceChannel Android = "android_channel"
 
-data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
+data ServerConfig = ServerConfig { lndrUcacAddrs         :: M.Map Text Address
                                  , creditProtocolAddress :: !Address
                                  , issueCreditEvent      :: !Text
                                  , scanStartBlock        :: !Integer
@@ -233,7 +234,7 @@ data ServerConfig = ServerConfig { lndrUcacAddr          :: !Address
 -- 'ConfigResponse' contains all the server data that users have access to via
 -- the /config endpoint. By and large, this endpoint is used by clients to
 -- ensure their configuratoins match the server's.
-data ConfigResponse = ConfigResponse { configResponseLndrAddress :: Address
+data ConfigResponse = ConfigResponse { configResponseLndrAddresses :: M.Map Text Address
                                      , configResponseCreditProtocolAddress :: Address
                                      }
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 14 }) ''ConfigResponse)

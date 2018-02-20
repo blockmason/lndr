@@ -61,15 +61,15 @@ validSubmission memo submitterAddress creditor debtor sig hash = do
     unless (textToAddress signer == submitterAddress) $
         throwError (err401 {errBody = "Bad submitter sig"})
 
-
+-- TODO fix this
 submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
-submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig _ _ _) = do
+submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig _ _ _ _) = do
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
     settlementM <- liftIO . runMaybeT $ settlementDataFromCreditRecord signedRecord
 
-    let hash = hashCreditRecord (lndrUcacAddr config) nonce signedRecord
+    let hash = hashCreditRecord nonce signedRecord
 
     -- check that credit submission is valid
     validSubmission memo submitterAddress creditor debtor sig hash
@@ -157,7 +157,8 @@ rejectHandler(RejectRequest hash sig) = do
     config <- liftIO . atomically $ readTVar configTVar
     pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
     let hashNotFound = throwError $ err404 { errBody = "credit hash does not refer to pending record" }
-    (CreditRecord creditor debtor _ _ _ _ _ _ _ _ _) <- maybe hashNotFound pure pendingRecordM
+    -- TODO clean this up
+    (CreditRecord creditor debtor _ _ _ _ _ _ _ _ _ _) <- maybe hashNotFound pure pendingRecordM
     -- recover address from sig
     let signer = EU.ecrecover (stripHexPrefix sig) hash
     case signer of
@@ -170,7 +171,6 @@ rejectHandler(RejectRequest hash sig) = do
                     nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
                     let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
                     case pushDataM of
-                        -- TODO include nickname in the alert if we intend to use it
                         Just (channelID, platform) -> void . liftIO $
                             sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
                         Nothing -> return ()

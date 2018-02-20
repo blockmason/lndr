@@ -34,6 +34,7 @@ instance FromRow SettlementCreditRecord where
     creditRecord <- CreditRecord <$> field <*> field <*> ((floor :: Rational -> Integer) <$> field)
                                  <*> field <*> field
                                  <*> ((floor :: Rational -> Integer) <$> field) <*> field <*> field
+                                 <*> field
                                  <*> (fmap (floor :: Rational -> Integer) <$> field) <*> field
                                  <*> (fmap (floor :: Rational -> Integer) <$> field)
     txHash <- field

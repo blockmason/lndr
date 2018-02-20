@@ -4,6 +4,7 @@
 module Lndr.Util where
 
 import           Control.Exception
+import           Control.Lens
 import qualified Data.ByteArray                as BA
 import qualified Data.ByteString               as B
 import qualified Data.ByteString.Base16        as BS16
@@ -19,13 +20,14 @@ import qualified Network.Ethereum.Web3.Address as Addr
 import           Numeric                       (readHex, showHex)
 
 
-hashCreditRecord :: Address -> Nonce -> CreditRecord -> Text
-hashCreditRecord ucacAddr nonce (CreditRecord creditor debtor amount _ _ _ _ _ _ _ _) =
+-- TODO can nonce be removed here?
+hashCreditRecord :: Nonce -> CreditRecord -> Text
+hashCreditRecord nonce creditRecord =
                 let message = T.concat $
-                      stripHexPrefix <$> [ Addr.toText ucacAddr
-                                         , Addr.toText creditor
-                                         , Addr.toText debtor
-                                         , integerToHex amount
+                      stripHexPrefix <$> [ Addr.toText $ ucac creditRecord
+                                         , Addr.toText $ creditor creditRecord
+                                         , Addr.toText $ debtor creditRecord
+                                         , integerToHex $ amount creditRecord
                                          , integerToHex $ unNonce nonce
                                          ]
                 in EU.hashText message
@@ -123,24 +125,20 @@ alignR :: Text -> Text
 alignR = snd . align
 
 
-setUcac :: Address -> IssueCreditLog -> IssueCreditLog
-setUcac lndrUcac creditlog =  creditlog { ucac = lndrUcac }
-
-
 configToResponse :: ServerConfig -> ConfigResponse
-configToResponse config = ConfigResponse (lndrUcacAddr config) (creditProtocolAddress config)
+configToResponse config = ConfigResponse (lndrUcacAddrs config) (creditProtocolAddress config)
 
 
-creditRowToCreditRecord :: (Address, Address, Rational, Text, Address, Rational, Text, Text)
+creditRowToCreditRecord :: (Address, Address, Rational, Text, Address, Rational, Text, Text, Address)
                         -> CreditRecord
-creditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, signature) = CreditRecord creditor debtor (floor amount) memo submitter (floor nonce) hash signature Nothing Nothing Nothing
+creditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac) = CreditRecord creditor debtor (floor amount) memo submitter (floor nonce) hash signature ucac Nothing Nothing Nothing
 
 
 -- TODO the signature is excluded here to keep number of parameters below 10
 -- (postgres-simple limit)
 settlementCreditRowToCreditRecord :: (Address, Address, Rational, Text, Address, Rational, Text, Rational, Text, Rational)
                                   -> CreditRecord
-settlementCreditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, settlementAmount, settlementCurrency, settlementBlockNumber) = CreditRecord creditor debtor (floor amount) memo submitter (floor nonce) hash "" (Just $ floor settlementAmount) (Just settlementCurrency) (Just $ floor settlementBlockNumber)
+settlementCreditRowToCreditRecord (creditor, debtor, amount, memo, submitter, nonce, hash, settlementAmount, settlementCurrency, settlementBlockNumber) = CreditRecord creditor debtor (floor amount) memo submitter (floor nonce) hash "" creditor (Just $ floor settlementAmount) (Just settlementCurrency) (Just $ floor settlementBlockNumber)
 
 -- example input data: 0x0a5b410e000000000000000000000000869a8f2c3d22be392618ed06c8f548d1d5b5aed600000000000000000000000070d71994d0414c19c1f09f1f2946544e8d97c4290000000000000000000000001b5fec5060e51886184d30b3d211d50836087b83000000000000000000000000000000000000000000000000000000000000006481e2e0f119561515281f1c76d64431760a8612305931f5378f3004da3aa6209927b3f24c58888a06da343aa4bf1f3520122e703e6ccf146ee9ac60e2123b10d8000000000000000000000000000000000000000000000000000000000000001bb6ff2d00768200c769018c277d53b2e2a3a3d5f4d740a2acc3e35cb4421dd38a45a02960d1e92cf061a357a819072658a482c02c4a4ee06e01cb58cf66bc3a8f000000000000000000000000000000000000000000000000000000000000001c736f6d657468696e672020202020202020202020202020202020202020202020
 parseIssueCreditInput :: Nonce -> Text -> (IssueCreditLog, Text, Bool, Text, Bool)

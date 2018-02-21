@@ -19,6 +19,8 @@ instance ToField Address where
 instance FromField Address where
     fromField f dat = textToAddress <$> fromField f dat
 
+instance FromRow NickInfo
+
 instance FromField DevicePlatform where
     fromField f dat = toDevicePlatform <$> fromField f dat
         where toDevicePlatform :: Text -> DevicePlatform
@@ -36,7 +38,28 @@ instance FromRow CreditRecord where
                          else baseCredit <$> (fmap (floor :: Rational -> Integer) <$> field) <*> field
                                          <*> (fmap (floor :: Rational -> Integer) <$> field)
 
-instance FromRow NickInfo
+instance FromRow BilateralCreditRecord where
+    fromRow = do
+        creditor <- field
+        debtor <- field
+        amount <- (floor :: Rational -> Integer) <$> field
+        memo <- field
+        submitter <- field
+        nonce <- (floor :: Rational -> Integer) <$> field
+        hash <- field
+        ucac <- field
+        creditorSignature <- field
+        debtorSignature <- field
+        let signature = if submitter == creditor
+                            then creditorSignature
+                            else debtorSignature
+        return $ BilateralCreditRecord
+            -- TODO make this function more flexible to accept settlment
+            -- credits as well
+            (CreditRecord creditor debtor amount memo submitter nonce hash signature ucac Nothing Nothing Nothing)
+            creditorSignature
+            debtorSignature
+
 
 instance FromRow SettlementCreditRecord where
   fromRow = do

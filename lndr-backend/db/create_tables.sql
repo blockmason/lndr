@@ -21,7 +21,8 @@ CREATE TABLE verified_credits (
     creditor_signature CHAR(130),
     debtor_signature   CHAR(130),
     ucac               CHAR(40),
-    created_at         TIMESTAMP DEFAULT now()
+    created_at         TIMESTAMP DEFAULT now(),
+    submitter          CHAR(40)
 );
 
 CREATE TABLE settlements (

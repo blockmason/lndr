@@ -19,6 +19,7 @@ module Lndr.Types
     -- TODO clean this up, very unorganized as is
     , CreditRecord(..)
     , SettlementCreditRecord(..)
+    , BilateralCreditRecord(..)
     , IssueCreditLog(..)
     , SettlementData(SettlementData)
     , SettlementsResponse(..)

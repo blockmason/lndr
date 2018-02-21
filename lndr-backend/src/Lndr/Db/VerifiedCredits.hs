@@ -13,6 +13,7 @@ import           Lndr.Db.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3
 
+-- TODO improve this with Bilateral CreditRecord
 insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
 insertCredit creditorSig debtorSig creditRecord conn =
     let query = "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac) VALUES (?,?,?,?,?,?,?,?,?)"
@@ -61,6 +62,7 @@ updateSettlementTxHash :: Text -> Text -> Connection -> IO Int
 updateSettlementTxHash hash txHash conn = fromIntegral <$> execute conn "UPDATE settlements SET  tx_hash = ? WHERE hash = ?" (txHash, hash)
 
 
+-- TODO make this reflect reality
 lookupSettlementCreditByAddress :: Address -> Connection -> IO [SettlementCreditRecord]
 lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, verified_credits.hash, creditor_signature, ucac, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
 
@@ -80,6 +82,7 @@ lookupSettlementCreditByHash hash conn = do
             Nothing -> return Nothing
 
 
+-- TODO clean this up with BilateralCreditRecordType
 lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text))
 lookupCreditByHash hash conn = do
                 let process (creditor, debtor, amount, nonce, memo, sig1, sig2, ucac) =

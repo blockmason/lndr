@@ -43,5 +43,15 @@ module.exports = async function (deployer, network, accounts) {
                                                        , usd
                                                        , web3.toWei(100)
                                                        , {from: web3.eth.accounts[0]});
+        await cpTokenContract.approve(creditProtocolContract.address, web3.toWei(100), {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrJpyContract.address
+                                                       , jpy
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
+        await cpTokenContract.approve(creditProtocolContract.address, web3.toWei(100), {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrKrwContract.address
+                                                       , krw
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
     }
 };

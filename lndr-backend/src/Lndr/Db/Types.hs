@@ -46,8 +46,7 @@ instance FromRow SettlementCreditRecord where
                                  <*> field
                                  <*> (fmap (floor :: Rational -> Integer) <$> field) <*> field
                                  <*> (fmap (floor :: Rational -> Integer) <$> field)
-    txHash <- field
-    return $ SettlementCreditRecord creditRecord txHash
+    SettlementCreditRecord creditRecord <$> field
 
 instance FromRow IssueCreditLog where
   fromRow =

@@ -121,6 +121,10 @@ data CreditRecord = CreditRecord { creditor              :: Address
                                  } deriving (Show, Generic)
 $(deriveJSON (defaultOptions { omitNothingFields = True }) ''CreditRecord)
 
+data BilateralCreditRecord = BilateralCreditRecord { creditRecord :: CreditRecord
+                                                   , creditorSignature :: Signature
+                                                   , debtorSignature :: Signature
+                                                   }
 
 data SettlementCreditRecord =
     SettlementCreditRecord { settlementCreditRecord :: CreditRecord

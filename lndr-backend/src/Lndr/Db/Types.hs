@@ -90,3 +90,17 @@ instance FromRow IssueCreditLog where
   fromRow =
     IssueCreditLog <$> field <*> field <*> field <*> ((floor :: Rational -> Integer) <$> field)
                    <*> ((floor :: Rational -> Integer) <$> field) <*> field
+
+instance ToRow IssueCreditLog where
+    toRow cl@(IssueCreditLog ucac creditor debtor amount nonce memo) =
+        [ toField creditor
+        , toField debtor
+        , toField amount
+        , toField memo
+        , toField nonce
+        , toField $ hashCreditLog cl
+        , toField ("" :: Text)
+        , toField ("" :: Text)
+        , toField ucac
+        , toField creditor
+        ]

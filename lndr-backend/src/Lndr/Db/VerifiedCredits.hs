@@ -20,13 +20,8 @@ insertCredit bilateralCreditRecord conn = fromIntegral <$> execute conn sql bila
 
 insertCredits :: [IssueCreditLog] -> Connection -> IO Int
 insertCredits creditLogs conn =
-    fromIntegral <$> executeMany conn sql (creditLogToCreditTuple <$> creditLogs)
+    fromIntegral <$> executeMany conn sql creditLogs
     where sql = "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac, submitter) VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING"
-          creditLogToCreditTuple :: IssueCreditLog
-                                 -> ( Address, Address, Integer, Text, Integer
-                                    , Text, Text, Text, Address, Address)
-          creditLogToCreditTuple cl@(IssueCreditLog ucac creditor debtor amount nonce memo) =
-                (creditor, debtor, amount, memo, nonce, hashCreditLog cl, "", "", ucac, creditor)
 
 
 allCredits :: Connection -> IO [IssueCreditLog]
@@ -57,9 +52,8 @@ updateSettlementTxHash :: Text -> Text -> Connection -> IO Int
 updateSettlementTxHash hash txHash conn = fromIntegral <$> execute conn "UPDATE settlements SET  tx_hash = ? WHERE hash = ?" (txHash, hash)
 
 
--- TODO make this reflect reality
 lookupSettlementCreditByAddress :: Address -> Connection -> IO [SettlementCreditRecord]
-lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, verified_credits.hash, creditor_signature, ucac, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
+lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, creditor_signature, ucac, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]

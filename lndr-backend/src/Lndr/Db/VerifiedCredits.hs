@@ -14,24 +14,19 @@ import           Lndr.Util
 import           Network.Ethereum.Web3
 
 insertCredit :: BilateralCreditRecord -> Connection -> IO Int
-insertCredit (BilateralCreditRecord creditRecord creditorSig debtorSig) conn =
-    let sql = "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac, submitter) VALUES (?,?,?,?,?,?,?,?,?,?)"
-    in fromIntegral <$> execute conn sql ( creditor creditRecord
-                                         , debtor creditRecord
-                                         , amount creditRecord
-                                         , memo creditRecord
-                                         , nonce creditRecord
-                                         , hash creditRecord
-                                         , creditorSig
-                                         , debtorSig
-                                         , ucac creditRecord
-                                         , submitter creditRecord
-                                         )
+insertCredit bilateralCreditRecord conn = fromIntegral <$> execute conn sql bilateralCreditRecord
+    where sql = "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac, submitter) VALUES (?,?,?,?,?,?,?,?,?,?)"
 
 
 insertCredits :: [IssueCreditLog] -> Connection -> IO Int
 insertCredits creditLogs conn =
-    fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING" (creditLogToCreditTuple <$> creditLogs)
+    fromIntegral <$> executeMany conn sql (creditLogToCreditTuple <$> creditLogs)
+    where sql = "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac, submitter) VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING"
+          creditLogToCreditTuple :: IssueCreditLog
+                                 -> ( Address, Address, Integer, Text, Integer
+                                    , Text, Text, Text, Address, Address)
+          creditLogToCreditTuple cl@(IssueCreditLog ucac creditor debtor amount nonce memo) =
+                (creditor, debtor, amount, memo, nonce, hashCreditLog cl, "", "", ucac, creditor)
 
 
 allCredits :: Connection -> IO [IssueCreditLog]
@@ -108,10 +103,3 @@ twoPartyNonce :: Address -> Address -> Connection -> IO Nonce
 twoPartyNonce addr counterparty conn = do
     [Only nonce] <- query conn "SELECT COALESCE(MAX(nonce) + 1, 0) FROM verified_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
     return . Nonce . floor $ nonce
-
--- utility functions
-
-creditLogToCreditTuple :: IssueCreditLog
-                       -> (Address, Address, Integer, Text, Integer, Text, Text, Text, Address)
-creditLogToCreditTuple cl@(IssueCreditLog ucac creditor debtor amount nonce memo) =
-    (creditor, debtor, amount, memo, nonce, hashCreditLog cl, "", "", ucac)

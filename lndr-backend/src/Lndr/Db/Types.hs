@@ -7,6 +7,7 @@ import           Database.PostgreSQL.Simple
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.FromRow
 import           Database.PostgreSQL.Simple.ToField
+import           Database.PostgreSQL.Simple.ToRow
 import           Lndr.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3
@@ -59,6 +60,20 @@ instance FromRow BilateralCreditRecord where
             (CreditRecord creditor debtor amount memo submitter nonce hash signature ucac Nothing Nothing Nothing)
             creditorSignature
             debtorSignature
+
+instance ToRow BilateralCreditRecord where
+    toRow (BilateralCreditRecord creditRecord creditorSignature debtorSignature) =
+        [ toField $ creditor creditRecord
+        , toField $ debtor creditRecord
+        , toField $ amount creditRecord
+        , toField $ memo creditRecord
+        , toField $ nonce creditRecord
+        , toField $ hash creditRecord
+        , toField creditorSignature
+        , toField debtorSignature
+        , toField $ ucac creditRecord
+        , toField $ submitter creditRecord
+        ]
 
 
 instance FromRow SettlementCreditRecord where

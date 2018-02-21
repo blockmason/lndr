@@ -149,7 +149,7 @@ parseIssueCreditInput (Nonce nonce) inputData = ( creditLog
           creditorSig = parseSig $ T.splitAt 128 creditorSig'
           (debtorSig', rest6) = T.splitAt 192 rest5
           debtorSig = parseSig $ T.splitAt 128 debtorSig'
-          memo = T.decodeUtf8 . fst . BS16.decode $ T.encodeUtf8 $ T.take 32 rest6
+          memo = T.decodeUtf8 . fst . BS16.decode $ T.encodeUtf8 $ T.take 64 rest6
           creditLog = IssueCreditLog (textToAddress $ T.drop 24 ucacIdText)
                                      (textToAddress creditorText)
                                      (textToAddress debtorText)

@@ -25,7 +25,13 @@ instance FromField DevicePlatform where
               toDevicePlatform "ios" = Ios
               toDevicePlatform "android" = Android
 
-instance FromRow CreditRecord
+instance FromRow CreditRecord where
+    fromRow = CreditRecord <$> field <*> field <*> ((floor :: Rational -> Integer) <$> field)
+                           <*> field <*> field
+                           <*> ((floor :: Rational -> Integer) <$> field) <*> field <*> field
+                           <*> field
+                           <*> (fmap (floor :: Rational -> Integer) <$> field) <*> field
+                           <*> (fmap (floor :: Rational -> Integer) <$> field)
 
 instance FromRow NickInfo
 

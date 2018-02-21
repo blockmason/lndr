@@ -26,12 +26,15 @@ instance FromField DevicePlatform where
               toDevicePlatform "android" = Android
 
 instance FromRow CreditRecord where
-    fromRow = CreditRecord <$> field <*> field <*> ((floor :: Rational -> Integer) <$> field)
-                           <*> field <*> field
-                           <*> ((floor :: Rational -> Integer) <$> field) <*> field <*> field
-                           <*> field
-                           <*> (fmap (floor :: Rational -> Integer) <$> field) <*> field
-                           <*> (fmap (floor :: Rational -> Integer) <$> field)
+    fromRow = do
+       baseCredit <- CreditRecord <$> field <*> field <*> ((floor :: Rational -> Integer) <$> field)
+                                  <*> field <*> field
+                                  <*> ((floor :: Rational -> Integer) <$> field) <*> field <*> field
+                                  <*> field
+       remaining <- numFieldsRemaining
+       if remaining == 0 then return $ baseCredit Nothing Nothing Nothing
+                         else baseCredit <$> (fmap (floor :: Rational -> Integer) <$> field) <*> field
+                                         <*> (fmap (floor :: Rational -> Integer) <$> field)
 
 instance FromRow NickInfo
 

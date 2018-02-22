@@ -130,7 +130,7 @@ data BilateralCreditRecord = BilateralCreditRecord { creditRecord :: CreditRecor
                                                    , creditorSignature :: Signature
                                                    , debtorSignature :: Signature
                                                    , txHash :: Maybe TransactionHash
-                                                   }
+                                                   } deriving (Show, Generic)
 $(deriveJSON (defaultOptions { omitNothingFields = True }) ''BilateralCreditRecord)
 
 

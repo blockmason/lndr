@@ -63,7 +63,7 @@ counterpartiesByAddress addr conn = fmap fromOnly <$>
 
 lookupCreditByHash :: Text -> Connection -> IO (Maybe BilateralCreditRecord)
 lookupCreditByHash hash conn = listToMaybe <$> query conn sql (Only hash)
-    where sql = "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, ucac, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?"
+    where sql = "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, ucac, creditor_signature, debtor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE verified_credits.hash = ?"
 
 
 -- Flips verified bit on once a settlement payment has been confirmed

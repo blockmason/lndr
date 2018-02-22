@@ -28,11 +28,10 @@ before_install:
     - ssh-add ~/.ssh/id_rsa
     - sudo /etc/init.d/postgresql restart
     - npm install ganache-cli@beta --global
-    - npm install truffle@4.0.5 --global
     - ganache-cli --port 8545 --blocktime 1 -m gravity top burden flip student usage spell purchase hundred improve check genre > /dev/null &
     - cd ucac
     - npm install
-    - truffle migrate --reset --network testrpc
+    - npm run migrate
     - cd ..
     - sudo -u postgres createuser -s travis
     - sudo -u postgres createuser -s test

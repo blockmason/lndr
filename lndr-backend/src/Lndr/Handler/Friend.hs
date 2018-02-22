@@ -32,7 +32,7 @@ nickHandler r@(NickRequest addr nick sig) = do
     unless (Right addr == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool . Db.insertNick addr $ T.toLower nick
-    return NoContent
+    pure NoContent
 
 
 nickLookupHandler :: Address -> LndrHandler Text
@@ -65,13 +65,13 @@ userHandler (Just email) _ = do
     pool <- dbConnectionPool <$> ask
     nickInfoM <- liftIO . withResource pool . Db.lookupAddressByEmail $ email
     case nickInfoM of
-        Just nickInfo -> return nickInfo
+        Just nickInfo -> pure nickInfo
         Nothing -> throwError (err404 {errBody = "No corresponding user found based on provided email."})
 userHandler _ (Just nick) = do
     pool <- dbConnectionPool <$> ask
     nickInfoM <- liftIO . withResource pool . Db.lookupAddressByNick $ T.toLower nick
     case nickInfoM of
-        Just nickInfo -> return nickInfo
+        Just nickInfo -> pure nickInfo
         Nothing -> throwError (err404 {errBody = "No corresponding user found based on provided nick."})
 userHandler Nothing Nothing = throwError (err400 {errBody = "No identifying information specified."})
 
@@ -81,7 +81,7 @@ addFriendsHandler address adds = do
     -- TODO verify signature
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool $ Db.addFriends address adds
-    return NoContent
+    pure NoContent
 
 
 removeFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
@@ -89,7 +89,7 @@ removeFriendsHandler address removes = do
     -- TODO verify signature
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool $ Db.removeFriends address removes
-    return NoContent
+    pure NoContent
 
 
 emailHandler :: EmailRequest -> LndrHandler NoContent
@@ -97,7 +97,7 @@ emailHandler r@(EmailRequest addr email sig) = do
     unless (Right addr == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool . Db.insertEmail addr $ toText email
-    return NoContent
+    pure NoContent
 
 
 emailLookupHandler :: Address -> LndrHandler EmailAddress
@@ -119,4 +119,4 @@ photoUploadHandler r@(ProfilePhotoRequest photo sig) = do
     env <- liftIO . Aws.newEnv $ Aws.FromKeys (Aws.AccessKey accessKeyId) (Aws.SecretKey secretAccessKey)
     liftIO . runResourceT . Aws.runAWS env . Aws.within Aws.Oregon $
         Aws.send (set Aws.poACL (Just Aws.OPublicRead) $ Aws.putObject bucket elementName body)
-    return NoContent
+    pure NoContent

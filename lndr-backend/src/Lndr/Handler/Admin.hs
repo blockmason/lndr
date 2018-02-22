@@ -22,14 +22,14 @@ gasPriceHandler :: LndrHandler Integer
 gasPriceHandler = do
     configTVar <- serverConfig <$> ask
     config <- liftIO . atomically $ readTVar configTVar
-    return $ gasPrice config
+    pure $ gasPrice config
 
 
 setGasPriceHandler :: Integer -> LndrHandler NoContent
 setGasPriceHandler newGasPrice = do
     configTVar <- serverConfig <$> ask
     liftIO . atomically $ modifyTVar configTVar (\x -> x { gasPrice = newGasPrice })
-    return NoContent
+    pure NoContent
 
 
 unsubmittedHandler :: LndrHandler [IssueCreditLog]
@@ -39,7 +39,7 @@ unsubmittedHandler = do
     blockchainCreditsE <- liftIO . runLndrWeb3 $ lndrLogs config Nothing Nothing
     let blockchainCredits = either (const []) id blockchainCreditsE
     dbCredits <- liftIO $ withResource pool Db.allCredits
-    return $ dbCredits \\ blockchainCredits
+    pure $ dbCredits \\ blockchainCredits
 
 
 resubmitHandler :: Text -> LndrHandler NoContent
@@ -64,7 +64,7 @@ registerPushHandler r@(PushRequest channelID platform addr _) = do
     unless (Right addr == recoverSigner r) $ throwError (err400 {errBody = "Bad signature."})
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool $ Db.insertPushDatum addr channelID platform
-    return NoContent
+    pure NoContent
 
 
 configHandler :: LndrHandler ConfigResponse

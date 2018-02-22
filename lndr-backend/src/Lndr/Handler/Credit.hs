@@ -57,7 +57,7 @@ validSubmission memo submitterAddress creditor debtor sig hash = do
         throwError (err400 {errBody = "Creditor and debtor cannot be equal."})
 
     -- check that submitter signed the tx
-    signer <- ioEitherToLndr . return . EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
+    signer <- ioEitherToLndr . pure . EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
     unless (textToAddress signer == submitterAddress) $
         throwError (err401 {errBody = "Bad submitter sig"})
 
@@ -83,7 +83,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             case pushDataM of
                 Just (channelID, platform) -> void . liftIO $
                     sendNotification config (Notification channelID platform fullMsg notifyAction)
-                Nothing -> return ()
+                Nothing -> pure ()
 
     -- check if hash is already registered in pending txs
     pendingCredit <- liftIO . withResource pool $ Db.lookupPending hash
@@ -109,7 +109,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             -- send push notification to counterparty
             attemptToNotify "New pending credit from " NewPendingCredit
 
-    return NoContent
+    pure NoContent
 
 
 -- TODO change input to bilateral credit record
@@ -118,7 +118,7 @@ finalizeCredit pool storedRecord config creditorSig debtorSig hash settlementM =
             -- In case the record is a settlement, delay submitting credit to
             -- the blockchain until /verify_settlement is called
             case settlementM of
-                Just _  -> return ()
+                Just _  -> pure ()
                 Nothing -> void $ finalizeTransaction config (BilateralCreditRecord storedRecord creditorSig debtorSig Nothing)
 
             -- saving transaction record
@@ -175,9 +175,9 @@ rejectHandler(RejectRequest hash sig) = do
                     case pushDataM of
                         Just (channelID, platform) -> void . liftIO $
                             sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
-                        Nothing -> return ()
+                        Nothing -> pure ()
 
-                    return NoContent
+                    pure NoContent
             else throwError $ err401 { errBody = "bad rejection sig" }
 
 
@@ -190,7 +190,7 @@ verifyHandler r@(VerifySettlementRequest creditHash txHash creditorAddress signa
 
     -- write txHash to settlement record
     liftIO . withResource pool . Db.updateSettlementTxHash creditHash $ stripHexPrefix txHash
-    return NoContent
+    pure NoContent
 
 
 pendingHandler :: Address -> LndrHandler [CreditRecord]
@@ -214,7 +214,7 @@ pendingSettlementsHandler addr = do
     pool <- dbConnectionPool <$> ask
     pending <- liftIO . withResource pool $ Db.lookupPendingByAddress addr True
     verified <- liftIO $ withResource pool $ Db.lookupSettlementCreditByAddress addr
-    return $ SettlementsResponse pending verified
+    pure $ SettlementsResponse pending verified
 
 
 txHashHandler :: Text -> LndrHandler Text
@@ -222,7 +222,7 @@ txHashHandler creditHash = do
     pool <- dbConnectionPool <$> ask
     txHashM <- liftIO . withResource pool $ Db.txHashByCreditHash creditHash
     case txHashM of
-        (Just txHash) -> return txHash
+        (Just txHash) -> pure txHash
         Nothing -> throwError $ err404 { errBody = "Settlement credit not found" }
 
 

@@ -135,7 +135,7 @@ verifySettlementPayment (BilateralCreditRecord creditRecord _ _ (Just txHash)) =
                 toMatch = txTo transaction == Just (debtor creditRecord)
                 valueMatch = Just (hexToInteger $ txValue transaction) == settlementAmount creditRecord
             in return $ fromMatch && toMatch && valueMatch
-        _                        -> return False
+        _                        -> pure False
 verifySettlementPayment _ = pure False
 
 
@@ -148,4 +148,4 @@ settlementDataFromCreditRecord (CreditRecord _ _ amount _ _ _ _ _ _ saM scM sbnM
     -- dollars, so we have to divide by 100
     let settlementAmount = floor $ fromIntegral amount / usd prices * 10 ^ 16
     blockNumber <- currentBlockNumber
-    return $ SettlementData settlementAmount currency blockNumber
+    pure $ SettlementData settlementAmount currency blockNumber

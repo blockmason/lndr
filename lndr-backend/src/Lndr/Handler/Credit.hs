@@ -121,7 +121,7 @@ finalizeCredit pool storedRecord config creditorSig debtorSig hash settlementM =
                 Nothing -> void $ finalizeTransaction config creditorSig debtorSig storedRecord
 
             -- saving transaction record
-            withResource pool $ Db.insertCredit creditorSig debtorSig storedRecord
+            withResource pool $ Db.insertCredit $ BilateralCreditRecord storedRecord creditorSig debtorSig
             -- delete pending record after transaction finalization
             void . withResource pool $ Db.deletePending hash False
 

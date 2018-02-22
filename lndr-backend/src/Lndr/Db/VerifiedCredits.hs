@@ -13,24 +13,15 @@ import           Lndr.Db.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3
 
-insertCredit :: Text -> Text -> CreditRecord -> Connection -> IO Int
-insertCredit creditorSig debtorSig creditRecord conn =
-    let query = "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac) VALUES (?,?,?,?,?,?,?,?,?)"
-    in fromIntegral <$> execute conn query ( creditor creditRecord
-                                           , debtor creditRecord
-                                           , amount creditRecord
-                                           , memo creditRecord
-                                           , nonce creditRecord
-                                           , hash creditRecord
-                                           , creditorSig
-                                           , debtorSig
-                                           , ucac creditRecord
-                                           )
+insertCredit :: BilateralCreditRecord -> Connection -> IO Int
+insertCredit bilateralCreditRecord conn = fromIntegral <$> execute conn sql bilateralCreditRecord
+    where sql = "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac, submitter) VALUES (?,?,?,?,?,?,?,?,?,?)"
 
 
 insertCredits :: [IssueCreditLog] -> Connection -> IO Int
 insertCredits creditLogs conn =
-    fromIntegral <$> executeMany conn "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING" (creditLogToCreditTuple <$> creditLogs)
+    fromIntegral <$> executeMany conn sql creditLogs
+    where sql = "INSERT INTO verified_credits (creditor, debtor, amount, memo, nonce, hash, creditor_signature, debtor_signature, ucac, submitter) VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT (hash) DO NOTHING"
 
 
 allCredits :: Connection -> IO [IssueCreditLog]
@@ -62,7 +53,7 @@ updateSettlementTxHash hash txHash conn = fromIntegral <$> execute conn "UPDATE 
 
 
 lookupSettlementCreditByAddress :: Address -> Connection -> IO [SettlementCreditRecord]
-lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, creditor, nonce, verified_credits.hash, creditor_signature, ucac, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
+lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, creditor_signature, ucac, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]
@@ -75,25 +66,14 @@ lookupSettlementCreditByHash hash conn = do
         pairM <- fmap (first (floor :: Rational -> Integer)) . listToMaybe <$> query conn "SELECT amount, tx_hash FROM settlements WHERE hash = ?" (Only hash)
         case pairM of
             Just (settlementAmount, txHash) -> do
-                Just (cr, sig1, sig2) <- lookupCreditByHash hash conn
+                Just (BilateralCreditRecord cr sig1 sig2) <- lookupCreditByHash hash conn
                 return $ Just (cr { settlementAmount = Just settlementAmount }, sig1, sig2, txHash)
             Nothing -> return Nothing
 
 
-lookupCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text))
-lookupCreditByHash hash conn = do
-                let process (creditor, debtor, amount, nonce, memo, sig1, sig2, ucac) =
-                        ( CreditRecord creditor debtor
-                                       ((floor :: Rational -> Integer) amount) memo
-                                       creditor ((floor :: Rational -> Integer) nonce) hash sig1
-                                       ucac
-                                       Nothing
-                                       Nothing
-                                       Nothing
-                        , sig1
-                        , sig2
-                        )
-                (fmap process . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, nonce, memo, creditor_signature, debtor_signature, ucac FROM verified_credits WHERE hash = ?" (Only hash)
+lookupCreditByHash :: Text -> Connection -> IO (Maybe BilateralCreditRecord)
+lookupCreditByHash hash conn = listToMaybe <$> query conn sql (Only hash)
+    where sql = "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, ucac, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?"
 
 
 -- Flips verified bit on once a settlement payment has been confirmed
@@ -117,10 +97,3 @@ twoPartyNonce :: Address -> Address -> Connection -> IO Nonce
 twoPartyNonce addr counterparty conn = do
     [Only nonce] <- query conn "SELECT COALESCE(MAX(nonce) + 1, 0) FROM verified_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
     return . Nonce . floor $ nonce
-
--- utility functions
-
-creditLogToCreditTuple :: IssueCreditLog
-                       -> (Address, Address, Integer, Text, Integer, Text, Text, Text, Address)
-creditLogToCreditTuple cl@(IssueCreditLog ucac creditor debtor amount nonce memo) =
-    (creditor, debtor, amount, memo, nonce, hashCreditLog cl, "", "", ucac)

@@ -19,6 +19,7 @@ module Lndr.Types
     -- TODO clean this up, very unorganized as is
     , CreditRecord(..)
     , SettlementCreditRecord(..)
+    , BilateralCreditRecord(..)
     , IssueCreditLog(..)
     , SettlementData(SettlementData)
     , SettlementsResponse(..)
@@ -121,6 +122,10 @@ data CreditRecord = CreditRecord { creditor              :: Address
                                  } deriving (Show, Generic)
 $(deriveJSON (defaultOptions { omitNothingFields = True }) ''CreditRecord)
 
+data BilateralCreditRecord = BilateralCreditRecord { creditRecord :: CreditRecord
+                                                   , creditorSignature :: Signature
+                                                   , debtorSignature :: Signature
+                                                   }
 
 data SettlementCreditRecord =
     SettlementCreditRecord { settlementCreditRecord :: CreditRecord

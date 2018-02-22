@@ -13,14 +13,14 @@ import           Lndr.Util
 import           Network.Ethereum.Web3
 
 lookupPending :: Text -> Connection -> IO (Maybe CreditRecord)
-lookupPending hash conn = (fmap creditRowToCreditRecord . listToMaybe) <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac FROM pending_credits WHERE hash = ?" (Only hash)
+lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac FROM pending_credits WHERE hash = ?" (Only hash)
 
 
 -- Boolean parameter determines if search is through settlement records or
 -- non-settlement records
 lookupPendingByAddress :: Address -> Bool -> Connection -> IO [CreditRecord]
-lookupPendingByAddress addr True conn = fmap settlementCreditRowToCreditRecord <$> query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, settlements.amount, settlements.currency, settlements.blocknumber FROM pending_credits JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
-lookupPendingByAddress addr False conn = fmap creditRowToCreditRecord <$> query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature, ucac FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
+lookupPendingByAddress addr True conn = query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature, ucac, settlements.amount, settlements.currency, settlements.blocknumber FROM pending_credits JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?)" (addr, addr)
+lookupPendingByAddress addr False conn = query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature, ucac FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
 
 
 lookupPendingSettlementByAddresses :: Address -> Address -> Connection -> IO [Only Text]
@@ -28,7 +28,7 @@ lookupPendingSettlementByAddresses p1 p2 conn = query conn "SELECT verified_cred
 
 
 lookupPendingByAddresses :: Address -> Address -> Connection -> IO [CreditRecord]
-lookupPendingByAddresses p1 p2 conn = fmap creditRowToCreditRecord <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac FROM pending_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (p1, p2, p2, p1)
+lookupPendingByAddresses p1 p2 conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac FROM pending_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (p1, p2, p2, p1)
 
 
 deletePending :: Text -> Bool -> Connection -> IO Int
@@ -45,8 +45,8 @@ insertSettlementData hash (SettlementData amount currency blocknumber) conn =
 insertPending :: CreditRecord -> Maybe SettlementData -> Connection -> IO Int
 insertPending creditRecord settlementDataM conn = do
     traverse_ (flip (insertSettlementData (hash creditRecord)) conn) settlementDataM
-    fromIntegral <$> execute conn query (creditRecordToPendingTuple creditRecord)
-    where query = "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac) VALUES (?,?,?,?,?,?,?,?,?)"
+    fromIntegral <$> execute conn sql (creditRecordToPendingTuple creditRecord)
+    where sql = "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac) VALUES (?,?,?,?,?,?,?,?,?)"
 
 -- utility functions
 

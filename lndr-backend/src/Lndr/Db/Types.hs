@@ -57,7 +57,10 @@ instance FromRow BilateralCreditRecord where
         remaining <- numFieldsRemaining
         (settlementAmountM, settlementCurrencyM, settlementBlockNumberM, txHashM) <-
             if remaining == 0 then pure (Nothing, Nothing, Nothing, Nothing)
-                              else (,,,) <$> field <*> field <*> field <*> field
+                              else (,,,) <$> (fmap (floor :: Rational -> Integer) <$> field)
+                                         <*> field
+                                         <*> (fmap (floor :: Rational -> Integer) <$> field)
+                                         <*> field
         return $ BilateralCreditRecord
             -- TODO make this function more flexible to accept settlment
             -- credits as well

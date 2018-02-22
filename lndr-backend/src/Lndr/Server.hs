@@ -173,12 +173,13 @@ freshState :: IO ServerState
 freshState = do
     serverConfig <- loadConfig
     setEnvironmentConfigs serverConfig
-    let dbConfig = DB.defaultConnectInfo { DB.connectHost = dbHost serverConfig
-                                         , DB.connectPort = dbPort serverConfig
-                                         , DB.connectUser = T.unpack $ dbUser serverConfig
-                                         , DB.connectPassword = T.unpack $ dbUserPassword serverConfig
-                                         , DB.connectDatabase = T.unpack $ dbName serverConfig
-                                         }
+    let dbConfig = DB.defaultConnectInfo {
+          DB.connectHost = dbHost serverConfig
+        , DB.connectPort = dbPort serverConfig
+        , DB.connectUser = T.unpack $ dbUser serverConfig
+        , DB.connectPassword = T.unpack $ dbUserPassword serverConfig
+        , DB.connectDatabase = T.unpack $ dbName serverConfig
+        }
 
     ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
                 <*> newTVarIO serverConfig

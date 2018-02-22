@@ -137,7 +137,8 @@ createPendingRecord pool creditor debtor signedRecord hash settlementM = do
 
     -- check if an unverified bilateral credit record exists in the
     -- `verified_credits` table
-    existingPendingSettlement <- liftIO . withResource pool $ Db.lookupPendingSettlementByAddresses creditor debtor
+    existingPendingSettlement <- liftIO . withResource pool $
+        Db.lookupPendingSettlementByAddresses creditor debtor
     unless (null existingPendingSettlement) $
         throwError (err400 {errBody = "An unverified settlement credit record already exists for the two users."})
 

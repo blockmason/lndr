@@ -84,16 +84,6 @@ instance ToRow BilateralCreditRecord where
         ]
 
 
--- instance FromRow SettlementCreditRecord where
---   fromRow = do
---     creditRecord <- CreditRecord <$> field <*> field <*> ((floor :: Rational -> Integer) <$> field)
---                                  <*> field <*> field
---                                  <*> ((floor :: Rational -> Integer) <$> field) <*> field <*> field
---                                  <*> field
---                                  <*> (fmap (floor :: Rational -> Integer) <$> field) <*> field
---                                  <*> (fmap (floor :: Rational -> Integer) <$> field)
---     SettlementCreditRecord creditRecord <$> field
-
 instance FromRow IssueCreditLog where
   fromRow =
     IssueCreditLog <$> field <*> field <*> field <*> ((floor :: Rational -> Integer) <$> field)

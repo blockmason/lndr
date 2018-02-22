@@ -68,9 +68,9 @@ import           Prelude                     hiding (lookup, (!!))
 [abiFrom|data/CreditProtocol.abi|]
 
 -- | Submit a bilateral credit record to the Credit Protocol smart contract.
-finalizeTransaction :: ServerConfig -> Text -> Text -> CreditRecord
+finalizeTransaction :: ServerConfig -> BilateralCreditRecord
                     -> IO (Either Web3Error TxHash)
-finalizeTransaction config sig1 sig2 (CreditRecord creditor debtor amount memo _ _ _ _ ucac _ _ _) = do
+finalizeTransaction config (BilateralCreditRecord (CreditRecord creditor debtor amount memo _ _ _ _ ucac _ _ _) sig1 sig2 _) = do
       let (sig1r, sig1s, sig1v) = decomposeSig sig1
           (sig2r, sig2s, sig2v) = decomposeSig sig2
           encodedMemo :: BytesN 32
@@ -126,16 +126,17 @@ interpretUcacLog change = do
 -- | Verify that a settlement payment was made using a 'txHash' corresponding to
 -- an Ethereum transaction on the blockchain and the associated addresses and
 -- eth settlment amount.
-verifySettlementPayment :: Text -> Address -> Address -> Integer -> IO Bool
-verifySettlementPayment txHash creditor debtor amount = do
+verifySettlementPayment :: BilateralCreditRecord -> IO Bool
+verifySettlementPayment (BilateralCreditRecord creditRecord _ _ (Just txHash)) = do
     transactionME <- runLndrWeb3 . Eth.getTransactionByHash $ addHexPrefix txHash
     case transactionME of
         Right (Just transaction) ->
-            let fromMatch = txFrom transaction == creditor
-                toMatch = txTo transaction == Just debtor
-                valueMatch = hexToInteger (txValue transaction) == amount
+            let fromMatch = txFrom transaction == creditor creditRecord
+                toMatch = txTo transaction == Just (debtor creditRecord)
+                valueMatch = Just (hexToInteger $ txValue transaction) == settlementAmount creditRecord
             in return $ fromMatch && toMatch && valueMatch
         _                        -> return False
+verifySettlementPayment _ = pure False
 
 
 settlementDataFromCreditRecord :: CreditRecord -> MaybeT IO SettlementData

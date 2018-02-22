@@ -51,9 +51,9 @@ resubmitHandler txHash = do
         Just creditLog -> do
             config <- liftIO . atomically $ readTVar configTVar
             let creditHash = hashCreditLog creditLog
-            crM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
-            case crM of
-                Just (BilateralCreditRecord cr sig1 sig2) -> void . liftIO $ finalizeTransaction config sig1 sig2 cr
+            bcrM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
+            case bcrM of
+                Just bilateralCreditRecord -> void . liftIO $ finalizeTransaction config bilateralCreditRecord
                 Nothing               -> pure ()
         Nothing -> pure ()
     pure NoContent

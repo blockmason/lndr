@@ -213,16 +213,15 @@ verifySettlementsWithTxHash state@(ServerState pool configMVar) = do
     return ()
 
 
-verifyIndividualRecord :: ServerState -> Text -> ExceptT ServantErr IO ()
+verifyIndividualRecord :: ServerState -> TransactionHash -> ExceptT ServantErr IO ()
 verifyIndividualRecord (ServerState pool configTVar) creditHash = do
     config <- liftIO $ atomically $ readTVar configTVar
-    recordM <- liftIO $ withResource pool $ Db.lookupSettlementCreditByHash creditHash
-    (storedRecord, creditor, debtor, amount, creditorSig, debtorSig, txHash) <- case recordM of
-        Just (storedRecord@(CreditRecord creditor debtor _ _ _ _ _ _ _ (Just amount) _ _), creditorSig, debtorSig, txHash) ->
-            pure (storedRecord, creditor, debtor, amount, creditorSig, debtorSig, txHash)
-        _ -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
-    verified <- liftIO $ verifySettlementPayment txHash creditor debtor amount
+    recordM <- liftIO $ withResource pool $ Db.lookupCreditByHash creditHash
+    let recordNotFound = throwError $
+            err404 { errBody = "Credit hash does not refer to pending bilateral settlement record" }
+    bilateralCreditRecord <- maybe recordNotFound pure recordM
+    verified <- liftIO $ verifySettlementPayment bilateralCreditRecord
     if verified
         then do liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
-                void . liftIO $ finalizeTransaction config creditorSig debtorSig storedRecord
+                void . liftIO $ finalizeTransaction config bilateralCreditRecord
         else throwError $ err400 { errBody = "Unable to verify debt settlement" }

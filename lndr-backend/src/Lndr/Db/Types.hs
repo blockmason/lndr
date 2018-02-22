@@ -54,15 +54,20 @@ instance FromRow BilateralCreditRecord where
         let signature = if submitter == creditor
                             then creditorSignature
                             else debtorSignature
+        remaining <- numFieldsRemaining
+        (settlementAmountM, settlementCurrencyM, settlementBlockNumberM, txHashM) <-
+            if remaining == 0 then pure (Nothing, Nothing, Nothing, Nothing)
+                              else (,,,) <$> field <*> field <*> field <*> field
         return $ BilateralCreditRecord
             -- TODO make this function more flexible to accept settlment
             -- credits as well
-            (CreditRecord creditor debtor amount memo submitter nonce hash signature ucac Nothing Nothing Nothing)
+            (CreditRecord creditor debtor amount memo submitter nonce hash signature ucac settlementAmountM settlementCurrencyM settlementBlockNumberM)
             creditorSignature
             debtorSignature
+            txHashM
 
 instance ToRow BilateralCreditRecord where
-    toRow (BilateralCreditRecord creditRecord creditorSignature debtorSignature) =
+    toRow (BilateralCreditRecord creditRecord creditorSignature debtorSignature _) =
         [ toField $ creditor creditRecord
         , toField $ debtor creditRecord
         , toField $ amount creditRecord
@@ -76,15 +81,15 @@ instance ToRow BilateralCreditRecord where
         ]
 
 
-instance FromRow SettlementCreditRecord where
-  fromRow = do
-    creditRecord <- CreditRecord <$> field <*> field <*> ((floor :: Rational -> Integer) <$> field)
-                                 <*> field <*> field
-                                 <*> ((floor :: Rational -> Integer) <$> field) <*> field <*> field
-                                 <*> field
-                                 <*> (fmap (floor :: Rational -> Integer) <$> field) <*> field
-                                 <*> (fmap (floor :: Rational -> Integer) <$> field)
-    SettlementCreditRecord creditRecord <$> field
+-- instance FromRow SettlementCreditRecord where
+--   fromRow = do
+--     creditRecord <- CreditRecord <$> field <*> field <*> ((floor :: Rational -> Integer) <$> field)
+--                                  <*> field <*> field
+--                                  <*> ((floor :: Rational -> Integer) <$> field) <*> field <*> field
+--                                  <*> field
+--                                  <*> (fmap (floor :: Rational -> Integer) <$> field) <*> field
+--                                  <*> (fmap (floor :: Rational -> Integer) <$> field)
+--     SettlementCreditRecord creditRecord <$> field
 
 instance FromRow IssueCreditLog where
   fromRow =

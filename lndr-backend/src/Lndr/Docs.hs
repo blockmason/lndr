@@ -33,8 +33,8 @@ crSigned = CreditRecord "0x11edd217a875063583dd1b638d16810c5d34d54b"
                         Nothing
                         Nothing
 
-crSettleSigned :: SettlementCreditRecord
-crSettleSigned = SettlementCreditRecord crSigned (Just "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c")
+crSettleSigned :: BilateralCreditRecord
+crSettleSigned = BilateralCreditRecord crSigned "" "" (Just "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c")
 
 instance ToSample ConfigResponse where
     toSamples _ = singleSample $

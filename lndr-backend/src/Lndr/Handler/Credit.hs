@@ -112,16 +112,18 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     return NoContent
 
 
+-- TODO change input to bilateral credit record
 finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> Text -> Maybe SettlementData -> IO ()
 finalizeCredit pool storedRecord config creditorSig debtorSig hash settlementM = do
             -- In case the record is a settlement, delay submitting credit to
             -- the blockchain until /verify_settlement is called
             case settlementM of
                 Just _  -> return ()
-                Nothing -> void $ finalizeTransaction config creditorSig debtorSig storedRecord
+                Nothing -> void $ finalizeTransaction config (BilateralCreditRecord storedRecord creditorSig debtorSig Nothing)
 
             -- saving transaction record
-            withResource pool $ Db.insertCredit $ BilateralCreditRecord storedRecord creditorSig debtorSig
+            -- TODO cleanup this last Nothing value
+            withResource pool $ Db.insertCredit $ BilateralCreditRecord storedRecord creditorSig debtorSig Nothing
             -- delete pending record after transaction finalization
             void . withResource pool $ Db.deletePending hash False
 

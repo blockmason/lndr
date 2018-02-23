@@ -7,12 +7,18 @@ RUN set -e;\
   apt-get clean;
 
 ENV \
-  LNDR_HOME=/lndr \
-  CIRCLECI_PROJECT_ID=107488794 \
-  CIRCLECI_BUILD_NUMBER=8
+  LNDR_HOME=/lndr
 
 RUN set -e;\
-  curl -sSL -o /usr/bin/lndr-server "https://${CIRCLECI_BUILD_NUMBER}-${CIRCLECI_PROJECT_ID}-gh.circle-artifacts.com/0/root/project/artifacts/lndr-server";\
+  curl \
+    -sSL \
+    -o /usr/bin/lndr-server \
+    $(curl \
+        -sSL \
+        'https://circleci.com/api/v1.1/project/github/blockmason/lndr/latest/artifacts?branch=master&filter=successful' \
+      | awk '/url.+lndr-server/ { print $3; }' \
+      | xargs \
+    );\
   chmod 0555 /usr/bin/lndr-server;
 
 COPY . "${LNDR_HOME}"

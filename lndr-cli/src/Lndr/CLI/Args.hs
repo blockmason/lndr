@@ -244,12 +244,6 @@ searchNick url nick = do
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
-takenNick :: String -> Text -> IO Bool
-takenNick url nick = do
-    req <- HTTP.parseRequest $ url ++ "/user?nick=" ++ T.unpack nick
-    HTTP.getResponseBody <$> HTTP.httpJSON req
-
-
 setEmail :: String -> Text -> EmailRequest -> IO Int
 setEmail url sk emailRequest = do
     initReq <- HTTP.parseRequest $ url ++ "/email"
@@ -268,6 +262,13 @@ getEmail url userAddr = do
 takenEmail :: String -> Text -> IO Bool
 takenEmail url email = do
     req <- HTTP.parseRequest $ url ++ "/user?email=" ++ T.unpack email
+    httpCode <- HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+    return $ httpCode == 200
+
+
+takenNick :: String -> Text -> IO Bool
+takenNick url nick = do
+    req <- HTTP.parseRequest $ url ++ "/user?nick=" ++ T.unpack nick
     httpCode <- HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
     return $ httpCode == 200
 

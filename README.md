@@ -2,8 +2,8 @@
 
 Server, CLI, and UCAC Solidity contracts.
 
-[![Build
-Status](https://travis-ci.org/blockmason/lndr.svg?branch=master)](https://travis-ci.org/blockmason/lndr)
+[![Travis CI](https://travis-ci.org/blockmason/lndr.svg?branch=master)](https://travis-ci.org/blockmason/lndr)
+[![CircleCI](https://circleci.com/gh/blockmason/lndr.svg?style=svg)](https://circleci.com/gh/blockmason/lndr)
 
 ## API
 

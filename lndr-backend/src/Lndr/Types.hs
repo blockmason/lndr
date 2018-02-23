@@ -16,7 +16,6 @@ module Lndr.Types
     , NickInfo(..)
     , Nick
     , ProfilePhotoRequest(..)
-    -- TODO clean this up, very unorganized as is
     , CreditRecord(..)
     , BilateralCreditRecord(..)
     , IssueCreditLog(..)

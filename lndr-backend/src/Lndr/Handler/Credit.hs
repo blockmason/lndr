@@ -57,7 +57,8 @@ validSubmission memo submitterAddress creditor debtor sig hash = do
         throwError (err400 {errBody = "Creditor and debtor cannot be equal."})
 
     -- check that submitter signed the tx
-    signer <- ioEitherToLndr . pure . EU.ecrecover (stripHexPrefix sig) $ EU.hashPersonalMessage hash
+    signer <- ioEitherToLndr . pure . EU.ecrecover (stripHexPrefix sig) $
+                EU.hashPersonalMessage hash
     unless (textToAddress signer == submitterAddress) $
         throwError (err401 {errBody = "Bad submitter sig"})
 

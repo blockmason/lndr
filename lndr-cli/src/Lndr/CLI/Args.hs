@@ -246,7 +246,7 @@ searchNick url nick = do
 
 takenNick :: String -> Text -> IO Bool
 takenNick url nick = do
-    req <- HTTP.parseRequest $ url ++ "/taken_nick/" ++ T.unpack nick
+    req <- HTTP.parseRequest $ url ++ "/user?nick=" ++ T.unpack nick
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 

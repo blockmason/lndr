@@ -47,13 +47,6 @@ nickSearchHandler nick = do
     liftIO . withResource pool . Db.lookupAddressesByFuzzyNick $ T.toLower nick
 
 
--- TODO remove when will says so
-nickTakenHandler :: Text -> LndrHandler Bool
-nickTakenHandler nick = do
-    pool <- dbConnectionPool <$> ask
-    liftIO . fmap (not . null) . withResource pool . Db.lookupAddressByNick $ T.toLower nick
-
-
 friendHandler :: Address -> LndrHandler [NickInfo]
 friendHandler addr = do
     pool <- dbConnectionPool <$> ask

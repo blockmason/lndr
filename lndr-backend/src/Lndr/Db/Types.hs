@@ -20,7 +20,7 @@ instance ToField Address where
 instance FromField Address where
     fromField f dat = textToAddress <$> fromField f dat
 
-instance FromRow NickInfo
+instance FromRow UserInfo
 
 instance FromField DevicePlatform where
     fromField f dat = toDevicePlatform <$> fromField f dat

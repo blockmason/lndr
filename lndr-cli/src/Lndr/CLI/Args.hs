@@ -238,7 +238,7 @@ getNick url userAddr = do
         Right b -> b
 
 
-searchNick :: String -> Text -> IO [NickInfo]
+searchNick :: String -> Text -> IO [UserInfo]
 searchNick url nick = do
     req <- HTTP.parseRequest $ url ++ "/search_nick/" ++ T.unpack nick
     HTTP.getResponseBody <$> HTTP.httpJSON req
@@ -288,7 +288,7 @@ removeFriend url userAddr addr = do
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 
 
-getFriends :: String -> Address -> IO [NickInfo]
+getFriends :: String -> Address -> IO [UserInfo]
 getFriends url userAddr = do
     req <- HTTP.parseRequest $ url ++ "/friends/" ++ show userAddr
     HTTP.getResponseBody <$> HTTP.httpJSON req
@@ -307,7 +307,7 @@ getTwoPartyBalance url userAddr counterPartyAddr = do
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
-getInfo :: String -> Text -> IO (Address, Text, Integer, [NickInfo])
+getInfo :: String -> Text -> IO (Address, Text, Integer, [UserInfo])
 getInfo url userAddr = do
     nick <- getNick url address
     balance <- getBalance url address

@@ -53,15 +53,15 @@ type LndrAPI =
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
    :<|> "nick" :> Capture "user" Address :> Get '[JSON] Text
-   :<|> "search_nick" :> Capture "nick" Text :> Get '[JSON] [NickInfo]
+   :<|> "search_nick" :> Capture "nick" Text :> Get '[JSON] [UserInfo]
    :<|> "email" :> ReqBody '[JSON] EmailRequest :> PostNoContent '[JSON] NoContent
    :<|> "email" :> Capture "user" Address :> Get '[JSON] EmailAddress
    :<|> "profile_photo" :> ReqBody '[JSON] ProfilePhotoRequest
                         :> PostNoContent '[JSON] NoContent
    :<|> "user" :> QueryParam "email" EmailAddress
                :> QueryParam "nick" Nick
-               :> Get '[JSON] NickInfo
-   :<|> "friends" :> Capture "user" Address :> Get '[JSON] [NickInfo]
+               :> Get '[JSON] UserInfo
+   :<|> "friends" :> Capture "user" Address :> Get '[JSON] [UserInfo]
    :<|> "add_friends" :> Capture "user" Address
                       :> ReqBody '[JSON] [Address]
                       :> PostNoContent '[JSON] NoContent

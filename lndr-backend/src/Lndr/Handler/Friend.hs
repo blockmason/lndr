@@ -41,19 +41,19 @@ nickLookupHandler addr = do
     ioMaybeToLndr "addr not found in nick db" . withResource pool $ Db.lookupNick addr
 
 
-nickSearchHandler :: Text -> LndrHandler [NickInfo]
+nickSearchHandler :: Text -> LndrHandler [UserInfo]
 nickSearchHandler nick = do
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool . Db.lookupAddressesByFuzzyNick $ T.toLower nick
 
 
-friendHandler :: Address -> LndrHandler [NickInfo]
+friendHandler :: Address -> LndrHandler [UserInfo]
 friendHandler addr = do
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool $ Db.lookupFriendsWithNick addr
 
 
-userHandler :: Maybe EmailAddress -> Maybe Nick -> LndrHandler NickInfo
+userHandler :: Maybe EmailAddress -> Maybe Nick -> LndrHandler UserInfo
 userHandler (Just email) _ = do
     pool <- dbConnectionPool <$> ask
     nickInfoM <- liftIO . withResource pool . Db.lookupAddressByEmail $ email

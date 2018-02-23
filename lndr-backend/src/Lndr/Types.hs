@@ -13,7 +13,7 @@ module Lndr.Types
     -- * lndr api types
     , NickRequest(..)
     , EmailRequest(..)
-    , NickInfo(..)
+    , UserInfo(..)
     , Nick
     , ProfilePhotoRequest(..)
     , CreditRecord(..)
@@ -152,10 +152,10 @@ data EmailRequest = EmailRequest { emailRequestAddr      :: Address
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 12 }) ''EmailRequest)
 
 
-data NickInfo = NickInfo { addr :: Address
+data UserInfo = UserInfo { addr :: Address
                          , nick :: Text
                          } deriving (Show, Eq, Generic)
-$(deriveJSON defaultOptions ''NickInfo)
+$(deriveJSON defaultOptions ''UserInfo)
 
 data PushRequest = PushRequest { pushRequestChannelID :: Text
                                , pushRequestPlatform  :: Text

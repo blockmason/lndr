@@ -121,7 +121,7 @@ nickTest = do
     assertEqual "add friend success" 204 httpCode
     -- verify that friend has been added
     friends <- getFriends testUrl testAddress3
-    assertEqual "friend properly added" [NickInfo testAddress4 testNick1] friends
+    assertEqual "friend properly added" [UserInfo testAddress4 testNick1] friends
 
     -- user3 removes user4 from friends
     removeFriend testUrl testAddress3 testAddress4

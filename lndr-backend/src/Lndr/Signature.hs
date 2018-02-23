@@ -10,7 +10,8 @@ import           Text.EmailAddress as Email
 
 class VerifiableSignature a where
      recoverSigner :: a -> Either String Address
-     recoverSigner x = fmap textToAddress . EU.ecrecover (extractSignature x) . generateHash $ x
+     recoverSigner x = fmap textToAddress . EU.ecrecover (extractSignature x)
+                                          . generateHash $ x
 
      extractSignature :: a -> Text
 
@@ -24,17 +25,16 @@ instance VerifiableSignature NickRequest where
     extractSignature (NickRequest _ _ sig) = sig
 
     generateHash (NickRequest addr nick _) = EU.hashText . T.concat $
-                                                stripHexPrefix <$> [ T.pack (show addr)
-                                                                   , bytesEncode nick
-                                                                   ]
+            stripHexPrefix <$> [ T.pack (show addr) , bytesEncode nick ]
 
 instance VerifiableSignature EmailRequest where
     extractSignature (EmailRequest _ _ sig) = sig
 
-    generateHash (EmailRequest addr email _) = EU.hashText . T.concat $
-                                                stripHexPrefix <$> [ T.pack (show addr)
-                                                                   , bytesEncode $ Email.toText email
-                                                                   ]
+    generateHash (EmailRequest addr email _) =
+        EU.hashText . T.concat $
+            stripHexPrefix <$> [ T.pack (show addr)
+                               , bytesEncode $ Email.toText email
+                               ]
 
 
 instance VerifiableSignature ProfilePhotoRequest where
@@ -48,10 +48,14 @@ instance VerifiableSignature VerifySettlementRequest where
 
     generateHash (VerifySettlementRequest creditHash txHash creditorAddress _) =
         EU.hashText . T.concat $
-            stripHexPrefix <$> [ creditHash,  txHash , T.pack (show creditorAddress) ]
+            stripHexPrefix <$> [ creditHash
+                               ,  txHash
+                               , T.pack (show creditorAddress) ]
 
 instance VerifiableSignature PushRequest where
     extractSignature (PushRequest _ _ _ sig) = sig
 
     generateHash (PushRequest channelID platform addr _) = EU.hashText . T.concat $
-        stripHexPrefix <$> [ bytesEncode platform , bytesEncode channelID , T.pack (show addr) ]
+        stripHexPrefix <$> [ bytesEncode platform
+                           , bytesEncode channelID
+                           , T.pack (show addr) ]

@@ -52,8 +52,8 @@ updateSettlementTxHash :: Text -> Text -> Connection -> IO Int
 updateSettlementTxHash hash txHash conn = fromIntegral <$> execute conn "UPDATE settlements SET  tx_hash = ? WHERE hash = ?" (txHash, hash)
 
 
-lookupSettlementCreditByAddress :: Address -> Connection -> IO [SettlementCreditRecord]
-lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, creditor_signature, ucac, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
+lookupSettlementCreditByAddress :: Address -> Connection -> IO [BilateralCreditRecord]
+lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, ucac, creditor_signature, debtor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]
@@ -61,19 +61,9 @@ counterpartiesByAddress addr conn = fmap fromOnly <$>
     query conn "SELECT creditor FROM verified_credits WHERE debtor = ? UNION SELECT debtor FROM verified_credits WHERE creditor = ?" (addr, addr)
 
 
-lookupSettlementCreditByHash :: Text -> Connection -> IO (Maybe (CreditRecord, Text, Text, Text))
-lookupSettlementCreditByHash hash conn = do
-        pairM <- fmap (first (floor :: Rational -> Integer)) . listToMaybe <$> query conn "SELECT amount, tx_hash FROM settlements WHERE hash = ?" (Only hash)
-        case pairM of
-            Just (settlementAmount, txHash) -> do
-                Just (BilateralCreditRecord cr sig1 sig2) <- lookupCreditByHash hash conn
-                return $ Just (cr { settlementAmount = Just settlementAmount }, sig1, sig2, txHash)
-            Nothing -> return Nothing
-
-
 lookupCreditByHash :: Text -> Connection -> IO (Maybe BilateralCreditRecord)
 lookupCreditByHash hash conn = listToMaybe <$> query conn sql (Only hash)
-    where sql = "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, ucac, creditor_signature, debtor_signature FROM verified_credits WHERE hash = ?"
+    where sql = "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, ucac, creditor_signature, debtor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE verified_credits.hash = ?"
 
 
 -- Flips verified bit on once a settlement payment has been confirmed

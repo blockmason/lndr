@@ -33,8 +33,8 @@ crSigned = CreditRecord "0x11edd217a875063583dd1b638d16810c5d34d54b"
                         Nothing
                         Nothing
 
-crSettleSigned :: SettlementCreditRecord
-crSettleSigned = SettlementCreditRecord crSigned (Just "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c")
+crSettleSigned :: BilateralCreditRecord
+crSettleSigned = BilateralCreditRecord crSigned "" "" (Just "0x4358c649de5746c91673378dd4c40a78feda715166913e09ded45343ff76841c")
 
 instance ToSample ConfigResponse where
     toSamples _ = singleSample $
@@ -65,9 +65,9 @@ instance ToSample EmailRequest where
     toSamples _ = singleSample $
         EmailRequest "0x11edd217a875063583dd1b638d16810c5d34d54b" (fromJust $ Email.emailAddressFromText "tim@blockmason.io") "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
 
-instance ToSample NickInfo where
+instance ToSample UserInfo where
     toSamples _ = singleSample $
-        NickInfo "0x11edd217a875063583dd1b638d16810c5d34d54b" "aupiff"
+        UserInfo "0x11edd217a875063583dd1b638d16810c5d34d54b" "aupiff"
 
 instance ToSample IssueCreditLog where
     toSamples _ = singleSample $

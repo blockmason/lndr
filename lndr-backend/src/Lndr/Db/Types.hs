@@ -20,7 +20,7 @@ instance ToField Address where
 instance FromField Address where
     fromField f dat = textToAddress <$> fromField f dat
 
-instance FromRow NickInfo
+instance FromRow UserInfo
 
 instance FromField DevicePlatform where
     fromField f dat = toDevicePlatform <$> fromField f dat
@@ -30,16 +30,21 @@ instance FromField DevicePlatform where
 
 instance FromRow CreditRecord where
     fromRow = do
-       baseCredit <- CreditRecord <$> field <*> field <*> ((floor :: Rational -> Integer) <$> field)
+       baseCredit <- CreditRecord <$> field <*> field
+                                  <*> ((floor :: Rational -> Integer) <$> field)
                                   <*> field <*> field
-                                  <*> ((floor :: Rational -> Integer) <$> field) <*> field <*> field
-                                  <*> field
+                                  <*> ((floor :: Rational -> Integer) <$> field)
+                                  <*> field <*> field <*> field
        remaining <- numFieldsRemaining
-       if remaining == 0 then return $ baseCredit Nothing Nothing Nothing
-                         else baseCredit <$> (fmap (floor :: Rational -> Integer) <$> field) <*> field
-                                         <*> (fmap (floor :: Rational -> Integer) <$> field)
+       if remaining == 0
+            then return $ baseCredit Nothing Nothing Nothing
+            else baseCredit <$> (fmap (floor :: Rational -> Integer) <$> field)
+                            <*> field
+                            <*> (fmap (floor :: Rational -> Integer) <$> field)
 
 instance FromRow BilateralCreditRecord where
+    -- 'fromRow' from 'CreditRecord' cannot be reused here due to the necessity
+    -- of calculating signature from creditorSig / debtorSig
     fromRow = do
         creditor <- field
         debtor <- field
@@ -54,15 +59,21 @@ instance FromRow BilateralCreditRecord where
         let signature = if submitter == creditor
                             then creditorSignature
                             else debtorSignature
+        remaining <- numFieldsRemaining
+        (settlementAmountM, settlementCurrencyM, settlementBlockNumberM, txHashM) <-
+            if remaining == 0
+                then pure (Nothing, Nothing, Nothing, Nothing)
+                else (,,,) <$> (fmap (floor :: Rational -> Integer) <$> field)
+                           <*> field
+                           <*> (fmap (floor :: Rational -> Integer) <$> field)
+                           <*> field
         return $ BilateralCreditRecord
-            -- TODO make this function more flexible to accept settlment
-            -- credits as well
-            (CreditRecord creditor debtor amount memo submitter nonce hash signature ucac Nothing Nothing Nothing)
-            creditorSignature
-            debtorSignature
+            (CreditRecord creditor debtor amount memo submitter nonce hash signature ucac
+                          settlementAmountM settlementCurrencyM settlementBlockNumberM)
+            creditorSignature debtorSignature txHashM
 
 instance ToRow BilateralCreditRecord where
-    toRow (BilateralCreditRecord creditRecord creditorSignature debtorSignature) =
+    toRow (BilateralCreditRecord creditRecord creditorSignature debtorSignature _) =
         [ toField $ creditor creditRecord
         , toField $ debtor creditRecord
         , toField $ amount creditRecord
@@ -76,19 +87,10 @@ instance ToRow BilateralCreditRecord where
         ]
 
 
-instance FromRow SettlementCreditRecord where
-  fromRow = do
-    creditRecord <- CreditRecord <$> field <*> field <*> ((floor :: Rational -> Integer) <$> field)
-                                 <*> field <*> field
-                                 <*> ((floor :: Rational -> Integer) <$> field) <*> field <*> field
-                                 <*> field
-                                 <*> (fmap (floor :: Rational -> Integer) <$> field) <*> field
-                                 <*> (fmap (floor :: Rational -> Integer) <$> field)
-    SettlementCreditRecord creditRecord <$> field
-
 instance FromRow IssueCreditLog where
   fromRow =
-    IssueCreditLog <$> field <*> field <*> field <*> ((floor :: Rational -> Integer) <$> field)
+    IssueCreditLog <$> field <*> field <*> field
+                   <*> ((floor :: Rational -> Integer) <$> field)
                    <*> ((floor :: Rational -> Integer) <$> field) <*> field
 
 instance ToRow IssueCreditLog where

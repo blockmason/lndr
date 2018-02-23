@@ -36,7 +36,6 @@ module Lndr.Db (
 
     -- * 'settlement'-specific functions
     , lookupSettlementCreditByAddress
-    , lookupSettlementCreditByHash
     , lookupPendingSettlementByAddresses
     , deleteExpiredSettlementsAndAssociatedCredits
     , settlementCreditsToVerify

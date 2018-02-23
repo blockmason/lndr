@@ -39,7 +39,7 @@ urban-airship {
 
 # how often to run the heartbeat function in seconds. The heartbeat is
 # responsible for confirming settlement transactions.
-heartbeat-interval = 5
+heartbeat-interval = 3
 
 # aws config and credentials
 aws {

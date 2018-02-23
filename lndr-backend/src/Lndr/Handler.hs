@@ -20,7 +20,6 @@ module Lndr.Handler (
     , nickHandler
     , nickLookupHandler
     , nickSearchHandler
-    , nickTakenHandler
     , friendHandler
     , addFriendsHandler
     , removeFriendsHandler

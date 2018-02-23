@@ -13,12 +13,10 @@ module Lndr.Types
     -- * lndr api types
     , NickRequest(..)
     , EmailRequest(..)
-    , NickInfo(..)
+    , UserInfo(..)
     , Nick
     , ProfilePhotoRequest(..)
-    -- TODO clean this up, very unorganized as is
     , CreditRecord(..)
-    , SettlementCreditRecord(..)
     , BilateralCreditRecord(..)
     , IssueCreditLog(..)
     , SettlementData(SettlementData)
@@ -37,6 +35,11 @@ module Lndr.Types
     , EthereumPrices(..)
     , GasStationResponse(..)
     , ConfigResponse(..)
+
+    -- * descriptive bytestring types
+    , TransactionHash
+    , CreditHash
+    , Signature
     ) where
 
 import           Control.Concurrent.STM.TVar
@@ -125,15 +128,9 @@ $(deriveJSON (defaultOptions { omitNothingFields = True }) ''CreditRecord)
 data BilateralCreditRecord = BilateralCreditRecord { creditRecord :: CreditRecord
                                                    , creditorSignature :: Signature
                                                    , debtorSignature :: Signature
-                                                   }
-
-data SettlementCreditRecord =
-    SettlementCreditRecord { settlementCreditRecord :: CreditRecord
-                           , settlementTxHash       :: Maybe TransactionHash
-                           }
-$(deriveJSON (defaultOptions { omitNothingFields = True
-                             , fieldLabelModifier = over _head toLower . drop 10
-                             }) ''SettlementCreditRecord)
+                                                   , txHash :: Maybe TransactionHash
+                                                   } deriving (Show, Generic)
+$(deriveJSON (defaultOptions { omitNothingFields = True }) ''BilateralCreditRecord)
 
 
 data RejectRequest = RejectRequest { rejectRequestHash      :: Text
@@ -155,10 +152,10 @@ data EmailRequest = EmailRequest { emailRequestAddr      :: Address
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 12 }) ''EmailRequest)
 
 
-data NickInfo = NickInfo { addr :: Address
+data UserInfo = UserInfo { addr :: Address
                          , nick :: Text
                          } deriving (Show, Eq, Generic)
-$(deriveJSON defaultOptions ''NickInfo)
+$(deriveJSON defaultOptions ''UserInfo)
 
 data PushRequest = PushRequest { pushRequestChannelID :: Text
                                , pushRequestPlatform  :: Text
@@ -245,7 +242,7 @@ data ConfigResponse = ConfigResponse { configResponseLndrAddresses :: M.Map Text
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 14 }) ''ConfigResponse)
 
 data SettlementsResponse = SettlementsResponse { unilateralSettlements :: [CreditRecord]
-                                               , bilateralSettlements :: [SettlementCreditRecord]
+                                               , bilateralSettlements  :: [BilateralCreditRecord]
                                                }
 $(deriveJSON defaultOptions ''SettlementsResponse)
 

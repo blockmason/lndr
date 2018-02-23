@@ -53,16 +53,15 @@ type LndrAPI =
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
    :<|> "nick" :> Capture "user" Address :> Get '[JSON] Text
-   :<|> "search_nick" :> Capture "nick" Text :> Get '[JSON] [NickInfo]
-   :<|> "taken_nick" :> Capture "nick" Text :> Get '[JSON] Bool
+   :<|> "search_nick" :> Capture "nick" Text :> Get '[JSON] [UserInfo]
    :<|> "email" :> ReqBody '[JSON] EmailRequest :> PostNoContent '[JSON] NoContent
    :<|> "email" :> Capture "user" Address :> Get '[JSON] EmailAddress
    :<|> "profile_photo" :> ReqBody '[JSON] ProfilePhotoRequest
                         :> PostNoContent '[JSON] NoContent
    :<|> "user" :> QueryParam "email" EmailAddress
                :> QueryParam "nick" Nick
-               :> Get '[JSON] NickInfo
-   :<|> "friends" :> Capture "user" Address :> Get '[JSON] [NickInfo]
+               :> Get '[JSON] UserInfo
+   :<|> "friends" :> Capture "user" Address :> Get '[JSON] [UserInfo]
    :<|> "add_friends" :> Capture "user" Address
                       :> ReqBody '[JSON] [Address]
                       :> PostNoContent '[JSON] NoContent
@@ -95,7 +94,6 @@ server = transactionsHandler
     :<|> nickHandler
     :<|> nickLookupHandler
     :<|> nickSearchHandler
-    :<|> nickTakenHandler
     :<|> emailHandler
     :<|> emailLookupHandler
     :<|> photoUploadHandler
@@ -173,12 +171,13 @@ freshState :: IO ServerState
 freshState = do
     serverConfig <- loadConfig
     setEnvironmentConfigs serverConfig
-    let dbConfig = DB.defaultConnectInfo { DB.connectHost = dbHost serverConfig
-                                         , DB.connectPort = dbPort serverConfig
-                                         , DB.connectUser = T.unpack $ dbUser serverConfig
-                                         , DB.connectPassword = T.unpack $ dbUserPassword serverConfig
-                                         , DB.connectDatabase = T.unpack $ dbName serverConfig
-                                         }
+    let dbConfig = DB.defaultConnectInfo {
+          DB.connectHost = dbHost serverConfig
+        , DB.connectPort = dbPort serverConfig
+        , DB.connectUser = T.unpack $ dbUser serverConfig
+        , DB.connectPassword = T.unpack $ dbUserPassword serverConfig
+        , DB.connectDatabase = T.unpack $ dbName serverConfig
+        }
 
     ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
                 <*> newTVarIO serverConfig
@@ -213,16 +212,15 @@ verifySettlementsWithTxHash state@(ServerState pool configMVar) = do
     return ()
 
 
-verifyIndividualRecord :: ServerState -> Text -> ExceptT ServantErr IO ()
+verifyIndividualRecord :: ServerState -> TransactionHash -> ExceptT ServantErr IO ()
 verifyIndividualRecord (ServerState pool configTVar) creditHash = do
     config <- liftIO $ atomically $ readTVar configTVar
-    recordM <- liftIO $ withResource pool $ Db.lookupSettlementCreditByHash creditHash
-    (storedRecord, creditor, debtor, amount, creditorSig, debtorSig, txHash) <- case recordM of
-        Just (storedRecord@(CreditRecord creditor debtor _ _ _ _ _ _ _ (Just amount) _ _), creditorSig, debtorSig, txHash) ->
-            pure (storedRecord, creditor, debtor, amount, creditorSig, debtorSig, txHash)
-        _ -> throwError $ err400 { errBody = "Unable to find matching settlement record" }
-    verified <- liftIO $ verifySettlementPayment txHash creditor debtor amount
+    recordM <- liftIO $ withResource pool $ Db.lookupCreditByHash creditHash
+    let recordNotFound = throwError $
+            err404 { errBody = "Credit hash does not refer to pending bilateral settlement record" }
+    bilateralCreditRecord <- maybe recordNotFound pure recordM
+    verified <- liftIO $ verifySettlementPayment bilateralCreditRecord
     if verified
         then do liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
-                void . liftIO $ finalizeTransaction config creditorSig debtorSig storedRecord
+                void . liftIO $ finalizeTransaction config bilateralCreditRecord
         else throwError $ err400 { errBody = "Unable to verify debt settlement" }

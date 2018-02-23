@@ -33,12 +33,16 @@ import           System.Directory
 ucacAddr = "0x7899b83071d9704af0b132859a04bb1698a3acaf"
 
 testUrl = "http://localhost:80"
-testPrivkey1 = "7231a774a538fce22a329729b03087de4cb4a1119494db1c10eae3bb491823e7"
-testPrivkey2 = "f581608ccd4dcd78e341e464b86f268b77ee2673acc705023e64eeb5a4e31490"
-testPrivkey3 = "b217205550c6011141e3580142ac43d7d41d217102f30e816eb36b70727e292e"
-testPrivkey4 = "024f55d169862624eec05be973a38f52ad252b3bcc0f0ed1927defa4ab4ea098"
-testPrivkey5 = "024f55d169862624eec05be973a38f52ad252b3bcc0f0ed1927defa4ab4ea099"
-testPrivkey6 = "024f55d169862624eec05be973a38f52ad252b3bcc0f0ed1927defa4ab4ea100"
+testPrivkey0 = "7920ca01d3d1ac463dfd55b5ddfdcbb64ae31830f31be045ce2d51a305516a37"
+testPrivkey1 = "bb63b692f9d8f21f0b978b596dc2b8611899f053d68aec6c1c20d1df4f5b6ee2"
+testPrivkey2 = "2f615ea53711e0d91390e97cdd5ce97357e345e441aa95d255094164f44c8652"
+testPrivkey3 = "7d52c3f6477e1507d54a826833169ad169a56e02ffc49a1801218a7d87ca50bd"
+testPrivkey4 = "6aecd44fcb79d4b68f1ee2b2c706f8e9a0cd06b0de4729fe98cfed8886315256"
+testPrivkey5 = "686e245584fdf696abd739c0e66ac6e01fc4c68babee20c7124566e118b2a634"
+testPrivkey6 = "9fd4ab25e1699bb252f4d5c4510a135db34b3adca8baa03194ad5cd6faa13a1d"
+testPrivkey7 = "e8445efa4e3349c3c74fd6689553f93b55aca723115fb777e1e6f4db2a0a82ca"
+testPrivkey8 = "56901d80abc6953d1dc01de2f077b75260f49a3304f665b57ed13514a7e2a2bc"
+testPrivkey9 = "edc63d0e14b29aaa26c7585e962f93abb59bd7d8b01b585e073dc03d052a000b"
 testAddress1 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey1
 testAddress2 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey2
 testAddress3 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey3
@@ -117,7 +121,7 @@ nickTest = do
     assertEqual "add friend success" 204 httpCode
     -- verify that friend has been added
     friends <- getFriends testUrl testAddress3
-    assertEqual "friend properly added" [NickInfo testAddress4 testNick1] friends
+    assertEqual "friend properly added" [UserInfo testAddress4 testNick1] friends
 
     -- user3 removes user4 from friends
     removeFriend testUrl testAddress3 testAddress4
@@ -229,7 +233,7 @@ basicSettlementTest = do
     assertEqual "post-confirmation: get pending settlements success" 0 (length pendingSettlements)
     assertEqual "post-confirmation: get bilateral pending settlements success" 1 (length bilateralPendingSettlements)
 
-    let settleAmount = fmap Quantity . settlementAmount . settlementCreditRecord $ head bilateralPendingSettlements
+    let settleAmount = fmap Quantity . settlementAmount . creditRecord $ head bilateralPendingSettlements
 
     -- user5 transfers eth to user6
     txHashE <- runLndrWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)
@@ -248,9 +252,9 @@ basicSettlementTest = do
     httpCode <- verifySettlement testUrl creditHash txHash testPrivkey5
     assertEqual "verification success" 204 httpCode
 
-    -- ensure that tx registers in blockchain w/ a 10 second pause and
+    -- ensure that tx registers in blockchain w/ a 7 second pause and
     -- heartbeat has time to verify its validity
-    threadDelay (8 * 10 ^ 6)
+    threadDelay (7 * 10 ^ 6)
 
     (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getSettlements testUrl testAddress5
     assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)
@@ -262,19 +266,33 @@ basicSettlementTest = do
 
 verifySettlementTest :: Assertion
 verifySettlementTest = do
+    let settleAmountInWei = 10 ^ 18
     -- testAddress1 is the person revieving eth, thus the credit must record
     -- this address as the debtor.
     txHashE <- runLndrWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
                                                         testAddress1
                                                         (Just 21000)
                                                         Nothing
-                                                        (Just $ 10 ^ 18)
+                                                        (Just settleAmountInWei)
                                                         Nothing
     let txHash = fromRight (error "error sending eth") txHashE
 
     threadDelay (5 * 10 ^ 6)
 
-    verified <- verifySettlementPayment txHash testAddress4 testAddress1 (10 ^ 18)
+    verified <- verifySettlementPayment (BilateralCreditRecord ( CreditRecord testAddress4
+                                                                              testAddress1
+                                                                              10
+                                                                              ""
+                                                                              testAddress4
+                                                                              0
+                                                                              ""
+                                                                              ""
+                                                                              ucacAddr
+                                                                              (Just $ unQuantity settleAmountInWei)
+                                                                              (Just "ETH")
+                                                                              (Just 0)
+                                                               ) "" "" (Just txHash))
+-- txHash testAddress4 testAddress1 (10 ^ 18)
     assertBool "payment properly verified" verified
 
 
@@ -315,7 +333,7 @@ parseCreditInputTest = do
 
 
 nickSignTest :: Assertion
-nickSignTest = assertEqual "expected nick request signature" nickSignature (Right "56324c5c3b52210099f12e569e73ee1853524b958cebc60a33ad1cfd32a84cf56caddd36ead0c2c34ebb0188e2a9fbf4591f3c1d34d3ba8bfe5ef2dae513a38a1c")
+nickSignTest = assertEqual "expected nick request signature" nickSignature (Right "6c965e1e501c18eedaf8af07dcdee651e0569efd017211be7faf10454c11bcf9611c8e9feaca7ac8ac400cce441db84ecbeb6f817fd8f40e321b33c3a0f4b21d1b")
     where
         unsignedNickRequest = NickRequest testAddress1 "testNick" ""
         nickSignature = generateSignature unsignedNickRequest testPrivkey1

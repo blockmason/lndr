@@ -33,15 +33,15 @@ lookupEmail addr conn = listToMaybe . fmap fromOnly <$>
     (query conn "SELECT email FROM nicknames WHERE address = ?" (Only addr) :: IO [Only EmailAddress])
 
 
-lookupAddressByNick :: Text -> Connection -> IO (Maybe NickInfo)
+lookupAddressByNick :: Text -> Connection -> IO (Maybe UserInfo)
 lookupAddressByNick nick conn = listToMaybe <$>
-    (query conn "SELECT address, nickname FROM nicknames WHERE nickname = ?" (Only nick) :: IO [NickInfo])
+    (query conn "SELECT address, nickname FROM nicknames WHERE nickname = ?" (Only nick) :: IO [UserInfo])
 
-lookupAddressByEmail :: EmailAddress -> Connection -> IO (Maybe NickInfo)
+lookupAddressByEmail :: EmailAddress -> Connection -> IO (Maybe UserInfo)
 lookupAddressByEmail email conn = listToMaybe <$>
-    (query conn "SELECT address, nickname FROM nicknames WHERE email = ?" (Only $ Email.toText email) :: IO [NickInfo])
+    (query conn "SELECT address, nickname FROM nicknames WHERE email = ?" (Only $ Email.toText email) :: IO [UserInfo])
 
 
-lookupAddressesByFuzzyNick :: Text -> Connection -> IO [NickInfo]
+lookupAddressesByFuzzyNick :: Text -> Connection -> IO [UserInfo]
 lookupAddressesByFuzzyNick nick conn =
-    query conn "SELECT address, nickname FROM nicknames WHERE nickname LIKE ? LIMIT 10" (Only $ T.append nick "%") :: IO [NickInfo]
+    query conn "SELECT address, nickname FROM nicknames WHERE nickname LIKE ? LIMIT 10" (Only $ T.append nick "%") :: IO [UserInfo]

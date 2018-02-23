@@ -23,6 +23,6 @@ lookupFriends addr conn = fmap fromOnly <$>
     (query conn "SELECT friend FROM friendships WHERE origin = ?" (Only addr) :: IO [Only Address])
 
 
-lookupFriendsWithNick :: Address -> Connection -> IO [NickInfo]
+lookupFriendsWithNick :: Address -> Connection -> IO [UserInfo]
 lookupFriendsWithNick addr conn =
-    query conn "SELECT friend, nickname FROM friendships, nicknames WHERE origin = ? AND address = friend" (Only addr) :: IO [NickInfo]
+    query conn "SELECT friend, nickname FROM friendships, nicknames WHERE origin = ? AND address = friend" (Only addr) :: IO [UserInfo]

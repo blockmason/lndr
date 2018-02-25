@@ -152,24 +152,26 @@ createBilateralFriendship pool creditor debtor = do
             void . withResource pool $ Db.addFriends debtor [creditor]
 
 
+
+
 rejectHandler :: RejectRequest -> LndrHandler NoContent
 rejectHandler(RejectRequest hash sig) = do
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
     let hashNotFound = throwError $ err404 { errBody = "credit hash does not refer to pending record" }
-    -- TODO clean this up
-    (CreditRecord creditor debtor _ _ _ _ _ _ _ _ _ _) <- maybe hashNotFound pure pendingRecordM
+    pendingRecord <- maybe hashNotFound pure pendingRecordM
     -- recover address from sig
-    let signer = EU.ecrecover (stripHexPrefix sig) hash
+    let signer = textToAddress <$> EU.ecrecover (stripHexPrefix sig) hash
     case signer of
         Left _ -> throwError $ err401 { errBody = "unable to recover addr from sig" }
-        Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
+        Right signerAddress -> if signerAddress == debtor pendingRecord || signerAddress == creditor pendingRecord
             then do liftIO . withResource pool $ Db.deletePending hash True
-                    let submitterAddress = textToAddress addr
-                        counterparty = if creditor /= submitterAddress then creditor else debtor
+                    let counterparty = if creditor pendingRecord /= signerAddress
+                                            then creditor pendingRecord
+                                            else debtor pendingRecord
                     pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
-                    nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
+                    nicknameM <- liftIO . withResource pool $ Db.lookupNick signerAddress
                     let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
                     case pushDataM of
                         Just (channelID, platform) -> void . liftIO $

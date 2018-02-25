@@ -12,9 +12,9 @@ import           Lndr.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3
 
+-- TODO VERIFY THAT JOIN is appopriate here
 lookupPending :: Text -> Connection -> IO (Maybe CreditRecord)
-lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac FROM pending_credits WHERE hash = ?" (Only hash)
-
+lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature, ucac, settlements.amount, settlements.currency, settlements.blocknumber FROM pending_credits JOIN settlements ON pending_credits.hash = settlements.hash WHERE hash = ?" (Only hash)
 
 -- Boolean parameter determines if search is through settlement records or
 -- non-settlement records
@@ -37,14 +37,15 @@ deletePending hash rejection conn = do
     fromIntegral <$> execute conn "DELETE FROM pending_credits WHERE hash = ?" (Only hash)
 
 
-insertSettlementData :: Text -> SettlementData -> Connection -> IO Int
-insertSettlementData hash (SettlementData amount currency blocknumber) conn =
+insertSettlementData :: CreditRecord -> Connection -> IO Int
+insertSettlementData (CreditRecord _ _ _ _ _ _ hash _ _ (Just amount) (Just currency) (Just blocknumber)) conn =
     fromIntegral <$> execute conn "INSERT INTO settlements (hash, amount, currency, blocknumber, verified) VALUES (?,?,?,?,FALSE)" (hash, amount, currency, blocknumber)
+insertSettlementData _ _ = return 0
 
 
-insertPending :: CreditRecord -> Maybe SettlementData -> Connection -> IO Int
-insertPending creditRecord settlementDataM conn = do
-    traverse_ (flip (insertSettlementData (hash creditRecord)) conn) settlementDataM
+insertPending :: CreditRecord -> Connection -> IO Int
+insertPending creditRecord conn = do
+    insertSettlementData creditRecord conn
     fromIntegral <$> execute conn sql (creditRecordToPendingTuple creditRecord)
     where sql = "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac) VALUES (?,?,?,?,?,?,?,?,?)"
 

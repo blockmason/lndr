@@ -114,7 +114,8 @@ interpretUcacLog change = do
     debtorAddr <- bytes32ToAddress <=< (!! 3) $ changeTopics change
     let amount = hexToInteger . takeNthByte32 0 $ changeData change
         nonce = hexToInteger . takeNthByte32 1 $ changeData change
-        memo = T.decodeUtf8 . fst . BS16.decode . T.encodeUtf8 . takeNthByte32 2 $ changeData change
+        memo = T.decodeUtf8 . fst . BS16.decode
+                            . T.encodeUtf8 . takeNthByte32 2 $ changeData change
     pure $ IssueCreditLog ucacAddr
                           creditorAddr
                           debtorAddr

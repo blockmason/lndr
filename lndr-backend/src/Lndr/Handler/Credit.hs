@@ -21,7 +21,7 @@ module Lndr.Handler.Credit (
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
-import           Data.Maybe (fromMaybe)
+import           Data.Maybe (fromMaybe, isJust)
 import           Data.Pool (Pool, withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -54,13 +54,9 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     config <- liftIO . atomically $ readTVar configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
 
-    -- TODO first check that hash and nonce match up, but don't require
-    -- a nonce to be passed into hashCreditRecord..
-    let calculatedHash = generateHash signedRecord
-    unless (hash == calculatedHash) $
-        throwError (err400 {errBody = "Bad hash included with credit record."})
-
     -- check that credit submission is valid
+    unless (hash == generateHash signedRecord) $
+        throwError (err400 {errBody = "Bad hash included with credit record."})
     unless (T.length memo <= 32) $
         throwError (err400 {errBody = "Memo too long. Memos must be no longer than 32 characters."})
     unless (submitterAddress == creditor || submitterAddress == debtor) $
@@ -99,7 +95,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             -- update gas price to latest safelow value
             updatedConfig <- safelowUpdate config configTVar
 
-            finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig hash
+            finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig
 
             -- send push notification to counterparty
             attemptToNotify "Pending credit confirmation from " CreditConfirmation
@@ -115,19 +111,18 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
 
 
 -- TODO change input to bilateral credit record
-finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> Text -> IO ()
-finalizeCredit pool storedRecord config creditorSig debtorSig hash = do
+finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> IO ()
+finalizeCredit pool storedRecord config creditorSig debtorSig = do
+            let bilateralCredit = BilateralCreditRecord storedRecord creditorSig debtorSig Nothing
             -- In case the record is a settlement, delay submitting credit to
             -- the blockchain until /verify_settlement is called
-            case settlementAmount storedRecord of
-                Just _  -> pure ()
-                Nothing -> void $ finalizeTransaction config (BilateralCreditRecord storedRecord creditorSig debtorSig Nothing)
+            when (isJust $ settlementAmount storedRecord) $
+                void $ finalizeTransaction config bilateralCredit
 
-            -- saving transaction record
-            -- TODO cleanup this last Nothing value
-            withResource pool $ Db.insertCredit $ BilateralCreditRecord storedRecord creditorSig debtorSig Nothing
+            -- saving transaction record to 'verified_credits' table
+            withResource pool $ Db.insertCredit bilateralCredit
             -- delete pending record after transaction finalization
-            void . withResource pool $ Db.deletePending hash False
+            void . withResource pool $ Db.deletePending (hash storedRecord) False
 
 
 createPendingRecord :: Pool Connection -> CreditRecord -> LndrHandler ()

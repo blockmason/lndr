@@ -151,10 +151,11 @@ nickTest = do
 basicLendTest :: Assertion
 basicLendTest = do
     let testCredit' = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
-        badTestCredit = CreditRecord testAddress1 testAddress1 100 "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
+        badTestCredit' = CreditRecord testAddress1 testAddress1 100 "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
 
         creditHash = generateHash testCredit'
         testCredit = testCredit' { hash = creditHash }
+        badTestCredit = badTestCredit' { hash = generateHash badTestCredit' }
 
     -- user1 fails to submit pending credit to himself
     httpCode <- submitCredit testUrl testPrivkey1 badTestCredit

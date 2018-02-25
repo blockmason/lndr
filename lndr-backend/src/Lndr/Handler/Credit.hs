@@ -57,7 +57,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     -- TODO first check that hash and nonce match up, but don't require
     -- a nonce to be passed into hashCreditRecord..
     let calculatedHash = generateHash signedRecord
-    unless (hash /= calculatedHash) $
+    unless (hash == calculatedHash) $
         throwError (err400 {errBody = "Bad hash included with credit record."})
 
     -- check that credit submission is valid

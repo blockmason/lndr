@@ -4,6 +4,7 @@ module Lndr.Config where
 
 import           Data.Configurator
 import           Data.Configurator.Types
+import           Data.Default
 import qualified Data.HashMap.Strict     as H (lookup)
 import           Data.Map                as M
 import           Data.Maybe                 (fromMaybe)
@@ -29,6 +30,7 @@ loadConfig = do
                           (loadEntry "db.port")
                           (loadEntry "execution-address")
                           (loadEntry "gas-price")
+                          def
                           (loadEntry "max-gas")
                           (loadEntry "urban-airship.key")
                           (loadEntry "urban-airship.secret")

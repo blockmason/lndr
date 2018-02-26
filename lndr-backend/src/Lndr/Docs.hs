@@ -7,6 +7,7 @@
 
 module Lndr.Docs where
 
+import           Data.Default
 import           Data.Maybe                    (fromJust)
 import qualified Data.Map                      as M
 import           Data.Text                     (Text)
@@ -40,6 +41,8 @@ instance ToSample ConfigResponse where
     toSamples _ = singleSample $
         ConfigResponse (M.fromList [("USD", "0x7899b83071d9704af0b132859a04bb1698a3acaf")])
                        "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
+                       1000
+                       def
 
 instance ToSample SettlementsResponse where
     toSamples _ = singleSample $ SettlementsResponse [crSigned] [crSettleSigned]

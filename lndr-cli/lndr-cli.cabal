@@ -17,7 +17,6 @@ library
   hs-source-dirs:      src
   exposed-modules:     Lndr.CLI.Args
                      , Lndr.CLI.Config
-
   build-depends:       base >= 4.7 && < 5
                      , base64-bytestring
                      , bytestring

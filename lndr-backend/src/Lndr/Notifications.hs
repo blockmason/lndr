@@ -6,6 +6,8 @@ import           Lndr.Types
 import qualified Network.HTTP.Client as HTTP (applyBasicAuth)
 import qualified Network.HTTP.Simple as HTTP
 import qualified Network.HTTP.Types  as HTTP (hAccept)
+import           Network.Wreq
+
 
 -- | Sends a request to the Urban Airship api to send push notifications to
 -- specific mobile devices.

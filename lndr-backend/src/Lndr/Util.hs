@@ -20,19 +20,6 @@ import qualified Network.Ethereum.Web3.Address as Addr
 import           Numeric                       (readHex, showHex)
 
 
--- TODO can nonce be removed here?
-hashCreditRecord :: Nonce -> CreditRecord -> Text
-hashCreditRecord nonce creditRecord =
-                let message = T.concat $
-                      stripHexPrefix <$> [ Addr.toText $ ucac creditRecord
-                                         , Addr.toText $ creditor creditRecord
-                                         , Addr.toText $ debtor creditRecord
-                                         , integerToHex $ amount creditRecord
-                                         , integerToHex $ unNonce nonce
-                                         ]
-                in EU.hashText message
-
-
 hashCreditLog :: IssueCreditLog -> Text
 hashCreditLog (IssueCreditLog ucac creditor debtor amount nonce _) =
                 let message = T.concat $

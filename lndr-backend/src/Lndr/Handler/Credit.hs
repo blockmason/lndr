@@ -21,7 +21,7 @@ module Lndr.Handler.Credit (
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
-import           Data.Maybe (fromMaybe)
+import           Data.Maybe (fromMaybe, isJust)
 import           Data.Pool (Pool, withResource)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -47,8 +47,16 @@ borrowHandler :: CreditRecord -> LndrHandler NoContent
 borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
 
 
-validSubmission :: Text -> Address -> Address -> Address -> Text -> Text -> LndrHandler ()
-validSubmission memo submitterAddress creditor debtor sig hash = do
+-- TODO fix this
+submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
+submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ hash sig _ _ _ _) = do
+    (ServerState pool configTVar) <- ask
+    config <- liftIO . atomically $ readTVar configTVar
+    nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
+
+    -- check that credit submission is valid
+    unless (hash == generateHash signedRecord) $
+        throwError (err400 {errBody = "Bad hash included with credit record."})
     unless (T.length memo <= 32) $
         throwError (err400 {errBody = "Memo too long. Memos must be no longer than 32 characters."})
     unless (submitterAddress == creditor || submitterAddress == debtor) $
@@ -62,18 +70,6 @@ validSubmission memo submitterAddress creditor debtor sig hash = do
     unless (textToAddress signer == submitterAddress) $
         throwError (err401 {errBody = "Bad submitter sig"})
 
--- TODO fix this
-submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
-submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ _ sig _ _ _ _) = do
-    (ServerState pool configTVar) <- ask
-    config <- liftIO . atomically $ readTVar configTVar
-    nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
-    settlementM <- liftIO . runMaybeT $ settlementDataFromCreditRecord signedRecord
-
-    let hash = hashCreditRecord nonce signedRecord
-
-    -- check that credit submission is valid
-    validSubmission memo submitterAddress creditor debtor sig hash
 
     -- creating function to query urban airship api
     let attemptToNotify msg notifyAction = do
@@ -99,14 +95,15 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
             -- update gas price to latest safelow value
             updatedConfig <- safelowUpdate config configTVar
 
-            finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig hash settlementM
+            finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig
 
             -- send push notification to counterparty
             attemptToNotify "Pending credit confirmation from " CreditConfirmation
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
-            createPendingRecord pool creditor debtor signedRecord hash settlementM
+            processedRecord <- liftIO $ calculateSettlementCreditRecord signedRecord
+            createPendingRecord pool processedRecord
             -- send push notification to counterparty
             attemptToNotify "New pending credit from " NewPendingCredit
 
@@ -114,39 +111,39 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
 
 
 -- TODO change input to bilateral credit record
-finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> Text -> Maybe SettlementData -> IO ()
-finalizeCredit pool storedRecord config creditorSig debtorSig hash settlementM = do
+finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> IO ()
+finalizeCredit pool storedRecord config creditorSig debtorSig = do
+            let bilateralCredit = BilateralCreditRecord storedRecord creditorSig debtorSig Nothing
             -- In case the record is a settlement, delay submitting credit to
             -- the blockchain until /verify_settlement is called
-            case settlementM of
-                Just _  -> pure ()
-                Nothing -> void $ finalizeTransaction config (BilateralCreditRecord storedRecord creditorSig debtorSig Nothing)
+            when (isJust $ settlementAmount storedRecord) $
+                void $ finalizeTransaction config bilateralCredit
 
-            -- saving transaction record
-            -- TODO cleanup this last Nothing value
-            withResource pool $ Db.insertCredit $ BilateralCreditRecord storedRecord creditorSig debtorSig Nothing
+            -- saving transaction record to 'verified_credits' table
+            withResource pool $ Db.insertCredit bilateralCredit
             -- delete pending record after transaction finalization
-            void . withResource pool $ Db.deletePending hash False
+            void . withResource pool $ Db.deletePending (hash storedRecord) False
 
 
-createPendingRecord :: Pool Connection -> Address -> Address -> CreditRecord -> Text -> Maybe SettlementData -> LndrHandler ()
-createPendingRecord pool creditor debtor signedRecord hash settlementM = do
+createPendingRecord :: Pool Connection -> CreditRecord -> LndrHandler ()
+createPendingRecord pool signedRecord = do
+    -- TODO can I consolidate these two checks into one?
     -- check if a pending transaction already exists between the two users
-    existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses creditor debtor
+    existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses (creditor signedRecord) (debtor signedRecord)
     unless (null existingPending) $
         throwError (err400 {errBody = "A pending credit record already exists for the two users."})
 
     -- check if an unverified bilateral credit record exists in the
     -- `verified_credits` table
     existingPendingSettlement <- liftIO . withResource pool $
-        Db.lookupPendingSettlementByAddresses creditor debtor
+        Db.lookupPendingSettlementByAddresses (creditor signedRecord) (debtor signedRecord)
     unless (null existingPendingSettlement) $
         throwError (err400 {errBody = "An unverified settlement credit record already exists for the two users."})
 
     -- ensuring that creditor is on debtor's friends list and vice-versa
-    liftIO $ createBilateralFriendship pool creditor debtor
+    liftIO $ createBilateralFriendship pool (creditor signedRecord) (debtor signedRecord)
 
-    void . liftIO . withResource pool $ Db.insertPending (signedRecord { hash = hash }) settlementM
+    void . liftIO . withResource pool $ Db.insertPending signedRecord
 
 
 createBilateralFriendship :: Pool Connection -> Address -> Address -> IO ()
@@ -157,30 +154,34 @@ createBilateralFriendship pool creditor debtor = do
 
 rejectHandler :: RejectRequest -> LndrHandler NoContent
 rejectHandler(RejectRequest hash sig) = do
+    pool <- dbConnectionPool <$> ask
+    pendingRecord <- ioMaybeToLndr "credit hash does not refer to pending record"
+                        . withResource pool $ Db.lookupPending hash
+    signerAddress <- eitherToLndr "unable to recover addr from sig" $
+                        textToAddress <$> EU.ecrecover (stripHexPrefix sig) hash
+    unless (signerAddress == debtor pendingRecord || signerAddress == creditor pendingRecord) $
+        throwError $ err401 { errBody = "bad rejection sig" }
+
+    liftIO . withResource pool $ Db.deletePending hash True
+    sendRejectionNotification pendingRecord signerAddress
+    pure NoContent
+
+
+sendRejectionNotification :: CreditRecord -> Address -> LndrHandler ()
+sendRejectionNotification pendingRecord signerAddress = do
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
-    pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
-    let hashNotFound = throwError $ err404 { errBody = "credit hash does not refer to pending record" }
-    -- TODO clean this up
-    (CreditRecord creditor debtor _ _ _ _ _ _ _ _ _ _) <- maybe hashNotFound pure pendingRecordM
-    -- recover address from sig
-    let signer = EU.ecrecover (stripHexPrefix sig) hash
-    case signer of
-        Left _ -> throwError $ err401 { errBody = "unable to recover addr from sig" }
-        Right addr -> if textToAddress addr == debtor || textToAddress addr == creditor
-            then do liftIO . withResource pool $ Db.deletePending hash True
-                    let submitterAddress = textToAddress addr
-                        counterparty = if creditor /= submitterAddress then creditor else debtor
-                    pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
-                    nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
-                    let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
-                    case pushDataM of
-                        Just (channelID, platform) -> void . liftIO $
-                            sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
-                        Nothing -> pure ()
 
-                    pure NoContent
-            else throwError $ err401 { errBody = "bad rejection sig" }
+    let counterparty = if creditor pendingRecord /= signerAddress
+                            then creditor pendingRecord
+                            else debtor pendingRecord
+    pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
+    nicknameM <- liftIO . withResource pool $ Db.lookupNick signerAddress
+    let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
+    case pushDataM of
+        Just (channelID, platform) -> void . liftIO $
+            sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
+        Nothing -> pure ()
 
 
 verifyHandler :: VerifySettlementRequest -> LndrHandler NoContent

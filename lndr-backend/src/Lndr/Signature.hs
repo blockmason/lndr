@@ -6,6 +6,7 @@ import           Lndr.Types
 import           Lndr.Util
 import qualified Network.Ethereum.Util         as EU
 import           Network.Ethereum.Web3.Address
+import qualified Network.Ethereum.Web3.Address as Addr
 import           Text.EmailAddress as Email
 
 class VerifiableSignature a where
@@ -19,6 +20,19 @@ class VerifiableSignature a where
 
      generateSignature :: a -> Text -> Either String Text
      generateSignature request = EU.ecsign (generateHash request)
+
+
+instance VerifiableSignature CreditRecord where
+    -- TODO make this more readable after transition to lens
+    extractSignature = signature
+
+    generateHash (CreditRecord creditor debtor amount _ _ nonce _ _ ucac _ _ _) =
+        EU.hashText . T.concat $ stripHexPrefix <$> [ Addr.toText ucac
+                                                    , Addr.toText creditor
+                                                    , Addr.toText debtor
+                                                    , integerToHex amount
+                                                    , integerToHex nonce
+                                                    ]
 
 
 instance VerifiableSignature NickRequest where

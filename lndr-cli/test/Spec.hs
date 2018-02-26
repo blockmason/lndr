@@ -14,10 +14,9 @@ import           Lndr.EthereumInterface
 import           Lndr.NetworkStatistics
 import           Lndr.Signature
 import           Lndr.Types
-import           Lndr.Util                      (hashCreditRecord,
-                                                 parseIssueCreditInput,
-                                                 textToAddress,
-                                                 addHexPrefix)
+import           Lndr.Util                      ( parseIssueCreditInput,
+                                                  textToAddress,
+                                                  addHexPrefix)
 import           Lndr.Web3
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Eth      as Eth
@@ -26,7 +25,7 @@ import           Test.Framework
 import           Test.Framework.Providers.HUnit
 import           Test.HUnit                     hiding (Test)
 import qualified Text.EmailAddress              as Email
-import           System.Environment      (setEnv)
+import           System.Environment             (setEnv)
 import           System.Directory
 
 -- TODO get rid of this once version enpoint point works
@@ -151,10 +150,12 @@ nickTest = do
 
 basicLendTest :: Assertion
 basicLendTest = do
-    let testCredit = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
-        badTestCredit = CreditRecord testAddress1 testAddress1 100 "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
+    let testCredit' = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
+        badTestCredit' = CreditRecord testAddress1 testAddress1 100 "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
 
-        creditHash = hashCreditRecord (Nonce 0) testCredit
+        creditHash = generateHash testCredit'
+        testCredit = testCredit' { hash = creditHash }
+        badTestCredit = badTestCredit' { hash = generateHash badTestCredit' }
 
     -- user1 fails to submit pending credit to himself
     httpCode <- submitCredit testUrl testPrivkey1 badTestCredit
@@ -213,8 +214,9 @@ basicSettlementTest = do
         Just prices -> assertBool "nonzero eth price retrieved from coinbase" (usd prices > 0)
         Nothing -> return ()
 
-    let testCredit = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" "" ucacAddr Nothing (Just "ETH") Nothing
-        creditHash = hashCreditRecord (Nonce 0) testCredit
+    let testCredit' = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" "" ucacAddr Nothing (Just "ETH") Nothing
+        creditHash = generateHash testCredit'
+        testCredit = testCredit' { hash = creditHash }
 
     -- user5 submits pending settlement credit to user6
     httpCode <- submitCredit testUrl testPrivkey5 testCredit

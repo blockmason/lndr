@@ -158,28 +158,27 @@ rejectHandler :: RejectRequest -> LndrHandler NoContent
 rejectHandler(RejectRequest hash sig) = do
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
-    pendingRecordM <- liftIO . withResource pool $ Db.lookupPending hash
-    let hashNotFound = throwError $ err404 { errBody = "credit hash does not refer to pending record" }
-    pendingRecord <- maybe hashNotFound pure pendingRecordM
+    pendingRecord <- ioMaybeToLndr "credit hash does not refer to pending record"
+                        . withResource pool $ Db.lookupPending hash
     -- recover address from sig
-    let signer = textToAddress <$> EU.ecrecover (stripHexPrefix sig) hash
-    case signer of
-        Left _ -> throwError $ err401 { errBody = "unable to recover addr from sig" }
-        Right signerAddress -> if signerAddress == debtor pendingRecord || signerAddress == creditor pendingRecord
-            then do liftIO . withResource pool $ Db.deletePending hash True
-                    let counterparty = if creditor pendingRecord /= signerAddress
-                                            then creditor pendingRecord
-                                            else debtor pendingRecord
-                    pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
-                    nicknameM <- liftIO . withResource pool $ Db.lookupNick signerAddress
-                    let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
-                    case pushDataM of
-                        Just (channelID, platform) -> void . liftIO $
-                            sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
-                        Nothing -> pure ()
+    signerAddress <- eitherToLndr "unable to recover addr from sig" $
+                        textToAddress <$> EU.ecrecover (stripHexPrefix sig) hash
+    unless (signerAddress == debtor pendingRecord || signerAddress == creditor pendingRecord) $
+        throwError $ err401 { errBody = "bad rejection sig" }
 
-                    pure NoContent
-            else throwError $ err401 { errBody = "bad rejection sig" }
+    liftIO . withResource pool $ Db.deletePending hash True
+    let counterparty = if creditor pendingRecord /= signerAddress
+                            then creditor pendingRecord
+                            else debtor pendingRecord
+    pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
+    nicknameM <- liftIO . withResource pool $ Db.lookupNick signerAddress
+    let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
+    case pushDataM of
+        Just (channelID, platform) -> void . liftIO $
+            sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
+        Nothing -> pure ()
+
+    pure NoContent
 
 
 verifyHandler :: VerifySettlementRequest -> LndrHandler NoContent

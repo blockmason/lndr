@@ -16,21 +16,12 @@ import qualified Network.Ethereum.Web3.Eth as Eth
 import           Network.Wreq
 import qualified Network.HTTP.Simple       as HTTP
 
-
--- | Sets server's default gasPrice to the current safelow price on
--- ethgasstation.info. If a query to ethgasstation.info fails, the old value
--- for 'gasPrice' is used.
-safelowUpdate :: ServerConfig -> TVar ServerConfig -> IO ServerConfig
-safelowUpdate config configTVar = do
-    req <- HTTP.parseRequest "https://ethgasstation.info/json/ethgasAPI.json"
-    gasStationResponseE <- try (HTTP.getResponseBody <$> HTTP.httpJSON req)
-    case gasStationResponseE of
-        Right gasStationResponse -> do
-            let lastestSafeLow = ceiling $ margin * safeLowScaling * safeLow gasStationResponse
-                updatedConfg = config { gasPrice = lastestSafeLow }
-            liftIO . atomically . modifyTVar configTVar $ const updatedConfg
-            return updatedConfg
-        Left (_ :: HTTP.HttpException) -> return config
+-- | Returns the current safelow price on ethgasstation.info.
+querySafelow :: MaybeT IO Integer
+querySafelow = do
+    req <- lift $ HTTP.parseRequest "https://ethgasstation.info/json/ethgasAPI.json"
+    gasStationResponse <- MaybeT $ rightToMaybe . HTTP.getResponseBody <$> HTTP.httpJSONEither req
+    return . ceiling $ margin * safeLowScaling * safeLow gasStationResponse
     where
         safeLowScaling = 100000000 -- eth gas station returns prices in DeciGigaWei
         margin = 1.3 -- multiplier for additional assurance that tx will make it into blockchain

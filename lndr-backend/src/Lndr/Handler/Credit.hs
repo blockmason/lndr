@@ -92,17 +92,14 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
                                             then (signature storedRecord, signature signedRecord)
                                             else (signature signedRecord, signature storedRecord)
 
-            -- update gas price to latest safelow value
-            updatedConfig <- safelowUpdate config configTVar
-
-            finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig
+            finalizeCredit pool storedRecord config creditorSig debtorSig
 
             -- send push notification to counterparty
             attemptToNotify "Pending credit confirmation from " CreditConfirmation
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
-            processedRecord <- liftIO $ calculateSettlementCreditRecord signedRecord
+            processedRecord <- liftIO $ calculateSettlementCreditRecord config signedRecord
             createPendingRecord pool processedRecord
             -- send push notification to counterparty
             attemptToNotify "New pending credit from " NewPendingCredit

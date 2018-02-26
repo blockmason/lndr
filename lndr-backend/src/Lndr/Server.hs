@@ -18,8 +18,10 @@ import           Control.Concurrent
 import           Control.Concurrent.STM
 import           Control.Monad.Except
 import           Control.Monad.Reader
+import           Control.Monad.Trans.Maybe
 import           Data.ByteString.Lazy       (ByteString)
 import           Data.Either                (either)
+import           Data.Maybe                 (fromMaybe)
 import           Data.Pool                  (createPool, withResource)
 import           Data.Text                  (Text)
 import qualified Data.Text                  as T
@@ -31,6 +33,7 @@ import qualified Lndr.Db                    as Db
 import           Lndr.Docs
 import           Lndr.EthereumInterface
 import           Lndr.Handler
+import           Lndr.NetworkStatistics
 import           Lndr.Types
 import           Lndr.Web3
 import           Network.Ethereum.Web3      hiding (convert)
@@ -192,10 +195,22 @@ heartbeat state@(ServerState _ configMVar) = do
     config <- atomically $ readTVar configMVar
     -- sleep for time specified in config
     threadDelay (heartbeatInterval config * 10 ^ 6)
+    -- update server config
+    updateServerConfig configMVar
     -- scan settlements table for any settlement eligible for deletion
     deleteExpiredSettlements state
     -- try to verify all settlements whose tx_hash column is populated
     verifySettlementsWithTxHash state
+
+
+updateServerConfig :: TVar ServerConfig -> IO ()
+updateServerConfig configTVar = do
+    config <- atomically $ readTVar configTVar
+    currentPricesM <- runMaybeT queryEtheruemPrices
+    currentGasPriceM <- runMaybeT querySafelow
+    atomically $ writeTVar configTVar
+        config { ethereumPrices = fromMaybe (ethereumPrices config) currentPricesM
+               , gasPrice = fromMaybe (gasPrice config) currentGasPriceM }
 
 
 deleteExpiredSettlements :: ServerState -> IO ()

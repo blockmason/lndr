@@ -140,16 +140,16 @@ verifySettlementPayment (BilateralCreditRecord creditRecord _ _ (Just txHash)) =
 verifySettlementPayment _ = pure False
 
 
--- TODO move this out of IO
-calculateSettlementCreditRecord :: CreditRecord -> IO CreditRecord
-calculateSettlementCreditRecord cr@(CreditRecord _ _ amount _ _ _ _ _ _ _ (Just currency) _) = do
-    Just prices <- runMaybeT queryEtheruemPrices
+calculateSettlementCreditRecord :: ServerConfig -> CreditRecord -> IO CreditRecord
+calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ _ _ (Just currency) _) = do
+    Just blockNumber <- runMaybeT currentBlockNumber
+    let prices = ethereumPrices config
     -- assumes USD / ETH settlement for now
     -- 10 ^ 16 instead of 10 ^ 18 because our amounts are stored in cents, not
     -- dollars, so we have to divide by 100
-    let settlementAmount = floor $ fromIntegral amount / usd prices * 10 ^ 16
-    Just blockNumber <- runMaybeT currentBlockNumber
+        settlementAmount = floor $ fromIntegral amount / usd prices * 10 ^ 16
+
     pure (cr { settlementAmount = Just settlementAmount
              , settlementBlocknumber = Just blockNumber
              })
-calculateSettlementCreditRecord cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _) = return cr
+calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _) = return cr

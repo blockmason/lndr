@@ -12,7 +12,6 @@ import           Lndr.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3
 
--- TODO VERIFY THAT JOIN is appopriate here
 lookupPending :: Text -> Connection -> IO (Maybe CreditRecord)
 lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature, ucac, settlements.amount, settlements.currency, settlements.blocknumber FROM pending_credits LEFT JOIN settlements ON pending_credits.hash = settlements.hash WHERE pending_credits.hash = ?" (Only hash)
 

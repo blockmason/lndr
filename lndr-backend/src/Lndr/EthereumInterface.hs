@@ -20,7 +20,7 @@ module Lndr.EthereumInterface (
       lndrLogs
     , finalizeTransaction
     , verifySettlementPayment
-    , settlementDataFromCreditRecord
+    , calculateSettlementCreditRecord
 
     -- * functions defined via TH rendering of solidity ABI
     , getNonce
@@ -114,7 +114,8 @@ interpretUcacLog change = do
     debtorAddr <- bytes32ToAddress <=< (!! 3) $ changeTopics change
     let amount = hexToInteger . takeNthByte32 0 $ changeData change
         nonce = hexToInteger . takeNthByte32 1 $ changeData change
-        memo = T.decodeUtf8 . fst . BS16.decode . T.encodeUtf8 . takeNthByte32 2 $ changeData change
+        memo = T.decodeUtf8 . fst . BS16.decode
+                            . T.encodeUtf8 . takeNthByte32 2 $ changeData change
     pure $ IssueCreditLog ucacAddr
                           creditorAddr
                           debtorAddr
@@ -139,13 +140,16 @@ verifySettlementPayment (BilateralCreditRecord creditRecord _ _ (Just txHash)) =
 verifySettlementPayment _ = pure False
 
 
-settlementDataFromCreditRecord :: CreditRecord -> MaybeT IO SettlementData
-settlementDataFromCreditRecord (CreditRecord _ _ amount _ _ _ _ _ _ saM scM sbnM) = do
-    currency <- MaybeT (return scM :: IO (Maybe Text))
-    prices <- queryEtheruemPrices
+-- TODO move this out of IO
+calculateSettlementCreditRecord :: CreditRecord -> IO CreditRecord
+calculateSettlementCreditRecord cr@(CreditRecord _ _ amount _ _ _ _ _ _ _ (Just currency) _) = do
+    Just prices <- runMaybeT queryEtheruemPrices
     -- assumes USD / ETH settlement for now
     -- 10 ^ 16 instead of 10 ^ 18 because our amounts are stored in cents, not
     -- dollars, so we have to divide by 100
     let settlementAmount = floor $ fromIntegral amount / usd prices * 10 ^ 16
-    blockNumber <- currentBlockNumber
-    pure $ SettlementData settlementAmount currency blockNumber
+    Just blockNumber <- runMaybeT currentBlockNumber
+    pure (cr { settlementAmount = Just settlementAmount
+             , settlementBlocknumber = Just blockNumber
+             })
+calculateSettlementCreditRecord cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _) = return cr

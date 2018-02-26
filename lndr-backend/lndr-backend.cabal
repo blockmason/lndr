@@ -73,6 +73,7 @@ library
                      , unordered-containers
                      , wai
                      , web3
+                     , wreq
   default-language:    Haskell2010
 
 executable lndr-server

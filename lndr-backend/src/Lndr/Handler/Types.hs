@@ -17,9 +17,16 @@ newtype LndrHandler a = LndrHandler {
   runLndr :: ReaderT ServerState (ExceptT ServantErr IO) a
 } deriving (Functor, Applicative, Monad, MonadReader ServerState, MonadError ServantErr, MonadIO)
 
+liftEither :: MonadError e m => Either e a -> m a
+liftEither = either throwError return
+
 
 lndrWeb3 :: Web3 LndrProvider b -> LndrHandler b
 lndrWeb3 = ioEitherToLndr . runLndrWeb3
+
+
+eitherToLndr :: Show a => String -> Either a b -> LndrHandler b
+eitherToLndr error = liftEither . mapLeft (const (err400 { errBody = B.fromStrict . B.pack $ error }))
 
 
 ioEitherToLndr :: Show a => IO (Either a b) -> LndrHandler b

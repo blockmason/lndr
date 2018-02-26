@@ -152,21 +152,26 @@ createBilateralFriendship pool creditor debtor = do
             void . withResource pool $ Db.addFriends debtor [creditor]
 
 
-
-
 rejectHandler :: RejectRequest -> LndrHandler NoContent
 rejectHandler(RejectRequest hash sig) = do
-    (ServerState pool configTVar) <- ask
-    config <- liftIO . atomically $ readTVar configTVar
+    pool <- dbConnectionPool <$> ask
     pendingRecord <- ioMaybeToLndr "credit hash does not refer to pending record"
                         . withResource pool $ Db.lookupPending hash
-    -- recover address from sig
     signerAddress <- eitherToLndr "unable to recover addr from sig" $
                         textToAddress <$> EU.ecrecover (stripHexPrefix sig) hash
     unless (signerAddress == debtor pendingRecord || signerAddress == creditor pendingRecord) $
         throwError $ err401 { errBody = "bad rejection sig" }
 
     liftIO . withResource pool $ Db.deletePending hash True
+    sendRejectionNotification pendingRecord signerAddress
+    pure NoContent
+
+
+sendRejectionNotification :: CreditRecord -> Address -> LndrHandler ()
+sendRejectionNotification pendingRecord signerAddress = do
+    (ServerState pool configTVar) <- ask
+    config <- liftIO . atomically $ readTVar configTVar
+
     let counterparty = if creditor pendingRecord /= signerAddress
                             then creditor pendingRecord
                             else debtor pendingRecord
@@ -177,8 +182,6 @@ rejectHandler(RejectRequest hash sig) = do
         Just (channelID, platform) -> void . liftIO $
             sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
         Nothing -> pure ()
-
-    pure NoContent
 
 
 verifyHandler :: VerifySettlementRequest -> LndrHandler NoContent

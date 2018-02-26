@@ -21,12 +21,13 @@ module Lndr.Handler.Credit (
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
-import           Data.Maybe (fromMaybe, isJust)
-import           Data.Pool (Pool, withResource)
-import           Data.Text (Text)
-import qualified Data.Text as T
+import qualified Data.Map                   as M
+import           Data.Maybe                 (fromMaybe, isJust)
+import           Data.Pool                  (Pool, withResource)
+import           Data.Text                  (Text)
+import qualified Data.Text                  as T
 import           Database.PostgreSQL.Simple (Connection)
-import qualified Lndr.Db as Db
+import qualified Lndr.Db                    as Db
 import           Lndr.EthereumInterface
 import           Lndr.Handler.Types
 import           Lndr.Notifications
@@ -34,7 +35,7 @@ import           Lndr.NetworkStatistics
 import           Lndr.Signature
 import           Lndr.Types
 import           Lndr.Util
-import qualified Network.Ethereum.Util as EU
+import qualified Network.Ethereum.Util      as EU
 import           Network.Ethereum.Web3
 import           Servant
 
@@ -63,6 +64,8 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
         throwError (err400 {errBody = "Submitter is not creditor nor debtor."})
     unless (creditor /= debtor) $
         throwError (err400 {errBody = "Creditor and debtor cannot be equal."})
+    unless (ucac signedRecord `elem` M.elems (lndrUcacAddrs config)) $
+        throwError (err400 {errBody = "Unrecognized UCAC address."})
 
     -- check that submitter signed the tx
     signer <- ioEitherToLndr . pure . EU.ecrecover (stripHexPrefix sig) $
@@ -92,17 +95,14 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
                                             then (signature storedRecord, signature signedRecord)
                                             else (signature signedRecord, signature storedRecord)
 
-            -- update gas price to latest safelow value
-            updatedConfig <- safelowUpdate config configTVar
-
-            finalizeCredit pool storedRecord updatedConfig creditorSig debtorSig
+            finalizeCredit pool storedRecord config creditorSig debtorSig
 
             -- send push notification to counterparty
             attemptToNotify "Pending credit confirmation from " CreditConfirmation
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
-            processedRecord <- liftIO $ calculateSettlementCreditRecord signedRecord
+            processedRecord <- liftIO $ calculateSettlementCreditRecord config signedRecord
             createPendingRecord pool processedRecord
             -- send push notification to counterparty
             attemptToNotify "New pending credit from " NewPendingCredit

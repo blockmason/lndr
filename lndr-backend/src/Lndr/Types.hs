@@ -48,6 +48,7 @@ import           Data.Aeson.TH
 import           Data.ByteString               (ByteString)
 import           Data.Char                     (toLower)
 import qualified Data.Configurator.Types       as Conf
+import           Data.Default
 import           Data.Either.Combinators       (fromRight, mapLeft)
 import           Data.Hashable
 import qualified Data.Map                      as M
@@ -206,6 +207,27 @@ instance ToJSON Notification where
         where deviceChannel Ios     = "ios_channel"
               deviceChannel Android = "android_channel"
 
+-- A newtype wrapper is used for this 'Double' value which holds an Ethereum
+-- price expressed in USD. This is necessary in order to have easy decoding
+-- from the JSON response of the coinbase API.
+data EthereumPrices = EthereumPrices { usd :: Double
+                                     , jpy :: Double
+                                     , krw :: Double
+                                     } deriving (Show, Generic)
+$(deriveToJSON defaultOptions ''EthereumPrices)
+
+instance Default EthereumPrices where
+    def = EthereumPrices 864.78 92481 925859
+
+instance FromJSON EthereumPrices where
+        parseJSON (Object v) = do
+            dataObject <- v .: "data"
+            ratesObject <- dataObject .: "rates"
+            usd <- read <$> ratesObject .: "USD"
+            jpy <- read <$> ratesObject .: "JPY"
+            krw <- read <$> ratesObject .: "KRW"
+            return $ EthereumPrices usd jpy krw
+
 data ServerConfig = ServerConfig { lndrUcacAddrs         :: M.Map Text Address
                                  , creditProtocolAddress :: !Address
                                  , issueCreditEvent      :: !Text
@@ -217,6 +239,7 @@ data ServerConfig = ServerConfig { lndrUcacAddrs         :: M.Map Text Address
                                  , dbPort                :: !Word16
                                  , executionAddress      :: !Address
                                  , gasPrice              :: !Integer
+                                 , ethereumPrices        :: !EthereumPrices
                                  , maxGas                :: !Integer
                                  , urbanAirshipKey       :: !ByteString
                                  , urbanAirshipSecret    :: !ByteString
@@ -232,6 +255,8 @@ data ServerConfig = ServerConfig { lndrUcacAddrs         :: M.Map Text Address
 -- ensure their configuratoins match the server's.
 data ConfigResponse = ConfigResponse { configResponseLndrAddresses :: M.Map Text Address
                                      , configResponseCreditProtocolAddress :: Address
+                                     , configResponseGasPrice :: Integer
+                                     , configResponseEthereumPrices :: EthereumPrices
                                      }
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 14 }) ''ConfigResponse)
 
@@ -248,23 +273,6 @@ data GasStationResponse = GasStationResponse { safeLow     :: Double
                                              , safeLowWait :: Double
                                              } deriving Show
 $(deriveJSON defaultOptions ''GasStationResponse)
-
--- A newtype wrapper is used for this 'Double' value which holds an Ethereum
--- price expressed in USD. This is necessary in order to have easy decoding
--- from the JSON response of the coinbase API.
-data EthereumPrices = EthereumPrices { usd :: Double
-                                     , jpy :: Double
-                                     , krw :: Double
-                                     } deriving (Show, Generic)
-
-instance FromJSON EthereumPrices where
-        parseJSON (Object v) = do
-            dataObject <- v .: "data"
-            ratesObject <- dataObject .: "rates"
-            usd <- read <$> ratesObject .: "USD"
-            jpy <- read <$> ratesObject .: "JPY"
-            krw <- read <$> ratesObject .: "KRW"
-            return $ EthereumPrices usd jpy krw
 
 data VerifySettlementRequest = VerifySettlementRequest { verifySettlementRequestCreditHash :: CreditHash
                                                        , verifySettlementRequestTxHash :: TransactionHash

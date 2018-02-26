@@ -217,7 +217,7 @@ data EthereumPrices = EthereumPrices { usd :: Double
 $(deriveToJSON defaultOptions ''EthereumPrices)
 
 instance Default EthereumPrices where
-    def = EthereumPrices 0 0 0
+    def = EthereumPrices 864.78 92481 925859
 
 instance FromJSON EthereumPrices where
         parseJSON (Object v) = do

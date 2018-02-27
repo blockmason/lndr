@@ -48,7 +48,8 @@ borrowHandler :: CreditRecord -> LndrHandler NoContent
 borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
 
 
--- TODO fix this
+-- TODO why is there a submitter address when CreditRecord already has
+-- a submitter field?
 submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
 submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ hash sig _ _ _ _) = do
     (ServerState pool configTVar) <- ask

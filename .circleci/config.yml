@@ -35,9 +35,11 @@ jobs:
             Dockerfile \
             .dockerignore \
             artifacts/
-          for file in $(perl -n -e'/^!\/(.+)/ && print "$1\n"' < .dockerignore | xargs); do \
-            mkdir -p "artifacts/$(dirname "${file}")"
-            cp "${file}" "artifacts/${file}"
+          for file in $(perl -n -e'/^!\/(.+)/ && print "$1\n"' < .dockerignore | xargs); do
+            if [ -f "${file}" ]; then
+              mkdir -p "artifacts/$(dirname "${file}")"
+              cp "${file}" "artifacts/${file}"
+            fi
           done
 
     - store_artifacts:

@@ -9,21 +9,24 @@ RUN set -e;\
 ENV \
   LNDR_HOME=/lndr
 
-RUN set -e;\
-  curl \
-    -sSL \
-    -o /usr/bin/lndr-server \
-    $(curl \
-        -sSL \
-        'https://circleci.com/api/v1.1/project/github/blockmason/lndr/latest/artifacts?branch=master&filter=successful' \
-      | awk '/url.+lndr-server/ { print $3; }' \
-      | xargs \
-    );\
-  chmod 0555 /usr/bin/lndr-server;
-
 COPY . "${LNDR_HOME}"
 
 WORKDIR "${LNDR_HOME}"
+
+RUN set -e;\
+  [ -f "${LNDR_HOME}/lndr-server" ] && cp "${LNDR_HOME}/lndr-server" /usr/bin/lndr-server;\
+  [ -f "/usr/bin/lndr-server" ] \
+  || curl \
+      -sSL \
+      -o /usr/bin/lndr-server \
+      $(\
+        curl \
+          -sSL \
+          'https://circleci.com/api/v1.1/project/github/blockmason/lndr/latest/artifacts?branch=master&filter=successful' \
+        | awk '/url.+lndr-server/ { print $3; }' \
+        | xargs \
+      );\
+  chmod 0555 /usr/bin/lndr-server;
 
 ENV \
   AWS_ACCESS_KEY_ID="" \

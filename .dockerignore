@@ -6,3 +6,6 @@
 
 # Required by the entry point to configure the container
 !/lndr-backend/data/lndr-server.config.j2
+
+# May be provided to prevent live download of binary from CircleCI
+!/lndr-server

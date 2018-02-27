@@ -34,7 +34,11 @@ jobs:
             "${HOME}/.local/bin/lndr-server" \
             Dockerfile \
             .dockerignore \
-            $(perl -n -e'/^!\/(.+)/ && print "$1\n"' < .dockerignore | xargs) \
             artifacts/
+          for file in $(perl -n -e'/^!\/(.+)/ && print "$1\n"' < .dockerignore | xargs); do \
+            mkdir -p "artifacts/$(dirname "${file}")"
+            cp "${file}" "artifacts/${file}"
+          done
+
     - store_artifacts:
         path: artifacts

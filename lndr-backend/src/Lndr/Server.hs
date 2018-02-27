@@ -208,9 +208,11 @@ updateServerConfig configTVar = do
     config <- atomically $ readTVar configTVar
     currentPricesM <- runMaybeT queryEtheruemPrices
     currentGasPriceM <- runMaybeT querySafelow
+    blockNumberM <- runMaybeT currentBlockNumber
     atomically $ writeTVar configTVar
         config { ethereumPrices = fromMaybe (ethereumPrices config) currentPricesM
-               , gasPrice = fromMaybe (gasPrice config) currentGasPriceM }
+               , gasPrice = fromMaybe (gasPrice config) currentGasPriceM
+               , latestBlockNumber = fromMaybe (latestBlockNumber config) blockNumberM }
 
 
 deleteExpiredSettlements :: ServerState -> IO ()

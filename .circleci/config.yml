@@ -30,8 +30,11 @@ jobs:
         name: Prepare artifacts
         command: |
           mkdir artifacts
-          for artifact in lndr lndr-server; do
-            cp "${HOME}/.local/bin/${artifact}" artifacts/
-          done
+          cp \
+            "${HOME}/.local/bin/lndr-server" \
+            Dockerfile \
+            .dockerignore \
+            $(perl -n -e'/^!\/(.+)/ && print "$1\n"' < .dockerignore | xargs) \
+            artifacts/
     - store_artifacts:
         path: artifacts

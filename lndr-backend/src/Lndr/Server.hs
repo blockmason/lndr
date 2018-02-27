@@ -192,15 +192,15 @@ runHeartbeat state = forkIO . forever $ heartbeat state
 
 heartbeat :: ServerState -> IO ()
 heartbeat state@(ServerState _ configMVar) = do
-    config <- atomically $ readTVar configMVar
-    -- sleep for time specified in config
-    threadDelay (heartbeatInterval config * 10 ^ 6)
     -- update server config
     updateServerConfig configMVar
     -- scan settlements table for any settlement eligible for deletion
     deleteExpiredSettlements state
     -- try to verify all settlements whose tx_hash column is populated
     verifySettlementsWithTxHash state
+    -- sleep for time specified in config
+    config <- atomically $ readTVar configMVar
+    threadDelay (heartbeatInterval config * 10 ^ 6)
 
 
 updateServerConfig :: TVar ServerConfig -> IO ()

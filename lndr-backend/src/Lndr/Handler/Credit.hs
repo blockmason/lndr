@@ -102,7 +102,7 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
-            processedRecord <- liftIO $ calculateSettlementCreditRecord config signedRecord
+            let processedRecord = calculateSettlementCreditRecord config signedRecord
             createPendingRecord pool processedRecord
             -- send push notification to counterparty
             attemptToNotify "New pending credit from " NewPendingCredit

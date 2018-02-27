@@ -141,10 +141,11 @@ verifySettlementPayment (BilateralCreditRecord creditRecord _ _ (Just txHash)) =
 verifySettlementPayment _ = pure False
 
 
-calculateSettlementCreditRecord :: ServerConfig -> CreditRecord -> IO CreditRecord
-calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ ucac _ (Just currency) _) = do
-    Just blockNumber <- runMaybeT currentBlockNumber
-    let prices = ethereumPrices config
+calculateSettlementCreditRecord :: ServerConfig -> CreditRecord -> CreditRecord
+calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _) = cr
+calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ ucac _ (Just currency) _) =
+    let blockNumber = latestBlockNumber config
+        prices = ethereumPrices config
     -- assumes USD / ETH settlement for now
     -- 10 ^ 16 instead of 10 ^ 18 because our amounts are stored in cents, not
     -- dollars, so we have to divide by 100
@@ -155,8 +156,6 @@ calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ uca
             Just "KRW" -> krw prices
             Nothing    -> error "ucac not found"
         settlementAmount = floor $ fromIntegral amount / currencyConversion * 10 ^ 16
-
-    pure (cr { settlementAmount = Just settlementAmount
-             , settlementBlocknumber = Just blockNumber
-             })
-calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _) = return cr
+    in cr { settlementAmount = Just settlementAmount
+          , settlementBlocknumber = Just blockNumber
+          }

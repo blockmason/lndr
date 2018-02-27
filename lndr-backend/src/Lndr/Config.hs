@@ -32,6 +32,7 @@ loadConfig = do
                           (loadEntry "gas-price")
                           def
                           (loadEntry "max-gas")
+                          0
                           (loadEntry "urban-airship.key")
                           (loadEntry "urban-airship.secret")
                           (loadEntry "heartbeat-interval")

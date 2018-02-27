@@ -241,6 +241,7 @@ data ServerConfig = ServerConfig { lndrUcacAddrs         :: M.Map Text Address
                                  , gasPrice              :: !Integer
                                  , ethereumPrices        :: !EthereumPrices
                                  , maxGas                :: !Integer
+                                 , latestBlockNumber     :: !Integer
                                  , urbanAirshipKey       :: !ByteString
                                  , urbanAirshipSecret    :: !ByteString
                                  , heartbeatInterval     :: !Int
@@ -257,6 +258,7 @@ data ConfigResponse = ConfigResponse { configResponseLndrAddresses :: M.Map Text
                                      , configResponseCreditProtocolAddress :: Address
                                      , configResponseGasPrice :: Integer
                                      , configResponseEthereumPrices :: EthereumPrices
+                                     , configResponseWeekAgoBlock :: Integer
                                      }
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 14 }) ''ConfigResponse)
 

@@ -120,6 +120,9 @@ finalizeCredit pool storedRecord config creditorSig debtorSig = do
             when (isJust $ settlementAmount storedRecord) $
                 void $ finalizeTransaction config bilateralCredit
 
+            -- TODO avoid hitting db twice if possible; might be achievable
+            -- using a sql constraint
+
             -- saving transaction record to 'verified_credits' table
             withResource pool $ Db.insertCredit bilateralCredit
             -- delete pending record after transaction finalization
@@ -148,9 +151,8 @@ createPendingRecord pool signedRecord = do
 
 
 createBilateralFriendship :: Pool Connection -> Address -> Address -> IO ()
-createBilateralFriendship pool creditor debtor = do
-            withResource pool $ Db.addFriends creditor [debtor]
-            void . withResource pool $ Db.addFriends debtor [creditor]
+createBilateralFriendship pool creditor debtor =
+    void . withResource pool $ Db.addFriends [(creditor, debtor), (debtor, creditor)]
 
 
 rejectHandler :: RejectRequest -> LndrHandler NoContent

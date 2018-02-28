@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 
 module Lndr.Db.Friendships where
 
@@ -8,9 +7,9 @@ import           Lndr.Types
 import           Lndr.Db.Types
 import           Network.Ethereum.Web3
 
-addFriends :: Address -> [Address] -> Connection -> IO Int
-addFriends addr addresses conn = fromIntegral <$>
-    executeMany conn "INSERT INTO friendships (origin, friend) VALUES (?,?) ON CONFLICT ON CONSTRAINT friendships_origin_friend_key DO NOTHING" ((addr,) <$> addresses)
+addFriends :: [(Address, Address)] -> Connection -> IO Int
+addFriends addressPairs conn = fromIntegral <$>
+    executeMany conn "INSERT INTO friendships (origin, friend) VALUES (?,?) ON CONFLICT ON CONSTRAINT friendships_origin_friend_key DO NOTHING" addressPairs
 
 
 removeFriends :: Address -> [Address] -> Connection -> IO Int

@@ -206,10 +206,7 @@ pendingHandler addr = do
 
 
 transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
-transactionsHandler Nothing = do
-    configTVar <- serverConfig <$> ask
-    config <- liftIO . atomically $ readTVar configTVar
-    lndrWeb3 (lndrLogs config Nothing Nothing)
+transactionsHandler Nothing = throwError (err401 {errBody = "Missing user address"})
 transactionsHandler (Just addr) = do
     pool <- dbConnectionPool <$> ask
     liftIO $ withResource pool $ Db.lookupCreditByAddress addr

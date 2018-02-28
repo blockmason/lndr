@@ -96,7 +96,8 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
                                             then (signature storedRecord, signature signedRecord)
                                             else (signature signedRecord, signature storedRecord)
 
-            finalizeCredit pool storedRecord config creditorSig debtorSig
+            finalizeCredit pool config $ BilateralCreditRecord storedRecord
+                                                               creditorSig debtorSig Nothing
 
             -- send push notification to counterparty
             attemptToNotify "Pending credit confirmation from " CreditConfirmation
@@ -111,13 +112,11 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     pure NoContent
 
 
--- TODO change input to bilateral credit record
-finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> IO ()
-finalizeCredit pool storedRecord config creditorSig debtorSig = do
-            let bilateralCredit = BilateralCreditRecord storedRecord creditorSig debtorSig Nothing
+finalizeCredit :: Pool Connection -> ServerConfig -> BilateralCreditRecord -> IO ()
+finalizeCredit pool config bilateralCredit = do
             -- In case the record is a settlement, delay submitting credit to
             -- the blockchain until /verify_settlement is called
-            when (isJust $ settlementAmount storedRecord) $
+            when (isJust . settlementAmount . creditRecord $ bilateralCredit) $
                 void $ finalizeTransaction config bilateralCredit
 
             -- TODO avoid hitting db twice if possible; might be achievable
@@ -126,7 +125,7 @@ finalizeCredit pool storedRecord config creditorSig debtorSig = do
             -- saving transaction record to 'verified_credits' table
             withResource pool $ Db.insertCredit bilateralCredit
             -- delete pending record after transaction finalization
-            void . withResource pool $ Db.deletePending (hash storedRecord) False
+            void . withResource pool $ Db.deletePending (hash $ creditRecord bilateralCredit) False
 
 
 createPendingRecord :: Pool Connection -> CreditRecord -> LndrHandler ()

@@ -41,6 +41,7 @@ module Lndr.CLI.Args (
     , getTxHash
     , getTxHashFail
     , verifySettlement
+    , getUnsubmitted
 
     -- * notifications-related requests
     , registerChannel
@@ -179,11 +180,11 @@ runMode (Config url sk _) Unsubmitted =
 userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
 
 
-getUnsubmitted :: String -> IO [(Text, IssueCreditLog)]
+getUnsubmitted :: String -> IO (Int, Int, [(Text, IssueCreditLog)])
 getUnsubmitted url = do
     initReq <- HTTP.parseRequest $ url ++ "/unsubmitted"
-    logs <- HTTP.getResponseBody <$> HTTP.httpJSON initReq
-    return $ fmap (\x -> (hashCreditLog x, x)) logs
+    (x, y, logs) <- HTTP.getResponseBody <$> HTTP.httpJSON initReq
+    return (x, y, fmap (\x -> (hashCreditLog x, x)) logs)
 
 
 getTransactions :: String -> Address -> IO [IssueCreditLog]

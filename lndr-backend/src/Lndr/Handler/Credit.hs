@@ -22,7 +22,7 @@ import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
 import qualified Data.Map                   as M
-import           Data.Maybe                 (fromMaybe, isJust)
+import           Data.Maybe                 (fromMaybe, isNothing)
 import           Data.Pool                  (Pool, withResource)
 import           Data.Text                  (Text)
 import qualified Data.Text                  as T
@@ -48,7 +48,8 @@ borrowHandler :: CreditRecord -> LndrHandler NoContent
 borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
 
 
--- TODO fix this
+-- TODO why is there a submitter address when CreditRecord already has
+-- a submitter field?
 submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
 submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ hash sig _ _ _ _) = do
     (ServerState pool configTVar) <- ask
@@ -95,7 +96,8 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
                                             then (signature storedRecord, signature signedRecord)
                                             else (signature signedRecord, signature storedRecord)
 
-            finalizeCredit pool storedRecord config creditorSig debtorSig
+            finalizeCredit pool config $ BilateralCreditRecord storedRecord
+                                                               creditorSig debtorSig Nothing
 
             -- send push notification to counterparty
             attemptToNotify "Pending credit confirmation from " CreditConfirmation
@@ -110,19 +112,24 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     pure NoContent
 
 
--- TODO change input to bilateral credit record
-finalizeCredit :: Pool Connection -> CreditRecord -> ServerConfig -> Text -> Text -> IO ()
-finalizeCredit pool storedRecord config creditorSig debtorSig = do
-            let bilateralCredit = BilateralCreditRecord storedRecord creditorSig debtorSig Nothing
+-- TODO this should be able to fail, should log failures
+finalizeCredit :: Pool Connection -> ServerConfig -> BilateralCreditRecord -> IO ()
+finalizeCredit pool config bilateralCredit = do
             -- In case the record is a settlement, delay submitting credit to
             -- the blockchain until /verify_settlement is called
-            when (isJust $ settlementAmount storedRecord) $
+            -- (settlements will have 'Just _' for thier 'settlementAmount',
+            -- non-settlements will have 'Nothing')
+            when (isNothing . settlementAmount . creditRecord $ bilateralCredit) $
+                -- TODO LOG if left
                 void $ finalizeTransaction config bilateralCredit
+
+            -- TODO avoid hitting db twice if possible; might be achievable
+            -- using a sql constraint
 
             -- saving transaction record to 'verified_credits' table
             withResource pool $ Db.insertCredit bilateralCredit
             -- delete pending record after transaction finalization
-            void . withResource pool $ Db.deletePending (hash storedRecord) False
+            void . withResource pool $ Db.deletePending (hash $ creditRecord bilateralCredit) False
 
 
 createPendingRecord :: Pool Connection -> CreditRecord -> LndrHandler ()
@@ -147,9 +154,8 @@ createPendingRecord pool signedRecord = do
 
 
 createBilateralFriendship :: Pool Connection -> Address -> Address -> IO ()
-createBilateralFriendship pool creditor debtor = do
-            withResource pool $ Db.addFriends creditor [debtor]
-            void . withResource pool $ Db.addFriends debtor [creditor]
+createBilateralFriendship pool creditor debtor =
+    void . withResource pool $ Db.addFriends [(creditor, debtor), (debtor, creditor)]
 
 
 rejectHandler :: RejectRequest -> LndrHandler NoContent
@@ -203,10 +209,7 @@ pendingHandler addr = do
 
 
 transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
-transactionsHandler Nothing = do
-    configTVar <- serverConfig <$> ask
-    config <- liftIO . atomically $ readTVar configTVar
-    lndrWeb3 (lndrLogs config Nothing Nothing)
+transactionsHandler Nothing = throwError (err401 {errBody = "Missing user address"})
 transactionsHandler (Just addr) = do
     pool <- dbConnectionPool <$> ask
     liftIO $ withResource pool $ Db.lookupCreditByAddress addr

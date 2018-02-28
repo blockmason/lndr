@@ -29,7 +29,7 @@ import           System.Environment             (setEnv)
 import           System.Directory
 
 -- TODO get rid of this once version enpoint point works
-ucacAddr = "0x7899b83071d9704af0b132859a04bb1698a3acaf"
+ucacAddr = "0x6804f48233f6ff2b468f7636560d525ca951931e"
 
 testUrl = "http://localhost:80"
 testPrivkey0 = "7920ca01d3d1ac463dfd55b5ddfdcbb64ae31830f31be045ce2d51a305516a37"
@@ -265,6 +265,9 @@ basicSettlementTest = do
     gottenTxHash <- getTxHash testUrl creditHash
     assertEqual "successful txHash retrieval" txHash (addHexPrefix gottenTxHash)
 
+    (dbCredits, blockchainCredits, _) <- getUnsubmitted testUrl
+    assertBool "equal, non-zero number of transactions in db and blockchain" (dbCredits == blockchainCredits && dbCredits == 2)
+
 
 verifySettlementTest :: Assertion
 verifySettlementTest = do
@@ -294,7 +297,7 @@ verifySettlementTest = do
                                                                               (Just "ETH")
                                                                               (Just 0)
                                                                ) "" "" (Just txHash))
--- txHash testAddress4 testAddress1 (10 ^ 18)
+    -- txHash testAddress4 testAddress1 (10 ^ 18)
     assertBool "payment properly verified" verified
 
 

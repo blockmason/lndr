@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Lndr.Handler.Friend where
 
@@ -70,10 +71,10 @@ userHandler Nothing Nothing = throwError (err400 {errBody = "No identifying info
 
 
 addFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
-addFriendsHandler address adds = do
+addFriendsHandler address friendAddresses = do
     -- TODO verify signature
     pool <- dbConnectionPool <$> ask
-    liftIO . withResource pool $ Db.addFriends address adds
+    liftIO . withResource pool $ Db.addFriends ((address,) <$> friendAddresses)
     pure NoContent
 
 

@@ -43,7 +43,7 @@ instance ToSample ConfigResponse where
                        "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"
                        1000
                        def
-                       5162553
+                       5122553
 
 instance ToSample SettlementsResponse where
     toSamples _ = singleSample $ SettlementsResponse [crSigned] [crSettleSigned]
@@ -108,6 +108,9 @@ instance ToSample Nonce where
     toSamples _ = singleSample $ Nonce 1
 
 instance ToSample Integer where
+    toSamples _ = singleSample 19
+
+instance ToSample Int where
     toSamples _ = singleSample 19
 
 instance ToCapture (Capture "email" EmailAddress) where

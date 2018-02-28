@@ -24,4 +24,4 @@ lookupFriends addr conn = fmap fromOnly <$>
 
 lookupFriendsWithNick :: Address -> Connection -> IO [UserInfo]
 lookupFriendsWithNick addr conn =
-    query conn "SELECT friend, nickname FROM friendships, nicknames WHERE origin = ? AND address = friend" (Only addr) :: IO [UserInfo]
+    query conn "SELECT friend, nickname FROM friendships LEFT JOIN nicknames ON nicknames.address = friendships.friend WHERE friendships.origin = ?" (Only addr) :: IO [UserInfo]

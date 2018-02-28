@@ -154,8 +154,8 @@ createPendingRecord pool signedRecord = do
 
 
 createBilateralFriendship :: Pool Connection -> Address -> Address -> IO ()
-createBilateralFriendship pool creditor debtor =
-    void . withResource pool $ Db.addFriends [(creditor, debtor), (debtor, creditor)]
+createBilateralFriendship pool addressA addressB =
+    void . withResource pool $ Db.addFriends [(addressA, addressB), (addressB, addressA)]
 
 
 rejectHandler :: RejectRequest -> LndrHandler NoContent

@@ -148,9 +148,9 @@ $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 12
 
 
 data UserInfo = UserInfo { addr :: Address
-                         , nick :: Text
+                         , nick :: Maybe Text
                          } deriving (Show, Eq, Generic)
-$(deriveJSON defaultOptions ''UserInfo)
+$(deriveJSON defaultOptions { omitNothingFields = True } ''UserInfo)
 
 data PushRequest = PushRequest { pushRequestChannelID :: Text
                                , pushRequestPlatform  :: Text

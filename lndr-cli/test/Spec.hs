@@ -120,7 +120,7 @@ nickTest = do
     assertEqual "add friend success" 204 httpCode
     -- verify that friend has been added
     friends <- getFriends testUrl testAddress3
-    assertEqual "friend properly added" [UserInfo testAddress4 testNick1] friends
+    assertEqual "friend properly added" [UserInfo testAddress4 (Just testNick1)] friends
 
     -- user3 removes user4 from friends
     removeFriend testUrl testAddress3 testAddress4
@@ -205,6 +205,14 @@ basicLendTest = do
     -- user1's counterparties list is [user2]
     counterparties <- getCounterparties testUrl testAddress1
     assertEqual "user1's counterparties properly calculated" [testAddress2] counterparties
+
+    -- user1 is friends with user2
+    friends <- fmap addr <$> getFriends testUrl testAddress1
+    assertEqual "user1's friends properly calculated" [testAddress2] friends
+
+    -- user2 is friends with user1
+    friends <- fmap addr <$> getFriends testUrl testAddress2
+    assertEqual "user2's friends properly calculated" [testAddress1] friends
 
 
 basicSettlementTest :: Assertion

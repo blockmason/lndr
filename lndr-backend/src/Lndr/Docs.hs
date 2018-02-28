@@ -71,7 +71,7 @@ instance ToSample EmailRequest where
 
 instance ToSample UserInfo where
     toSamples _ = singleSample $
-        UserInfo "0x11edd217a875063583dd1b638d16810c5d34d54b" "aupiff"
+        UserInfo "0x11edd217a875063583dd1b638d16810c5d34d54b" (Just "aupiff")
 
 instance ToSample IssueCreditLog where
     toSamples _ = singleSample $

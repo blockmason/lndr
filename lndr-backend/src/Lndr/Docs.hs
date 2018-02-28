@@ -110,6 +110,9 @@ instance ToSample Nonce where
 instance ToSample Integer where
     toSamples _ = singleSample 19
 
+instance ToSample Int where
+    toSamples _ = singleSample 19
+
 instance ToCapture (Capture "email" EmailAddress) where
   toCapture _ =
     DocCapture "email" "the email whose availability is being checked"

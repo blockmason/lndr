@@ -76,7 +76,7 @@ type LndrAPI =
    :<|> "balance" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Integer
    :<|> "gas_price" :> Get '[JSON] Integer
    :<|> "gas_price" :> ReqBody '[JSON] Integer :> PutNoContent '[JSON] NoContent
-   :<|> "unsubmitted" :> Get '[JSON] [IssueCreditLog]
+   :<|> "unsubmitted" :> Get '[JSON] (Int, Int, [IssueCreditLog])
    :<|> "resubmit" :> Capture "hash" Text :> PostNoContent '[JSON] NoContent
    :<|> "register_push" :> ReqBody '[JSON] PushRequest
                         :> PostNoContent '[JSON] NoContent

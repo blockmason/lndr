@@ -32,20 +32,20 @@ setGasPriceHandler newGasPrice = do
     pure NoContent
 
 
-unsubmittedHandler :: LndrHandler [IssueCreditLog]
+unsubmittedHandler :: LndrHandler (Int, Int, [IssueCreditLog])
 unsubmittedHandler = do
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     blockchainCreditsE <- liftIO . runLndrWeb3 $ lndrLogs config Nothing Nothing
     let blockchainCredits = either (const []) id blockchainCreditsE
     dbCredits <- liftIO $ withResource pool Db.allCredits
-    pure $ dbCredits \\ blockchainCredits
+    pure (length dbCredits, length blockchainCredits, dbCredits \\ blockchainCredits)
 
 
 resubmitHandler :: Text -> LndrHandler NoContent
 resubmitHandler txHash = do
     (ServerState pool configTVar) <- ask
-    txs <- unsubmittedHandler
+    (_, _, txs) <- unsubmittedHandler
     let creditToResubmitM = find ((== txHash) . hashCreditLog) txs
     case creditToResubmitM of
         Just creditLog -> do

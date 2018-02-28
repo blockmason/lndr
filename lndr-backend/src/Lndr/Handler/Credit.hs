@@ -22,7 +22,7 @@ import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
 import qualified Data.Map                   as M
-import           Data.Maybe                 (fromMaybe, isJust)
+import           Data.Maybe                 (fromMaybe, isNothing)
 import           Data.Pool                  (Pool, withResource)
 import           Data.Text                  (Text)
 import qualified Data.Text                  as T
@@ -112,11 +112,14 @@ submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo
     pure NoContent
 
 
+-- TODO this should be able to fail, should log failures
 finalizeCredit :: Pool Connection -> ServerConfig -> BilateralCreditRecord -> IO ()
 finalizeCredit pool config bilateralCredit = do
             -- In case the record is a settlement, delay submitting credit to
             -- the blockchain until /verify_settlement is called
-            when (isJust . settlementAmount . creditRecord $ bilateralCredit) $
+            -- (settlements will have 'Just _' for thier 'settlementAmount',
+            -- non-settlements will have 'Nothing')
+            when (isNothing . settlementAmount . creditRecord $ bilateralCredit) $
                 void $ finalizeTransaction config bilateralCredit
 
             -- TODO avoid hitting db twice if possible; might be achievable

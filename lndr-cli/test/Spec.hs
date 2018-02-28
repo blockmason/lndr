@@ -294,7 +294,7 @@ verifySettlementTest = do
                                                                               (Just "ETH")
                                                                               (Just 0)
                                                                ) "" "" (Just txHash))
--- txHash testAddress4 testAddress1 (10 ^ 18)
+    -- txHash testAddress4 testAddress1 (10 ^ 18)
     assertBool "payment properly verified" verified
 
 

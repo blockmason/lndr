@@ -36,9 +36,10 @@ CREATE TABLE settlements (
 );
 
 CREATE TABLE friendships (
-    id     SERIAL PRIMARY KEY,
-    origin CHAR(40),
-    friend CHAR(40),
+    id          SERIAL PRIMARY KEY,
+    origin      CHAR(40),
+    friend      CHAR(40),
+    created_at  TIMESTAMP DEFAULT now(),
     UNIQUE (origin, friend)
 );
 

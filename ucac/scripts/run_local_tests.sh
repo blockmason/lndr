@@ -1,25 +1,28 @@
 #!/usr/bin/env bash
 
+# This script assumes that psql db called ${dbname} exists and is accessible by ${dbuser}.
+
+dbname="lndrtest"
+dbuser="test"
+
 function cleanup {
     kill -9 $ganache_pid
     kill -9 $lndr_server_pid
     sleep 1
-    dropdb -U aupiff lndr
+    dropdb -U ${dbuser} ${dbname}
 }
 
 trap cleanup EXIT
-
-ganache-cli -b 1 -e 100000000000000000000 -m gravity top burden flip student usage spell purchase hundred improve check genre > /dev/null &
+cp ../lndr-backend/data/lndr-server.config.test ../lndr-backend/data/lndr-server.config
+ganache-cli --blocktime 1 -e 100000000000000000000 -m gravity top burden flip student usage spell purchase hundred improve check genre &
 ganache_pid=$!
 echo "Started ganache, pid ${ganache_pid}"
-
-sleep 1
 
 stack install --allow-different-user
 
 npm run migrate
 
-createdb -U aupiff lndr && psql -U aupiff lndr -f ../lndr-backend/db/create_tables.sql
+createdb -U ${dbuser} ${dbname} && psql -U ${dbuser} ${dbname} -f ../lndr-backend/db/create_tables.sql
 
 cd ..
 

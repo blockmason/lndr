@@ -8,7 +8,6 @@ import           Network.Wai.Logger       (withStdoutLogger)
 main :: IO ()
 main = do
     emptyState <- freshState
-    updateDbFromLndrLogs emptyState
     runHeartbeat emptyState
     withStdoutLogger $ \aplogger -> do
         let settings = W.setPort 80 $ W.setLogger aplogger W.defaultSettings

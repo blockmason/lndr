@@ -120,6 +120,7 @@ finalizeCredit pool config bilateralCredit = do
             -- (settlements will have 'Just _' for thier 'settlementAmount',
             -- non-settlements will have 'Nothing')
             when (isNothing . settlementAmount . creditRecord $ bilateralCredit) $
+                -- TODO LOG if left
                 void $ finalizeTransaction config bilateralCredit
 
             -- TODO avoid hitting db twice if possible; might be achievable

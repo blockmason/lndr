@@ -158,6 +158,13 @@ Clients must supply the following data
 - *p1*: the address of the first party in a credit relationship
 - *p2*: the address of the second party in a credit relationship
 
+#### GET Parameters:
+
+- currency
+     - **Values**: *USD, JPY*
+     - **Description**: currency for which to query balance
+
+
 #### Response:
 
 - Status code 200
@@ -192,6 +199,13 @@ Clients must supply the following data
 #### Captures:
 
 - *user*: the address of the user whose friends will be returned
+
+#### GET Parameters:
+
+- currency
+     - **Values**: *USD, JPY*
+     - **Description**: currency for which to query balance
+
 
 #### Response:
 
@@ -287,13 +301,13 @@ Clients must supply the following data
 -
 
 ```javascript
-{"lndrAddresses":{"USD":"0x7899b83071d9704af0b132859a04bb1698a3acaf"},"creditProtocolAddress":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"}
+{"lndrAddresses":{"USD":"0x7899b83071d9704af0b132859a04bb1698a3acaf"},"creditProtocolAddress":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","gasPrice":1000,"ethereumPrices":{"usd":864.78,"jpy":92481.0,"krw":925859.0},"weekAgoBlock":5122553}
 ```
 
 -
 
 ```javascript
-{"lndrAddresses":{"USD":"0x7899b83071d9704af0b132859a04bb1698a3acaf"},"creditProtocolAddress":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb"}
+{"lndrAddresses":{"USD":"0x7899b83071d9704af0b132859a04bb1698a3acaf"},"creditProtocolAddress":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","gasPrice":1000,"ethereumPrices":{"usd":864.78,"jpy":92481.0,"krw":925859.0},"weekAgoBlock":5122553}
 ```
 
 ## GET /counterparties/:user
@@ -488,19 +502,19 @@ Clients must supply the following data
 -
 
 ```javascript
-[{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}]
+[{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"}]
 ```
 
 -
 
 ```javascript
-[{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}]
+[{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"}]
 ```
 
 -
 
 ```javascript
-[{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"},{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}]
+[{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"},{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"}]
 ```
 
 ## GET /gas_price
@@ -1138,66 +1152,19 @@ Clients must supply the following data
 -
 
 ```javascript
-[{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}]
+[{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"}]
 ```
 
 -
 
 ```javascript
-[{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}]
+[{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"}]
 ```
 
 -
 
 ```javascript
-[{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"},{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}]
-```
-
-## GET /taken_nick/:nick
-
-#### Authentication
-
-
-
-Clients must supply the following data
-
-
-#### Captures:
-
-- *nick*: the nickname to be associated with a particular address
-
-#### Response:
-
-- Status code 200
-- Headers: []
-
-- Supported content types are:
-
-    - `application/json;charset=utf-8`
-    - `application/json`
-
--
-
-```javascript
-false
-```
-
--
-
-```javascript
-false
-```
-
--
-
-```javascript
-true
-```
-
--
-
-```javascript
-true
+[{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"},{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"}]
 ```
 
 ## GET /transactions
@@ -1313,31 +1280,31 @@ Clients must supply the following data
 -
 
 ```javascript
-[]
+[19,19,[]]
 ```
 
 -
 
 ```javascript
-[]
+[19,19,[]]
 ```
 
 -
 
 ```javascript
-[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]
+[19,19,[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]]
 ```
 
 -
 
 ```javascript
-[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]
+[19,19,[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]]
 ```
 
 -
 
 ```javascript
-[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"},{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]
+[19,19,[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"},{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]]
 ```
 
 ## GET /user
@@ -1373,13 +1340,13 @@ Clients must supply the following data
 -
 
 ```javascript
-{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}
+{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"}
 ```
 
 -
 
 ```javascript
-{"addr":"0x11edd217a875063583dd1b638d16810c5d34d54b","nick":"aupiff"}
+{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"}
 ```
 
 ## POST /verify_settlement

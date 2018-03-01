@@ -7,6 +7,7 @@ import           Control.Concurrent             (threadDelay)
 import           Control.Monad.Trans.Maybe
 import           Data.Either.Combinators        (fromRight)
 import           Data.Maybe                     (fromJust)
+import qualified Data.Map                       as M
 import qualified Data.Text.Lazy                 as LT
 import           Lndr.CLI.Args
 import           Lndr.Config
@@ -27,9 +28,6 @@ import           Test.HUnit                     hiding (Test)
 import qualified Text.EmailAddress              as Email
 import           System.Environment             (setEnv)
 import           System.Directory
-
--- TODO get rid of this once version enpoint point works
-ucacAddr = "0x6804f48233f6ff2b468f7636560d525ca951931e"
 
 testUrl = "http://localhost:80"
 testPrivkey0 = "7920ca01d3d1ac463dfd55b5ddfdcbb64ae31830f31be045ce2d51a305516a37"
@@ -53,6 +51,15 @@ testNick1 = "test1"
 testNick2 = "test2"
 testEmailText = "tim@blockmason.io"
 testEmail = fromJust $ Email.emailAddressFromText testEmailText
+
+
+loadUcacs = do
+    (ConfigResponse ucacAddresses _ _ _ _) <- getConfig testUrl
+    let Just ucacAddr = M.lookup "USD" ucacAddresses
+        Just ucacAddrKRW = M.lookup "KRW" ucacAddresses
+        Just ucacAddrJPY = M.lookup "JPY" ucacAddresses
+    return (ucacAddr, ucacAddrKRW, ucacAddrJPY)
+
 
 main :: IO ()
 main = do
@@ -150,6 +157,7 @@ nickTest = do
 
 basicLendTest :: Assertion
 basicLendTest = do
+    (ucacAddr, ucacAddrKRW, ucacAddrJPY) <- loadUcacs
     let testCredit' = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
         badTestCredit' = CreditRecord testAddress1 testAddress1 100 "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
 
@@ -217,6 +225,7 @@ basicLendTest = do
 
 basicSettlementTest :: Assertion
 basicSettlementTest = do
+    (ucacAddr, ucacAddrKRW, ucacAddrJPY) <- loadUcacs
     pricesM <- runMaybeT queryEtheruemPrices
     case pricesM of
         Just prices -> assertBool "nonzero eth price retrieved from coinbase" (usd prices > 0)
@@ -279,6 +288,7 @@ basicSettlementTest = do
 
 verifySettlementTest :: Assertion
 verifySettlementTest = do
+    (ucacAddr, _, _) <- loadUcacs
     let settleAmountInWei = 10 ^ 18
     -- testAddress1 is the person revieving eth, thus the credit must record
     -- this address as the debtor.

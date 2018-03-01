@@ -13,7 +13,6 @@ import           Lndr.Util
 import           Lndr.Web3
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Eth as Eth
-import           Network.Wreq
 import qualified Network.HTTP.Simple       as HTTP
 
 -- | Returns the current safelow price on ethgasstation.info.

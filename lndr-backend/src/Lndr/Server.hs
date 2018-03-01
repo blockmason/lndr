@@ -164,7 +164,9 @@ app state = serve lndrAPI (readerServer state)
 updateDbFromLndrLogs :: ServerState -> IO ()
 updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
     config <- atomically $ readTVar configMVar
-    logs <- runLndrWeb3 $ lndrLogs config Nothing Nothing
+    logs <- runLndrWeb3 $ join <$> sequence [ lndrLogs config "USD" Nothing Nothing
+                                            , lndrLogs config "JPY" Nothing Nothing
+                                            , lndrLogs config "KRW" Nothing Nothing ]
     withResource pool . Db.insertCredits $ either (const []) id logs
 
 

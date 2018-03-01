@@ -259,12 +259,25 @@ data ConfigResponse = ConfigResponse { configResponseLndrAddresses :: M.Map Text
                                      , configResponseGasPrice :: Integer
                                      , configResponseEthereumPrices :: EthereumPrices
                                      , configResponseWeekAgoBlock :: Integer
-                                     }
-$(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 14 }) ''ConfigResponse)
+                                     } deriving (Show, Generic)
+$(deriveToJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 14 }) ''ConfigResponse)
+
+instance FromJSON ConfigResponse where
+    parseJSON (Object v) = do
+        addressesObject <- v .: "lndrAddresses"
+        creditProtocolAddress <- v .: "creditProtocolAddress"
+        gasPrice <- v .: "gasPrice"
+        ethereumPricesObject <- v .: "ethereumPrices"
+        weekAgoBlock <- v .: "weekAgoBlock"
+        ethereumPrices <- EthereumPrices <$> ethereumPricesObject .: "usd"
+                                         <*> ethereumPricesObject .: "jpy"
+                                         <*> ethereumPricesObject .: "krw"
+        return $ ConfigResponse addressesObject creditProtocolAddress gasPrice
+                                ethereumPrices weekAgoBlock
 
 data SettlementsResponse = SettlementsResponse { unilateralSettlements :: [CreditRecord]
                                                , bilateralSettlements  :: [BilateralCreditRecord]
-                                               }
+                                               } deriving Show
 $(deriveJSON defaultOptions ''SettlementsResponse)
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection

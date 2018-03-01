@@ -36,7 +36,11 @@ unsubmittedHandler :: LndrHandler (Int, Int, [IssueCreditLog])
 unsubmittedHandler = do
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
-    blockchainCreditsE <- liftIO . runLndrWeb3 $ lndrLogs config Nothing Nothing
+    blockchainCreditsE <- liftIO . runLndrWeb3 $
+        join <$> sequence [ lndrLogs config "USD" Nothing Nothing
+                          , lndrLogs config "JPY" Nothing Nothing
+                          , lndrLogs config "KRW" Nothing Nothing ]
+
     let blockchainCredits = either (const []) id blockchainCreditsE
     dbCredits <- liftIO $ withResource pool Db.allCredits
     pure (length dbCredits, length blockchainCredits, dbCredits \\ blockchainCredits)

@@ -8,6 +8,9 @@ module Lndr.CLI.Args (
     , runMode
     , userFromSK
 
+    -- * config-related requests
+    , getConfig
+
     -- * nick-related requests
     , getNick
     , setNick
@@ -92,6 +95,8 @@ data LndrCmd = Transactions
              | SetGasPrice { price :: Integer }
              | Info
              | Unsubmitted
+             | Settlements
+             | LndrConfig
              deriving (Show, Data, Typeable)
 
 
@@ -116,6 +121,8 @@ programModes = modes [ Transactions &= help "list all transactions processed by 
                      , SetGasPrice 2000000
                      , Unsubmitted &= help "prints txs that are in lndr db but not yet on the blockchain"
                      , Info &= help "prints config, nick, and friends"
+                     , Settlements &= help "list all settlements"
+                     , LndrConfig &= help "prints config endpoint response"
                      ] &= help "Lend and borrow money" &= program "lndr" &= summary "lndr v0.1"
 
 
@@ -176,6 +183,12 @@ runMode (Config url sk _) Info =
 
 runMode (Config url sk _) Unsubmitted =
     print =<< getUnsubmitted (LT.unpack url)
+
+runMode (Config url sk _) Settlements =
+    print =<< getSettlements (LT.unpack url) (textToAddress $ userFromSK sk)
+
+runMode (Config url sk _) LndrConfig =
+    print =<< getConfig (LT.unpack url)
 
 userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
 
@@ -379,6 +392,12 @@ rejectCredit url secretKey hash = do
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp
+
+
+getConfig :: String -> IO ConfigResponse
+getConfig url = do
+    req <- HTTP.parseRequest $ url ++ "/config"
+    HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
 verifySettlement :: String -> Text -> Text -> Text -> IO Int

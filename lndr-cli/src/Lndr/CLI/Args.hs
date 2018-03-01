@@ -309,15 +309,16 @@ getFriends url userAddr = do
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
-getBalance :: String -> Address -> IO Integer
-getBalance url userAddr = do
-    req <- HTTP.parseRequest $ url ++ "/balance/" ++ show userAddr
+getBalance :: String -> Address -> String -> IO Integer
+getBalance url userAddr currency = do
+    req <- HTTP.parseRequest $ url ++ "/balance/" ++ show userAddr ++ "?currency=" ++ currency
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
-getTwoPartyBalance :: String -> Address -> Address -> IO Integer
-getTwoPartyBalance url userAddr counterPartyAddr = do
-    let fullUrl = url ++ "/balance/" ++ show userAddr ++ "/" ++ show counterPartyAddr
+getTwoPartyBalance :: String -> Address -> Address -> String -> IO Integer
+getTwoPartyBalance url userAddr counterPartyAddr currency = do
+    let fullUrl = url ++ "/balance/" ++ show userAddr ++ "/"
+                      ++ show counterPartyAddr ++ "?currency=" ++ currency
     req <- HTTP.parseRequest fullUrl
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
@@ -325,7 +326,7 @@ getTwoPartyBalance url userAddr counterPartyAddr = do
 getInfo :: String -> Text -> IO (Address, Text, Integer, [UserInfo])
 getInfo url userAddr = do
     nick <- getNick url address
-    balance <- getBalance url address
+    balance <- getBalance url address "USD"
     friends <- getFriends url address
     return (address, nick, balance, friends)
     where address = textToAddress userAddr

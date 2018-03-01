@@ -244,13 +244,15 @@ counterpartiesHandler addr = do
     liftIO $ withResource pool $ Db.counterpartiesByAddress addr
 
 
-balanceHandler :: Address -> LndrHandler Integer
-balanceHandler addr = do
-    pool <- dbConnectionPool <$> ask
-    liftIO . withResource pool $ Db.userBalance addr
+balanceHandler :: Address -> Maybe Text -> LndrHandler Integer
+balanceHandler addr currency = do
+    (ServerState pool configTVar) <- ask
+    ucacAddresses <- fmap lndrUcacAddrs . liftIO . atomically $ readTVar configTVar
+    liftIO . withResource pool $ Db.userBalance addr (getUcac ucacAddresses currency)
 
 
-twoPartyBalanceHandler :: Address -> Address -> LndrHandler Integer
-twoPartyBalanceHandler p1 p2 = do
-    pool <- dbConnectionPool <$> ask
-    liftIO . withResource pool $ Db.twoPartyBalance p1 p2
+twoPartyBalanceHandler :: Address -> Address -> Maybe Text -> LndrHandler Integer
+twoPartyBalanceHandler p1 p2 currency = do
+    (ServerState pool configTVar) <- ask
+    ucacAddresses <- fmap lndrUcacAddrs . liftIO . atomically $ readTVar configTVar
+    liftIO . withResource pool $ Db.twoPartyBalance p1 p2 (getUcac ucacAddresses currency)

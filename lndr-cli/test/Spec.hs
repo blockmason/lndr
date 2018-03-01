@@ -222,6 +222,19 @@ basicLendTest = do
     friends <- fmap addr <$> getFriends testUrl testAddress2
     assertEqual "user2's friends properly calculated" [testAddress1] friends
 
+    -- user1 and user2 create credit on JPY ucac
+    let testCredit' = CreditRecord testAddress2 testAddress1 2000000 "sushi" testAddress2 0 "" "" ucacAddrJPY Nothing Nothing Nothing
+        creditHash = generateHash testCredit'
+        testCredit = testCredit' { hash = creditHash }
+
+    -- user2 submits pending credit to user1
+    httpCode <- submitCredit testUrl testPrivkey2 testCredit
+    assertEqual "lend success" 204 httpCode
+
+    -- user1 accepts user2's pending credit
+    httpCode <- submitCredit testUrl testPrivkey1 (testCredit { submitter = testAddress1 })
+    assertEqual "borrow success" 204 httpCode
+
 
 basicSettlementTest :: Assertion
 basicSettlementTest = do
@@ -283,7 +296,7 @@ basicSettlementTest = do
     assertEqual "successful txHash retrieval" txHash (addHexPrefix gottenTxHash)
 
     (dbCredits, blockchainCredits, _) <- getUnsubmitted testUrl
-    assertBool "equal, non-zero number of transactions in db and blockchain" (dbCredits == blockchainCredits && dbCredits == 2)
+    assertBool "equal, non-zero number of transactions in db and blockchain" (dbCredits == blockchainCredits && dbCredits == 3)
 
 
 verifySettlementTest :: Assertion

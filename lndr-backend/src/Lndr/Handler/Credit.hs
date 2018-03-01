@@ -119,6 +119,7 @@ finalizeCredit pool config bilateralCredit = do
             -- non-settlements will have 'Nothing')
             when (isNothing . settlementAmount . creditRecord $ bilateralCredit) $
                 -- TODO LOG if left
+                -- should I move this into begin / commit block?
                 void $ finalizeTransaction config bilateralCredit
 
             -- saving transaction record to 'verified_credits' table

@@ -34,10 +34,12 @@ lookupCreditByAddress addr conn = query conn "SELECT ucac, creditor, debtor, ver
 
 deleteExpiredSettlementsAndAssociatedCredits :: Connection -> IO ()
 deleteExpiredSettlementsAndAssociatedCredits conn = do
+    begin conn
     hashes <- fmap fromOnly <$> query_ conn "SELECT hash FROM settlements WHERE created_at < now() - interval '2 days' AND verified = FALSE" :: IO [Text]
     execute conn "DELETE FROM verified_credits WHERE hash IN ?" (Only $ In hashes)
     execute conn "DELETE FROM pending_credits WHERE hash IN ?" (Only $ In hashes)
-    void $ execute conn "DELETE FROM settlements WHERE hash IN ?" (Only $ In hashes)
+    execute conn "DELETE FROM settlements WHERE hash IN ?" (Only $ In hashes)
+    commit conn
 
 
 settlementCreditsToVerify :: Connection -> IO [Text]

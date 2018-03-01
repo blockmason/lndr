@@ -163,6 +163,9 @@ app state = serve lndrAPI (readerServer state)
 -- blockchain. All credit-related queries use database data so without these
 -- consistency checks at startup, it's possible user's transaction history
 -- would be inaccurately represented.
+--
+-- When credits are recovered from blockchain, we lose 'submitter' information
+-- so 'submitter' is set to be equal to 'creditor'
 updateDbFromLndrLogs :: ServerState -> IO ()
 updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
     config <- atomically $ readTVar configMVar

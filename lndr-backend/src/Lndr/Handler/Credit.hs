@@ -26,7 +26,7 @@ import           Data.Maybe                 (fromMaybe, isNothing)
 import           Data.Pool                  (Pool, withResource)
 import           Data.Text                  (Text)
 import qualified Data.Text                  as T
-import           Database.PostgreSQL.Simple (Connection)
+import           Database.PostgreSQL.Simple (Connection, begin, commit)
 import qualified Lndr.Db                    as Db
 import           Lndr.EthereumInterface
 import           Lndr.Handler.Types
@@ -123,13 +123,13 @@ finalizeCredit pool config bilateralCredit = do
                 -- TODO LOG if left
                 void $ finalizeTransaction config bilateralCredit
 
-            -- TODO avoid hitting db twice if possible; might be achievable
-            -- using a sql constraint
-
             -- saving transaction record to 'verified_credits' table
-            withResource pool $ Db.insertCredit bilateralCredit
-            -- delete pending record after transaction finalization
-            void . withResource pool $ Db.deletePending (hash $ creditRecord bilateralCredit) False
+            withResource pool $ \conn -> do
+                begin conn
+                Db.insertCredit bilateralCredit conn
+                -- delete pending record after transaction finalization
+                Db.deletePending (hash $ creditRecord bilateralCredit) False conn
+                commit conn
 
 
 createPendingRecord :: Pool Connection -> CreditRecord -> LndrHandler ()

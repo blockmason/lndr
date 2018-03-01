@@ -18,20 +18,6 @@ import           Network.Ethereum.Web3
 import           Servant
 
 
-gasPriceHandler :: LndrHandler Integer
-gasPriceHandler = do
-    configTVar <- serverConfig <$> ask
-    config <- liftIO . atomically $ readTVar configTVar
-    pure $ gasPrice config
-
-
-setGasPriceHandler :: Integer -> LndrHandler NoContent
-setGasPriceHandler newGasPrice = do
-    configTVar <- serverConfig <$> ask
-    liftIO . atomically $ modifyTVar configTVar (\x -> x { gasPrice = newGasPrice })
-    pure NoContent
-
-
 unsubmittedHandler :: LndrHandler (Int, Int, [IssueCreditLog])
 unsubmittedHandler = do
     (ServerState pool configTVar) <- ask

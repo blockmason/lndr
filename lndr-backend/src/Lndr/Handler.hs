@@ -27,8 +27,6 @@ module Lndr.Handler (
     , photoUploadHandler
 
     -- * Admin Handlers
-    , gasPriceHandler
-    , setGasPriceHandler
     , unsubmittedHandler
     , resubmitHandler
     , registerPushHandler

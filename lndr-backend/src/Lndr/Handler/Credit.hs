@@ -26,7 +26,7 @@ import           Data.Maybe                 (fromMaybe, isNothing)
 import           Data.Pool                  (Pool, withResource)
 import           Data.Text                  (Text)
 import qualified Data.Text                  as T
-import           Database.PostgreSQL.Simple (Connection)
+import           Database.PostgreSQL.Simple (Connection, begin, commit)
 import qualified Lndr.Db                    as Db
 import           Lndr.EthereumInterface
 import           Lndr.Handler.Types
@@ -41,17 +41,15 @@ import           Servant
 
 
 lendHandler :: CreditRecord -> LndrHandler NoContent
-lendHandler creditRecord = submitHandler (creditor creditRecord) creditRecord
+lendHandler creditRecord = submitHandler $ creditRecord { submitter = creditor creditRecord }
 
 
 borrowHandler :: CreditRecord -> LndrHandler NoContent
-borrowHandler creditRecord = submitHandler (debtor creditRecord) creditRecord
+borrowHandler creditRecord = submitHandler $ creditRecord { submitter = debtor creditRecord }
 
 
--- TODO why is there a submitter address when CreditRecord already has
--- a submitter field?
-submitHandler :: Address -> CreditRecord -> LndrHandler NoContent
-submitHandler submitterAddress signedRecord@(CreditRecord creditor debtor _ memo _ _ hash sig _ _ _ _) = do
+submitHandler :: CreditRecord -> LndrHandler NoContent
+submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress _ hash sig _ _ _ _) = do
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
@@ -123,13 +121,13 @@ finalizeCredit pool config bilateralCredit = do
                 -- TODO LOG if left
                 void $ finalizeTransaction config bilateralCredit
 
-            -- TODO avoid hitting db twice if possible; might be achievable
-            -- using a sql constraint
-
             -- saving transaction record to 'verified_credits' table
-            withResource pool $ Db.insertCredit bilateralCredit
-            -- delete pending record after transaction finalization
-            void . withResource pool $ Db.deletePending (hash $ creditRecord bilateralCredit) False
+            withResource pool $ \conn -> do
+                begin conn
+                Db.insertCredit bilateralCredit conn
+                -- delete pending record after transaction finalization
+                Db.deletePending (hash $ creditRecord bilateralCredit) False conn
+                commit conn
 
 
 createPendingRecord :: Pool Connection -> CreditRecord -> LndrHandler ()

@@ -76,8 +76,7 @@ tests = [ testGroup "Nicks"
             , testCase "settlement" basicSettlementTest
             ]
         , testGroup "Admin"
-            [ testCase "get and set gas price" gasTest
-            , testCase "get current blocknumber" blocknumberTest
+            [ testCase "get current blocknumber" blocknumberTest
             ]
         , testGroup "Notifications"
             [ testCase "registerChannel" basicNotificationsTest
@@ -338,19 +337,6 @@ verifySettlementTest = do
                                                                ) "" "" (Just txHash))
     -- txHash testAddress4 testAddress1 (10 ^ 18)
     assertBool "payment properly verified" verified
-
-
-gasTest :: Assertion
-gasTest = do
-    price <- getGasPrice testUrl
-
-    -- double gas price
-    httpCode <- setGasPrice testUrl testAddress1 (price * 2)
-    assertEqual "add friend success" 204 httpCode
-
-    -- check that gas price has been doubled
-    newPrice <- getGasPrice testUrl
-    assertEqual "gas price doubled" newPrice (price * 2)
 
 
 blocknumberTest :: Assertion

@@ -76,10 +76,7 @@ type LndrAPI =
                   :> Get '[JSON] Integer
    :<|> "balance" :> Capture "p1" Address :> Capture "p2" Address
                   :> QueryParam "currency" Text :> Get '[JSON] Integer
-   :<|> "gas_price" :> Get '[JSON] Integer
-   :<|> "gas_price" :> ReqBody '[JSON] Integer :> PutNoContent '[JSON] NoContent
    :<|> "unsubmitted" :> Get '[JSON] (Int, Int, [IssueCreditLog])
-   :<|> "resubmit" :> Capture "hash" Text :> PostNoContent '[JSON] NoContent
    :<|> "register_push" :> ReqBody '[JSON] PushRequest
                         :> PostNoContent '[JSON] NoContent
    :<|> "config" :> Get '[JSON] ConfigResponse
@@ -109,10 +106,7 @@ server = transactionsHandler
     :<|> counterpartiesHandler
     :<|> balanceHandler
     :<|> twoPartyBalanceHandler
-    :<|> gasPriceHandler
-    :<|> setGasPriceHandler
     :<|> unsubmittedHandler
-    :<|> resubmitHandler
     :<|> registerPushHandler
     :<|> configHandler
     :<|> Tagged serveDocs
@@ -163,6 +157,9 @@ app state = serve lndrAPI (readerServer state)
 -- blockchain. All credit-related queries use database data so without these
 -- consistency checks at startup, it's possible user's transaction history
 -- would be inaccurately represented.
+--
+-- When credits are recovered from blockchain, we lose 'submitter' information
+-- so 'submitter' is set to be equal to 'creditor'
 updateDbFromLndrLogs :: ServerState -> IO ()
 updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
     config <- atomically $ readTVar configMVar

@@ -9,8 +9,8 @@ import qualified Data.ByteArray                as BA
 import qualified Data.ByteString               as B
 import qualified Data.ByteString.Base16        as BS16
 import           Data.Either.Combinators       (fromRight, mapLeft)
-import qualified Data.Map                   as M
-import           Data.Maybe                 (fromMaybe, isNothing)
+import qualified Data.Map                      as M
+import           Data.Maybe                    (fromMaybe, isNothing)
 import           Data.Monoid                   ((<>))
 import           Data.Text                     (Text)
 import qualified Data.Text                     as T

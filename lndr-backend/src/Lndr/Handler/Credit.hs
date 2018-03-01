@@ -21,8 +21,8 @@ module Lndr.Handler.Credit (
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
-import           Data.Maybe                 (fromMaybe, isNothing)
 import qualified Data.Map                   as M
+import           Data.Maybe                 (fromMaybe, isNothing)
 import           Data.Pool                  (Pool, withResource)
 import           Data.Text                  (Text)
 import qualified Data.Text                  as T

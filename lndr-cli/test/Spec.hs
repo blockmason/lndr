@@ -204,10 +204,10 @@ basicLendTest = do
     verifiedRecords1 <- getTransactions testUrl testAddress1
     assertEqual "one verified record found for user1" 1 (length verifiedRecords1)
 
-    balance <- getBalance testUrl testAddress1
+    balance <- getBalance testUrl testAddress1 "USD"
     assertEqual "user1's total balance is 100" 100 balance
 
-    twoPartyBalance <- getTwoPartyBalance testUrl testAddress1 testAddress2
+    twoPartyBalance <- getTwoPartyBalance testUrl testAddress1 testAddress2 "USD"
     assertEqual "user1's two-party balance is 100" 100 twoPartyBalance
 
     -- user1's counterparties list is [user2]
@@ -223,17 +223,25 @@ basicLendTest = do
     assertEqual "user2's friends properly calculated" [testAddress1] friends
 
     -- user1 and user2 create credit on JPY ucac
-    let testCredit' = CreditRecord testAddress2 testAddress1 2000000 "sushi" testAddress2 0 "" "" ucacAddrJPY Nothing Nothing Nothing
-        creditHash = generateHash testCredit'
-        testCredit = testCredit' { hash = creditHash }
+    let jpyValue = 200000
+        testCreditJPY' = CreditRecord testAddress2 testAddress1 jpyValue "sushi" testAddress2 0 "" "" ucacAddrJPY Nothing Nothing Nothing
+        creditHashJPY = generateHash testCreditJPY'
+        testCreditJPY = testCreditJPY' { hash = creditHashJPY }
 
     -- user2 submits pending credit to user1
-    httpCode <- submitCredit testUrl testPrivkey2 testCredit
+    httpCode <- submitCredit testUrl testPrivkey2 testCreditJPY
     assertEqual "lend success" 204 httpCode
 
     -- user1 accepts user2's pending credit
-    httpCode <- submitCredit testUrl testPrivkey1 (testCredit { submitter = testAddress1 })
+    httpCode <- submitCredit testUrl testPrivkey1 (testCreditJPY { submitter = testAddress1 })
     assertEqual "borrow success" 204 httpCode
+
+    -- user2 has a correct total JPY balance
+    balance <- getBalance testUrl testAddress2 "JPY"
+    assertEqual "user2's total jpy balance is correct" jpyValue balance
+
+    balance <- getTwoPartyBalance testUrl testAddress1 testAddress2 "JPY"
+    assertEqual "user2 & user1's two-party total balance is correct" (-jpyValue) balance
 
 
 basicSettlementTest :: Assertion

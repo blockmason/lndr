@@ -73,13 +73,13 @@ verifyCreditByHash hash conn = fromIntegral <$> execute conn "UPDATE settlements
 
 userBalance :: Address -> Address -> Connection -> IO Integer
 userBalance addr ucac conn = do
-    [Only balance] <- query conn "SELECT (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ?) - (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE debtor = ?)" (addr, addr) :: IO [Only Scientific]
+    [Only balance] <- query conn "SELECT (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND ucac = ?) - (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE debtor = ? AND ucac = ?)" (addr, ucac, addr, ucac) :: IO [Only Scientific]
     return . floor $ balance
 
 
 twoPartyBalance :: Address -> Address -> Address -> Connection -> IO Integer
 twoPartyBalance addr counterparty ucac conn = do
-    [Only balance] <- query conn "SELECT (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ?) - (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
+    [Only balance] <- query conn "SELECT (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ? AND ucac = ?) - (SELECT COALESCE(SUM(amount), 0) FROM verified_credits WHERE creditor = ? AND debtor = ? AND ucac = ?)" (addr, counterparty, ucac, counterparty, addr, ucac) :: IO [Only Scientific]
     return . floor $ balance
 
 

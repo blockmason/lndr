@@ -23,7 +23,7 @@ querySafelow = do
     return . ceiling $ margin * safeLowScaling * safeLow gasStationResponse
     where
         safeLowScaling = 100000000 -- eth gas station returns prices in DeciGigaWei
-        margin = 1.3 -- multiplier for additional assurance that tx will make it into blockchain
+        margin = 1.7 -- multiplier for additional assurance that tx will make it into blockchain
 
 -- | Queries the coinbase api and returns price in USD per 1 eth.
 queryEtheruemPrices :: MaybeT IO EthereumPrices

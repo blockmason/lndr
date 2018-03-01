@@ -72,8 +72,10 @@ type LndrAPI =
                          :> ReqBody '[JSON] [Address]
                          :> PostNoContent '[JSON] NoContent
    :<|> "counterparties" :> Capture "user" Address :> Get '[JSON] [Address]
-   :<|> "balance" :> Capture "user" Address :> Get '[JSON] Integer
-   :<|> "balance" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Integer
+   :<|> "balance" :> Capture "user" Address :> QueryParam "currency" Text
+                  :> Get '[JSON] Integer
+   :<|> "balance" :> Capture "p1" Address :> Capture "p2" Address
+                  :> QueryParam "currency" Text :> Get '[JSON] Integer
    :<|> "gas_price" :> Get '[JSON] Integer
    :<|> "gas_price" :> ReqBody '[JSON] Integer :> PutNoContent '[JSON] NoContent
    :<|> "unsubmitted" :> Get '[JSON] (Int, Int, [IssueCreditLog])

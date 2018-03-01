@@ -153,6 +153,15 @@ instance ToParam (QueryParam "user" Address) where
                   "address of user whose records to display"
                   Normal
 
+instance ToParam (QueryParam "currency" Text) where
+  toParam _ =
+    DocQueryParam "currency"
+                  [ "USD"
+                  , "JPY" ]
+                  "currency for which to query balance"
+                  Normal
+
+
 instance ToParam (QueryParam "txHash" Text) where
   toParam _ =
     DocQueryParam "txHash"

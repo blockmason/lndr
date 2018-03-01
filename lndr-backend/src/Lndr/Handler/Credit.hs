@@ -244,13 +244,13 @@ counterpartiesHandler addr = do
     liftIO $ withResource pool $ Db.counterpartiesByAddress addr
 
 
-balanceHandler :: Address -> LndrHandler Integer
-balanceHandler addr = do
+balanceHandler :: Address -> Maybe Text -> LndrHandler Integer
+balanceHandler addr currency = do
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool $ Db.userBalance addr
 
 
-twoPartyBalanceHandler :: Address -> Address -> LndrHandler Integer
-twoPartyBalanceHandler p1 p2 = do
+twoPartyBalanceHandler :: Address -> Address -> Maybe Text -> LndrHandler Integer
+twoPartyBalanceHandler p1 p2 currency = do
     pool <- dbConnectionPool <$> ask
     liftIO . withResource pool $ Db.twoPartyBalance p1 p2

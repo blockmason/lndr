@@ -21,8 +21,8 @@ module Lndr.Handler.Credit (
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
-import qualified Data.Map                   as M
 import           Data.Maybe                 (fromMaybe, isNothing)
+import qualified Data.Map                   as M
 import           Data.Pool                  (Pool, withResource)
 import           Data.Text                  (Text)
 import qualified Data.Text                  as T
@@ -246,11 +246,13 @@ counterpartiesHandler addr = do
 
 balanceHandler :: Address -> Maybe Text -> LndrHandler Integer
 balanceHandler addr currency = do
-    pool <- dbConnectionPool <$> ask
-    liftIO . withResource pool $ Db.userBalance addr
+    (ServerState pool configTVar) <- ask
+    ucacAddresses <- fmap lndrUcacAddrs . liftIO . atomically $ readTVar configTVar
+    liftIO . withResource pool $ Db.userBalance addr (getUcac ucacAddresses currency)
 
 
 twoPartyBalanceHandler :: Address -> Address -> Maybe Text -> LndrHandler Integer
 twoPartyBalanceHandler p1 p2 currency = do
-    pool <- dbConnectionPool <$> ask
-    liftIO . withResource pool $ Db.twoPartyBalance p1 p2
+    (ServerState pool configTVar) <- ask
+    ucacAddresses <- fmap lndrUcacAddrs . liftIO . atomically $ readTVar configTVar
+    liftIO . withResource pool $ Db.twoPartyBalance p1 p2 (getUcac ucacAddresses currency)

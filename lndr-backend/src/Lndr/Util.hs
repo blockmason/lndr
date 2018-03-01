@@ -9,6 +9,8 @@ import qualified Data.ByteArray                as BA
 import qualified Data.ByteString               as B
 import qualified Data.ByteString.Base16        as BS16
 import           Data.Either.Combinators       (fromRight, mapLeft)
+import qualified Data.Map                   as M
+import           Data.Maybe                 (fromMaybe, isNothing)
 import           Data.Monoid                   ((<>))
 import           Data.Text                     (Text)
 import qualified Data.Text                     as T
@@ -110,6 +112,12 @@ alignL = fst . align
 
 alignR :: Text -> Text
 alignR = snd . align
+
+
+getUcac :: M.Map Text Address -> Maybe Text -> Address
+getUcac ucacAddresses currency =
+    let defaultUcac = fromMaybe (error "no USD ucac registered") $ M.lookup "USD" ucacAddresses
+    in fromMaybe defaultUcac $ (`M.lookup` ucacAddresses) =<< currency
 
 
 configToResponse :: ServerConfig -> ConfigResponse

@@ -146,16 +146,14 @@ calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _
 calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ ucac _ (Just currency) _) =
     let blockNumber = latestBlockNumber config
         prices = ethereumPrices config
-    -- assumes USD / ETH settlement for now
-    -- 10 ^ 16 instead of 10 ^ 18 because our amounts are stored in cents, not
-    -- dollars, so we have to divide by 100
         currencyMap = M.fromList . fmap swap . M.toList $ lndrUcacAddrs config
-        currencyConversion = case M.lookup ucac currencyMap of
-            Just "USD" -> usd prices
+        currencyPerEth = case M.lookup ucac currencyMap of
+            Just "USD" -> usd prices * 100 -- mutliplying by 100 here since
+                                           -- usd amounts are stored in cents
             Just "JPY" -> jpy prices
             Just "KRW" -> krw prices
             Nothing    -> error "ucac not found"
-        settlementAmount = floor $ fromIntegral amount / currencyConversion * 10 ^ 16
+        settlementAmount = floor $ fromIntegral amount / currencyPerEth * 10 ^ 18
     in cr { settlementAmount = Just settlementAmount
           , settlementBlocknumber = Just blockNumber
           }

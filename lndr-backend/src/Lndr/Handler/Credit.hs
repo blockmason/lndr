@@ -159,7 +159,7 @@ createBilateralFriendship pool addressA addressB =
 
 rejectHandler :: RejectRequest -> LndrHandler NoContent
 rejectHandler(RejectRequest hash sig) = do
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     pendingRecord <- ioMaybeToLndr "credit hash does not refer to pending record"
                         . withResource pool $ Db.lookupPending hash
     signerAddress <- eitherToLndr "unable to recover addr from sig" $
@@ -203,20 +203,20 @@ verifyHandler r@(VerifySettlementRequest creditHash txHash creditorAddress signa
 
 pendingHandler :: Address -> LndrHandler [CreditRecord]
 pendingHandler addr = do
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     liftIO . withResource pool $ Db.lookupPendingByAddress addr False
 
 
 transactionsHandler :: Maybe Address -> LndrHandler [IssueCreditLog]
 transactionsHandler Nothing = throwError (err401 {errBody = "Missing user address"})
 transactionsHandler (Just addr) = do
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     liftIO $ withResource pool $ Db.lookupCreditByAddress addr
 
 
 pendingSettlementsHandler :: Address -> LndrHandler SettlementsResponse
 pendingSettlementsHandler addr = do
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     pending <- liftIO . withResource pool $ Db.lookupPendingByAddress addr True
     verified <- liftIO $ withResource pool $ Db.lookupSettlementCreditByAddress addr
     pure $ SettlementsResponse pending verified
@@ -224,7 +224,7 @@ pendingSettlementsHandler addr = do
 
 txHashHandler :: Text -> LndrHandler Text
 txHashHandler creditHash = do
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     txHashM <- liftIO . withResource pool $ Db.txHashByCreditHash creditHash
     case txHashM of
         (Just txHash) -> pure txHash
@@ -233,13 +233,13 @@ txHashHandler creditHash = do
 
 nonceHandler :: Address -> Address -> LndrHandler Nonce
 nonceHandler p1 p2 = do
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     liftIO . withResource pool $ Db.twoPartyNonce p1 p2
 
 
 counterpartiesHandler :: Address -> LndrHandler [Address]
 counterpartiesHandler addr = do
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     liftIO $ withResource pool $ Db.counterpartiesByAddress addr
 
 

@@ -31,38 +31,38 @@ import           Text.EmailAddress
 nickHandler :: NickRequest -> LndrHandler NoContent
 nickHandler r@(NickRequest addr nick sig) = do
     unless (Right addr == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     liftIO . withResource pool . Db.insertNick addr $ T.toLower nick
     pure NoContent
 
 
 nickLookupHandler :: Address -> LndrHandler Text
 nickLookupHandler addr = do
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     ioMaybeToLndr "addr not found in nick db" . withResource pool $ Db.lookupNick addr
 
 
 nickSearchHandler :: Text -> LndrHandler [UserInfo]
 nickSearchHandler nick = do
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     liftIO . withResource pool . Db.lookupAddressesByFuzzyNick $ T.toLower nick
 
 
 friendHandler :: Address -> LndrHandler [UserInfo]
 friendHandler addr = do
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     liftIO . withResource pool $ Db.lookupFriendsWithNick addr
 
 
 userHandler :: Maybe EmailAddress -> Maybe Nick -> LndrHandler UserInfo
 userHandler (Just email) _ = do
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     nickInfoM <- liftIO . withResource pool . Db.lookupAddressByEmail $ email
     case nickInfoM of
         Just nickInfo -> pure nickInfo
         Nothing -> throwError (err404 {errBody = "No corresponding user found based on provided email."})
 userHandler _ (Just nick) = do
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     nickInfoM <- liftIO . withResource pool . Db.lookupAddressByNick $ T.toLower nick
     case nickInfoM of
         Just nickInfo -> pure nickInfo
@@ -73,7 +73,7 @@ userHandler Nothing Nothing = throwError (err400 {errBody = "No identifying info
 addFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
 addFriendsHandler address friendAddresses = do
     -- TODO verify signature
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     liftIO . withResource pool $ Db.addFriends ((address,) <$> friendAddresses)
     pure NoContent
 
@@ -89,20 +89,20 @@ removeFriendsHandler address removes = do
 emailHandler :: EmailRequest -> LndrHandler NoContent
 emailHandler r@(EmailRequest addr email sig) = do
     unless (Right addr == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     liftIO . withResource pool . Db.insertEmail addr $ toText email
     pure NoContent
 
 
 emailLookupHandler :: Address -> LndrHandler EmailAddress
 emailLookupHandler addr = do
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     ioMaybeToLndr "addr not found in nick db" . withResource pool $ Db.lookupEmail addr
 
 
 photoUploadHandler :: ProfilePhotoRequest -> LndrHandler NoContent
 photoUploadHandler r@(ProfilePhotoRequest photo sig) = do
-    configTVar <- serverConfig <$> ask
+    configTVar <- asks serverConfig
     config <- liftIO . atomically $ readTVar configTVar
     let Right address = recoverSigner r
         elementName = Aws.ObjectKey . stripHexPrefix . T.pack $ show address ++ ".jpeg"

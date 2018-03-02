@@ -52,12 +52,12 @@ resubmitHandler txHash = do
 registerPushHandler :: PushRequest -> LndrHandler NoContent
 registerPushHandler r@(PushRequest channelID platform addr _) = do
     unless (Right addr == recoverSigner r) $ throwError (err400 {errBody = "Bad signature."})
-    pool <- dbConnectionPool <$> ask
+    pool <- asks dbConnectionPool
     liftIO . withResource pool $ Db.insertPushDatum addr channelID platform
     pure NoContent
 
 
 configHandler :: LndrHandler ConfigResponse
 configHandler = do
-    configTVar <- serverConfig <$> ask
+    configTVar <- asks serverConfig
     configToResponse <$> (liftIO . atomically $ readTVar configTVar)

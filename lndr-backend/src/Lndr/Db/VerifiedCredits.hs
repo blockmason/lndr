@@ -29,7 +29,7 @@ allCredits conn = query_ conn "SELECT ucac, creditor, debtor, amount, nonce, mem
 
 
 lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
-lookupCreditByAddress addr conn = query conn "SELECT ucac, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND (settlements.hash IS NULL OR settlements.verified = TRUE)" (addr, addr)
+lookupCreditByAddress addr conn = query conn "SELECT ucac, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND (settlements.hash IS NULL OR settlements.verified = TRUE) ORDER BY created_at DESC" (addr, addr)
 
 
 deleteExpiredSettlementsAndAssociatedCredits :: Connection -> IO ()

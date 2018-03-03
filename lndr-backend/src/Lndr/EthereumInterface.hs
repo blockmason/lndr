@@ -45,6 +45,7 @@ module Lndr.EthereumInterface (
 import           Control.Exception
 import           Control.Monad
 import           Control.Monad.Trans.Maybe
+import qualified Data.Bimap                  as B
 import qualified Data.ByteArray              as BA
 import qualified Data.ByteString.Base16      as BS16
 import           Data.Default
@@ -100,7 +101,7 @@ lndrLogs config currencyKey creditorM debtorM = rights . fmap interpretUcacLog <
                         (Just [ Just (issueCreditEvent config)
                               -- TODO this will have to change once we deploy
                               -- multiple lndr ucacs
-                              , addressToBytes32 <$> M.lookup currencyKey (lndrUcacAddrs config)
+                              , addressToBytes32 <$> B.lookup currencyKey (lndrUcacAddrs config)
                               , addressToBytes32 <$> creditorM
                               , addressToBytes32 <$> debtorM ])
                         (Just . integerToHex' $ scanStartBlock config)
@@ -146,8 +147,7 @@ calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _
 calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ ucac _ (Just currency) _) =
     let blockNumber = latestBlockNumber config
         prices = ethereumPrices config
-        currencyMap = M.fromList . fmap swap . M.toList $ lndrUcacAddrs config
-        currencyPerEth = case M.lookup ucac currencyMap of
+        currencyPerEth = case B.lookupR ucac (lndrUcacAddrs config) of
             Just "USD" -> usd prices * 100 -- mutliplying by 100 here since
                                            -- usd amounts are stored in cents
             Just "JPY" -> jpy prices

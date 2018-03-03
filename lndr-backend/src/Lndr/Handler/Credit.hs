@@ -21,6 +21,7 @@ module Lndr.Handler.Credit (
 import           Control.Concurrent.STM
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
+import qualified Data.Bimap                 as B
 import qualified Data.Map                   as M
 import           Data.Maybe                 (fromMaybe, isNothing)
 import           Data.Pool                  (Pool, withResource)
@@ -63,7 +64,7 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
         throwError (err400 {errBody = "Submitter is not creditor nor debtor."})
     unless (creditor /= debtor) $
         throwError (err400 {errBody = "Creditor and debtor cannot be equal."})
-    unless (ucac signedRecord `elem` M.elems (lndrUcacAddrs config)) $
+    unless (B.memberR (ucac signedRecord) (lndrUcacAddrs config)) $
         throwError (err400 {errBody = "Unrecognized UCAC address."})
 
     -- check that submitter signed the tx
@@ -72,6 +73,7 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
     unless (textToAddress signer == submitterAddress) $
         throwError (err401 {errBody = "Bad submitter sig"})
 
+    currency <- liftIO $ B.lookupR (ucac signedRecord) (lndrUcacAddrs config)
 
     -- creating function to query urban airship api
     let attemptToNotify msg notifyAction = do
@@ -81,9 +83,8 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
             let fullMsg = T.append msg (fromMaybe "..." nicknameM)
             case pushDataM of
                 Just (channelID, platform) -> void . liftIO $
-                    sendNotification config (Notification channelID platform fullMsg notifyAction)
+                    sendNotification config currency (Notification channelID platform fullMsg notifyAction)
                 Nothing -> pure ()
-
     -- check if hash is already registered in pending txs
     pendingCredit <- liftIO . withResource pool $ Db.lookupPending hash
     case pendingCredit of
@@ -176,7 +177,7 @@ sendRejectionNotification :: CreditRecord -> Address -> LndrHandler ()
 sendRejectionNotification pendingRecord signerAddress = do
     (ServerState pool configTVar) <- ask
     config <- liftIO . atomically $ readTVar configTVar
-
+    currency <- liftIO $ B.lookupR (ucac pendingRecord) (lndrUcacAddrs config)
     let counterparty = if creditor pendingRecord /= signerAddress
                             then creditor pendingRecord
                             else debtor pendingRecord
@@ -185,7 +186,7 @@ sendRejectionNotification pendingRecord signerAddress = do
     let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
     case pushDataM of
         Just (channelID, platform) -> void . liftIO $
-            sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
+            sendNotification config currency (Notification channelID platform fullMsg PendingCreditRejection)
         Nothing -> pure ()
 
 

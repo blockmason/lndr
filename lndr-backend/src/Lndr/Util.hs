@@ -5,6 +5,7 @@ module Lndr.Util where
 
 import           Control.Exception
 import           Control.Lens
+import qualified Data.Bimap                    as B
 import qualified Data.ByteArray                as BA
 import qualified Data.ByteString               as B
 import qualified Data.ByteString.Base16        as BS16
@@ -114,14 +115,15 @@ alignR :: Text -> Text
 alignR = snd . align
 
 
-getUcac :: M.Map Text Address -> Maybe Text -> Address
+getUcac :: B.Bimap Text Address -> Maybe Text -> Address
 getUcac ucacAddresses currency =
-    let defaultUcac = fromMaybe (error "no USD ucac registered") $ M.lookup "USD" ucacAddresses
-    in fromMaybe defaultUcac $ (`M.lookup` ucacAddresses) =<< currency
+    let defaultUcac = fromMaybe (error "no USD ucac registered") $ B.lookup "USD" ucacAddresses
+    in fromMaybe defaultUcac $ (`B.lookup` ucacAddresses) =<< currency
 
 
 configToResponse :: ServerConfig -> ConfigResponse
-configToResponse config = ConfigResponse (lndrUcacAddrs config) (creditProtocolAddress config)
+configToResponse config = ConfigResponse (B.toMap $ lndrUcacAddrs config)
+                                         (creditProtocolAddress config)
                                          (gasPrice config) (ethereumPrices config)
                                          (latestBlockNumber config - 40600)
 

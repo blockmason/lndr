@@ -45,6 +45,7 @@ import           Control.Concurrent.STM.TVar
 import           Control.Lens                  (over, _head, makeLenses)
 import           Data.Aeson
 import           Data.Aeson.TH
+import qualified Data.Bimap                    as B
 import           Data.ByteString               (ByteString)
 import           Data.Char                     (toLower)
 import qualified Data.Configurator.Types       as Conf
@@ -228,27 +229,26 @@ instance FromJSON EthereumPrices where
             krw <- read <$> ratesObject .: "KRW"
             return $ EthereumPrices usd jpy krw
 
-data ServerConfig = ServerConfig { lndrUcacAddrs         :: M.Map Text Address
-                                 , creditProtocolAddress :: !Address
-                                 , issueCreditEvent      :: !Text
-                                 , scanStartBlock        :: !Integer
-                                 , dbUser                :: !Text
-                                 , dbUserPassword        :: !Text
-                                 , dbName                :: !Text
-                                 , dbHost                :: !String
-                                 , dbPort                :: !Word16
-                                 , executionAddress      :: !Address
-                                 , gasPrice              :: !Integer
-                                 , ethereumPrices        :: !EthereumPrices
-                                 , maxGas                :: !Integer
-                                 , latestBlockNumber     :: !Integer
-                                 , urbanAirshipKey       :: !ByteString
-                                 , urbanAirshipSecret    :: !ByteString
-                                 , heartbeatInterval     :: !Int
-                                 , awsPhotoBucket        :: !Text
-                                 , awsAccessKeyId        :: !ByteString
-                                 , awsSecretAccessKey    :: !ByteString
-                                 , web3Url               :: !String
+data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Address
+                                 , creditProtocolAddress    :: !Address
+                                 , issueCreditEvent         :: !Text
+                                 , scanStartBlock           :: !Integer
+                                 , dbUser                   :: !Text
+                                 , dbUserPassword           :: !Text
+                                 , dbName                   :: !Text
+                                 , dbHost                   :: !String
+                                 , dbPort                   :: !Word16
+                                 , executionAddress         :: !Address
+                                 , gasPrice                 :: !Integer
+                                 , ethereumPrices           :: !EthereumPrices
+                                 , maxGas                   :: !Integer
+                                 , latestBlockNumber        :: !Integer
+                                 , urbanAirshipCreditialMap :: M.Map Text (ByteString, ByteString)
+                                 , heartbeatInterval        :: !Int
+                                 , awsPhotoBucket           :: !Text
+                                 , awsAccessKeyId           :: !ByteString
+                                 , awsSecretAccessKey       :: !ByteString
+                                 , web3Url                  :: !String
                                  }
 
 -- 'ConfigResponse' contains all the server data that users have access to via

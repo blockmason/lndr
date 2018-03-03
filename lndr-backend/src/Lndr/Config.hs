@@ -2,6 +2,7 @@
 
 module Lndr.Config where
 
+import qualified Data.Bimap              as B
 import           Data.Configurator
 import           Data.Configurator.Types
 import           Data.Default
@@ -17,7 +18,7 @@ loadConfig :: IO ServerConfig
 loadConfig = do
     config <- getMap =<< load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
     let loadEntry x = fromMaybe (error $ T.unpack x) $ convert =<< H.lookup x config
-    return $ ServerConfig (M.fromList [ ("USD", loadEntry "lndr-ucacs.usd")
+    return $ ServerConfig (B.fromList [ ("USD", loadEntry "lndr-ucacs.usd")
                                       , ("JPY", loadEntry "lndr-ucacs.jpy")
                                       , ("KRW", loadEntry "lndr-ucacs.krw") ])
                           (loadEntry "credit-protocol-address")
@@ -33,8 +34,13 @@ loadConfig = do
                           def
                           (loadEntry "max-gas")
                           0
-                          (loadEntry "urban-airship.key")
-                          (loadEntry "urban-airship.secret")
+                          (M.fromList [ ("USD", ( loadEntry "urban-airship.usd.key"
+                                                , loadEntry "urban-airship.usd.secret"))
+                                      , ("JPY", ( loadEntry "urban-airship.jpy.key"
+                                                , loadEntry "urban-airship.jpy.secret"))
+                                      , ("KRW", ( loadEntry "urban-airship.krw.key"
+                                                , loadEntry "urban-airship.krw.secret"))
+                                      ])
                           (loadEntry "heartbeat-interval")
                           (loadEntry "aws.photo-bucket")
                           (loadEntry "aws.access-key-id")

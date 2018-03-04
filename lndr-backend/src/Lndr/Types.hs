@@ -62,6 +62,7 @@ import           GHC.Generics
 import           Network.Ethereum.Web3.Address (Address)
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Servant.API
+import           System.Log.FastLogger
 import           Text.EmailAddress
 
 
@@ -282,6 +283,7 @@ $(deriveJSON defaultOptions ''SettlementsResponse)
 
 data ServerState = ServerState { dbConnectionPool :: Pool Connection
                                , serverConfig     :: TVar ServerConfig
+                               , loggerSet        :: LoggerSet
                                }
 
 data GasStationResponse = GasStationResponse { safeLow     :: Double

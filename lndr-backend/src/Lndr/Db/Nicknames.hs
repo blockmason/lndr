@@ -2,6 +2,7 @@
 
 module Lndr.Db.Nicknames where
 
+import           Control.Monad
 import           Data.Maybe (listToMaybe)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -29,8 +30,8 @@ lookupNick addr conn = listToMaybe . fmap fromOnly <$>
 
 
 lookupEmail :: Address -> Connection -> IO (Maybe EmailAddress)
-lookupEmail addr conn = listToMaybe . fmap fromOnly <$>
-    (query conn "SELECT email FROM nicknames WHERE address = ?" (Only addr) :: IO [Only EmailAddress])
+lookupEmail addr conn = join . listToMaybe . fmap fromOnly <$>
+    (query conn "SELECT email FROM nicknames WHERE address = ?" (Only addr) :: IO [Only (Maybe EmailAddress)])
 
 
 lookupAddressByNick :: Text -> Connection -> IO (Maybe UserInfo)

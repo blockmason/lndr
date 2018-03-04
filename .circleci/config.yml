@@ -32,6 +32,7 @@ jobs:
           mkdir artifacts
           cp \
             "${HOME}/.local/bin/lndr-server" \
+            "${HOME}/.local/bin/lndr" \
             Dockerfile \
             .dockerignore \
             artifacts/

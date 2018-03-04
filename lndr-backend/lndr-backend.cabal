@@ -51,6 +51,7 @@ library
                      , emailaddress
                      , ethereumhs-util
                      , filepath
+                     , fast-logger
                      , hashable
                      , http-client
                      , http-conduit

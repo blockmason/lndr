@@ -20,7 +20,7 @@ import           Servant
 
 unsubmittedHandler :: LndrHandler (Int, Int, [IssueCreditLog])
 unsubmittedHandler = do
-    (ServerState pool configTVar) <- ask
+    (ServerState pool configTVar _) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     blockchainCreditsE <- liftIO . runLndrWeb3 $
         join <$> sequence [ lndrLogs config "USD" Nothing Nothing
@@ -34,7 +34,7 @@ unsubmittedHandler = do
 
 resubmitHandler :: Text -> LndrHandler NoContent
 resubmitHandler txHash = do
-    (ServerState pool configTVar) <- ask
+    (ServerState pool configTVar _) <- ask
     (_, _, txs) <- unsubmittedHandler
     let creditToResubmitM = find ((== txHash) . hashCreditLog) txs
     case creditToResubmitM of

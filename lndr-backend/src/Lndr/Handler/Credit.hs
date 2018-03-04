@@ -39,6 +39,7 @@ import           Lndr.Util
 import qualified Network.Ethereum.Util      as EU
 import           Network.Ethereum.Web3
 import           Servant
+import           System.Log.FastLogger
 
 
 lendHandler :: CreditRecord -> LndrHandler NoContent
@@ -51,7 +52,7 @@ borrowHandler creditRecord = submitHandler $ creditRecord { submitter = debtor c
 
 submitHandler :: CreditRecord -> LndrHandler NoContent
 submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress _ hash sig _ _ _ _) = do
-    (ServerState pool configTVar) <- ask
+    state@(ServerState pool configTVar loggerSet) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
 
@@ -81,10 +82,12 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
             pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
             nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
             let fullMsg = T.append msg (fromMaybe "..." nicknameM)
-            case pushDataM of
-                Just (channelID, platform) -> void . liftIO $
-                    sendNotification config currency (Notification channelID platform fullMsg notifyAction)
-                Nothing -> pure ()
+
+            forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
+                repsonseCode <- sendNotification config currency (Notification channelID platform fullMsg notifyAction)
+                let logMsg = "UrbanAirship response (" ++ T.unpack currency ++ "): " ++ show repsonseCode
+                pushLogStrLn loggerSet . toLogStr $ logMsg
+
     -- check if hash is already registered in pending txs
     pendingCredit <- liftIO . withResource pool $ Db.lookupPending hash
     case pendingCredit of
@@ -95,8 +98,10 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
                                             then (signature storedRecord, signature signedRecord)
                                             else (signature signedRecord, signature storedRecord)
 
-            finalizeCredit pool config $ BilateralCreditRecord storedRecord
-                                                               creditorSig debtorSig Nothing
+            finalizeCredit pool config loggerSet  $ BilateralCreditRecord storedRecord
+                                                                          creditorSig
+                                                                          debtorSig
+                                                                          Nothing
 
             -- send push notification to counterparty
             attemptToNotify "Pending credit confirmation from " CreditConfirmation
@@ -112,16 +117,16 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
 
 
 -- TODO this should be able to fail, should log failures
-finalizeCredit :: Pool Connection -> ServerConfig -> BilateralCreditRecord -> IO ()
-finalizeCredit pool config bilateralCredit = do
+finalizeCredit :: Pool Connection -> ServerConfig -> LoggerSet -> BilateralCreditRecord -> IO ()
+finalizeCredit pool config loggerSet bilateralCredit = do
             -- In case the record is a settlement, delay submitting credit to
             -- the blockchain until /verify_settlement is called
             -- (settlements will have 'Just _' for thier 'settlementAmount',
             -- non-settlements will have 'Nothing')
-            when (isNothing . settlementAmount . creditRecord $ bilateralCredit) $
-                -- TODO LOG if left
+            when (isNothing . settlementAmount . creditRecord $ bilateralCredit) $ do
                 -- should I move this into begin / commit block?
-                void $ finalizeTransaction config bilateralCredit
+                web3Result <- finalizeTransaction config bilateralCredit
+                pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result
 
             -- saving transaction record to 'verified_credits' table
             withResource pool $ \conn -> do
@@ -175,7 +180,7 @@ rejectHandler(RejectRequest hash sig) = do
 
 sendRejectionNotification :: CreditRecord -> Address -> LndrHandler ()
 sendRejectionNotification pendingRecord signerAddress = do
-    (ServerState pool configTVar) <- ask
+    (ServerState pool configTVar loggerSet) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     currency <- liftIO $ B.lookupR (ucac pendingRecord) (lndrUcacAddrs config)
     let counterparty = if creditor pendingRecord /= signerAddress
@@ -184,17 +189,17 @@ sendRejectionNotification pendingRecord signerAddress = do
     pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
     nicknameM <- liftIO . withResource pool $ Db.lookupNick signerAddress
     let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
-    case pushDataM of
-        Just (channelID, platform) -> void . liftIO $
-            sendNotification config currency (Notification channelID platform fullMsg PendingCreditRejection)
-        Nothing -> pure ()
+    forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
+            responseCode <- sendNotification config currency (Notification channelID platform fullMsg PendingCreditRejection)
+            let logMsg =  "UrbanAirship response (" ++ T.unpack currency ++ "): " ++ show responseCode
+            pushLogStrLn loggerSet . toLogStr $ logMsg
 
 
 verifyHandler :: VerifySettlementRequest -> LndrHandler NoContent
 verifyHandler r@(VerifySettlementRequest creditHash txHash creditorAddress signature) = do
     unless (Right creditorAddress == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
 
-    (ServerState pool configTVar) <- ask
+    (ServerState pool configTVar _) <- ask
     config <- liftIO . atomically $ readTVar configTVar
 
     -- write txHash to settlement record
@@ -246,13 +251,13 @@ counterpartiesHandler addr = do
 
 balanceHandler :: Address -> Maybe Text -> LndrHandler Integer
 balanceHandler addr currency = do
-    (ServerState pool configTVar) <- ask
+    (ServerState pool configTVar _) <- ask
     ucacAddresses <- fmap lndrUcacAddrs . liftIO . atomically $ readTVar configTVar
     liftIO . withResource pool $ Db.userBalance addr (getUcac ucacAddresses currency)
 
 
 twoPartyBalanceHandler :: Address -> Address -> Maybe Text -> LndrHandler Integer
 twoPartyBalanceHandler p1 p2 currency = do
-    (ServerState pool configTVar) <- ask
+    (ServerState pool configTVar _) <- ask
     ucacAddresses <- fmap lndrUcacAddrs . liftIO . atomically $ readTVar configTVar
     liftIO . withResource pool $ Db.twoPartyBalance p1 p2 (getUcac ucacAddresses currency)

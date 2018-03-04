@@ -41,6 +41,7 @@ import           Network.HTTP.Types
 import           Network.Wai
 import           Servant
 import           Servant.Docs
+import           System.Log.FastLogger
 import           Text.EmailAddress
 
 type LndrAPI =
@@ -161,7 +162,7 @@ app state = serve lndrAPI (readerServer state)
 -- When credits are recovered from blockchain, we lose 'submitter' information
 -- so 'submitter' is set to be equal to 'creditor'
 updateDbFromLndrLogs :: ServerState -> IO ()
-updateDbFromLndrLogs (ServerState pool configMVar) = void $ do
+updateDbFromLndrLogs (ServerState pool configMVar _) = void $ do
     config <- atomically $ readTVar configMVar
     logs <- runLndrWeb3 $ join <$> sequence [ lndrLogs config "USD" Nothing Nothing
                                             , lndrLogs config "JPY" Nothing Nothing
@@ -182,9 +183,9 @@ freshState = do
         , DB.connectPassword = T.unpack $ dbUserPassword serverConfig
         , DB.connectDatabase = T.unpack $ dbName serverConfig
         }
-
     ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
                 <*> newTVarIO serverConfig
+                <*> newStdoutLoggerSet defaultBufSize
 
 
 runHeartbeat :: ServerState -> IO ThreadId
@@ -192,13 +193,15 @@ runHeartbeat state = forkIO . forever $ heartbeat state
 
 
 heartbeat :: ServerState -> IO ()
-heartbeat state@(ServerState _ configMVar) = do
+heartbeat state@(ServerState _ configMVar loggerSet) = do
     -- update server config
     updateServerConfig configMVar
     -- scan settlements table for any settlement eligible for deletion
     deleteExpiredSettlements state
     -- try to verify all settlements whose tx_hash column is populated
     verifySettlementsWithTxHash state
+    -- log hearbeat statistics
+    pushLogStrLn loggerSet . toLogStr $ ("heartbeat" :: Text)
     -- sleep for time specified in config
     config <- atomically $ readTVar configMVar
     threadDelay (heartbeatInterval config * 10 ^ 6)
@@ -217,13 +220,13 @@ updateServerConfig configTVar = do
 
 
 deleteExpiredSettlements :: ServerState -> IO ()
-deleteExpiredSettlements (ServerState pool configMVar) = do
+deleteExpiredSettlements (ServerState pool configMVar _) = do
     config <- atomically $ readTVar configMVar
     void $ withResource pool Db.deleteExpiredSettlementsAndAssociatedCredits
 
 
 verifySettlementsWithTxHash :: ServerState -> IO ()
-verifySettlementsWithTxHash state@(ServerState pool configMVar) = do
+verifySettlementsWithTxHash state@(ServerState pool configMVar _) = do
     config <- atomically $ readTVar configMVar
     creditHashes <- withResource pool Db.settlementCreditsToVerify
     mapM_ (runExceptT . verifyIndividualRecord state) creditHashes
@@ -231,7 +234,7 @@ verifySettlementsWithTxHash state@(ServerState pool configMVar) = do
 
 
 verifyIndividualRecord :: ServerState -> TransactionHash -> ExceptT ServantErr IO ()
-verifyIndividualRecord (ServerState pool configTVar) creditHash = do
+verifyIndividualRecord (ServerState pool configTVar loggerSet) creditHash = do
     config <- liftIO $ atomically $ readTVar configTVar
     recordM <- liftIO $ withResource pool $ Db.lookupCreditByHash creditHash
     let recordNotFound = throwError $
@@ -239,6 +242,8 @@ verifyIndividualRecord (ServerState pool configTVar) creditHash = do
     bilateralCreditRecord <- maybe recordNotFound pure recordM
     verified <- liftIO $ verifySettlementPayment bilateralCreditRecord
     if verified
+        -- TODO unify it with other finalizeTransaction
         then do liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
-                void . liftIO $ finalizeTransaction config bilateralCreditRecord
+                web3Result <- liftIO $ finalizeTransaction config bilateralCreditRecord
+                liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result
         else throwError $ err400 { errBody = "Unable to verify debt settlement" }

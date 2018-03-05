@@ -244,7 +244,8 @@ data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Addr
                                  , ethereumPrices           :: !EthereumPrices
                                  , maxGas                   :: !Integer
                                  , latestBlockNumber        :: !Integer
-                                 , urbanAirshipCreditialMap :: M.Map Text (ByteString, ByteString)
+                                 , urbanAirshipKey          :: !ByteString
+                                 , urbanAirshipSecret       :: !ByteString
                                  , heartbeatInterval        :: !Int
                                  , awsPhotoBucket           :: !Text
                                  , awsAccessKeyId           :: !ByteString

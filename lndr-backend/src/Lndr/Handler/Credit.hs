@@ -23,7 +23,7 @@ import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
 import qualified Data.Bimap                 as B
 import qualified Data.Map                   as M
-import           Data.Maybe                 (fromMaybe, isNothing)
+import           Data.Maybe                 (fromMaybe, fromJust, isNothing)
 import           Data.Pool                  (Pool, withResource)
 import           Data.Text                  (Text)
 import qualified Data.Text                  as T
@@ -40,6 +40,7 @@ import qualified Network.Ethereum.Util      as EU
 import           Network.Ethereum.Web3
 import           Servant
 import           System.Log.FastLogger
+import           Text.Printf
 
 
 lendHandler :: CreditRecord -> LndrHandler NoContent
@@ -81,10 +82,10 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
             let counterparty = if creditor /= submitterAddress then creditor else debtor
             pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
             nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
-            let fullMsg = T.append msg (fromMaybe "..." nicknameM)
+            let fullMsg = T.pack $ printf msg (fromMaybe "..." nicknameM)
 
             forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
-                repsonseCode <- sendNotification config currency (Notification channelID platform fullMsg notifyAction)
+                repsonseCode <- sendNotification config (Notification channelID platform fullMsg notifyAction)
                 let logMsg = "UrbanAirship response (" ++ T.unpack currency ++ "): " ++ show repsonseCode
                 pushLogStrLn loggerSet . toLogStr $ logMsg
 
@@ -104,14 +105,14 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
                                                                           Nothing
 
             -- send push notification to counterparty
-            attemptToNotify "Pending credit confirmation from " CreditConfirmation
+            attemptToNotify (fromJust $ M.lookup (T.unpack currency) pendingConfirmationMap) CreditConfirmation
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
             let processedRecord = calculateSettlementCreditRecord config signedRecord
             createPendingRecord pool processedRecord
             -- send push notification to counterparty
-            attemptToNotify "New pending credit from " NewPendingCredit
+            attemptToNotify (fromJust $ M.lookup (T.unpack currency) newPendingMap) NewPendingCredit
 
     pure NoContent
 
@@ -188,9 +189,10 @@ sendRejectionNotification pendingRecord signerAddress = do
                             else debtor pendingRecord
     pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
     nicknameM <- liftIO . withResource pool $ Db.lookupNick signerAddress
-    let fullMsg = T.append "Pending credit rejected by " (fromMaybe "..." nicknameM)
+    let msgTemplate = fromJust $ M.lookup (T.unpack currency) pendingConfirmationMap
+        fullMsg = T.pack $ printf msgTemplate (fromMaybe "..." nicknameM)
     forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
-            responseCode <- sendNotification config currency (Notification channelID platform fullMsg PendingCreditRejection)
+            responseCode <- sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
             let logMsg =  "UrbanAirship response (" ++ T.unpack currency ++ "): " ++ show responseCode
             pushLogStrLn loggerSet . toLogStr $ logMsg
 

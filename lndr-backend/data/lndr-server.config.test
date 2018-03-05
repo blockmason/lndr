@@ -33,18 +33,8 @@ max-gas = 250000
 
 # urban airship credentials used for push notifications
 urban-airship {
-    usd {
-        key = "4_88888888888mmmmmmmmm"
-        secret = "rrrrrrrrrrrrrrrrrrrrrr"
-    }
-    jpy {
-        key = "4_88888888888mmmmmmmmm"
-        secret = "rrrrrrrrrrrrrrrrrrrrrr"
-    }
-    krw {
-        key = "4_88888888888mmmmmmmmm"
-        secret = "rrrrrrrrrrrrrrrrrrrrrr"
-    }
+    key = "4_88888888888mmmmmmmmm"
+    secret = "rrrrrrrrrrrrrrrrrrrrrr"
 }
 
 # how often to run the heartbeat function in seconds. The heartbeat is

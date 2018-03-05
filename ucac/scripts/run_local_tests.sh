@@ -14,7 +14,7 @@ function cleanup {
 
 trap cleanup EXIT
 cp ../lndr-backend/data/lndr-server.config.test ../lndr-backend/data/lndr-server.config
-ganache-cli --blocktime 1 -e 100000000000000000000 -m gravity top burden flip student usage spell purchase hundred improve check genre &
+npm run ganache &
 ganache_pid=$!
 echo "Started ganache, pid ${ganache_pid}"
 

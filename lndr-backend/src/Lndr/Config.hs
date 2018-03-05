@@ -34,13 +34,8 @@ loadConfig = do
                           def
                           (loadEntry "max-gas")
                           0
-                          (M.fromList [ ("USD", ( loadEntry "urban-airship.usd.key"
-                                                , loadEntry "urban-airship.usd.secret"))
-                                      , ("JPY", ( loadEntry "urban-airship.jpy.key"
-                                                , loadEntry "urban-airship.jpy.secret"))
-                                      , ("KRW", ( loadEntry "urban-airship.krw.key"
-                                                , loadEntry "urban-airship.krw.secret"))
-                                      ])
+                          (loadEntry "urban-airship.key")
+                          (loadEntry "urban-airship.secret")
                           (loadEntry "heartbeat-interval")
                           (loadEntry "aws.photo-bucket")
                           (loadEntry "aws.access-key-id")

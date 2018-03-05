@@ -24,6 +24,7 @@ sendNotification config notification = do
 
 notificationMessages = "Pending credit confirmation from "
 
+pendingRejectionMap :: M.Map String String
 pendingRejectionMap = M.fromList [ ("USD", "Pending credit rejected by %s")
                                  , ("JPY", "%sにより拒否された、保留状態のクレジット")
                                  , ("KRW", "계류중거래 %s 께서 거절 했습니다") ]
@@ -32,8 +33,8 @@ pendingConfirmationMap :: M.Map String String
 pendingConfirmationMap = M.fromList [ ("USD", "Pending credit confirmation by %s")
                                     , ("JPY", "%sが承認した、保留状態のクレジット")
                                     , ("KRW", "계류중거래 %s 께서 승인 했습니다") ]
-defaultPendingConfirmation = "New Pending Confirmation"
 
+newPendingMap :: M.Map String String
 newPendingMap = M.fromList [ ("USD", "New pending credit from %s")
                            , ("JPY", "%sからの保留になっている新しいクレジット")
                            , ("KRW", "새로운 계류중거래 %s 께서 추가 했습니다") ]

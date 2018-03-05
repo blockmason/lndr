@@ -189,7 +189,7 @@ sendRejectionNotification pendingRecord signerAddress = do
                             else debtor pendingRecord
     pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
     nicknameM <- liftIO . withResource pool $ Db.lookupNick signerAddress
-    let msgTemplate = fromJust $ M.lookup (T.unpack currency) pendingConfirmationMap
+    let msgTemplate = fromJust $ M.lookup (T.unpack currency) pendingRejectionMap
         fullMsg = T.pack $ printf msgTemplate (fromMaybe "..." nicknameM)
     forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
             responseCode <- sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)

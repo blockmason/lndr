@@ -8,8 +8,6 @@ Server, CLI, and UCAC Solidity contracts.
 
 ## API
 
-Production server answering requests at `http://34.238.20.130`
-
 ## Installation
 
 See [INSTALL.md](INSTALL.md)

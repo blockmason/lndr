@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveGeneric             #-}
 {-# LANGUAGE DuplicateRecordFields     #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
@@ -52,6 +53,7 @@ import           Data.Default
 import           Data.Either                 (rights)
 import           Data.List.Safe              ((!!))
 import qualified Data.Map                    as M
+import           Data.Sized                  hiding (fmap, (!!))
 import           Data.Text                   (Text)
 import qualified Data.Text.Encoding          as T
 import           Data.Tuple
@@ -78,11 +80,11 @@ finalizeTransaction config (BilateralCreditRecord (CreditRecord creditor debtor 
           encodedMemo :: BytesN 32
           encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
       runLndrWeb3 $ issueCredit callVal
-                            ucac
-                            creditor debtor amount
-                            [ sig1r, sig1s, sig1v ]
-                            [ sig2r, sig2s, sig2v ]
-                            encodedMemo
+                                ucac
+                                creditor debtor (UIntN amount)
+                                (sig1r :< sig1s :< sig1v :< NilL)
+                                (sig2r :< sig2s :< sig2v :< NilL)
+                                encodedMemo
     where callVal = def { callFrom = Just $ executionAddress config
                         , callTo = creditProtocolAddress config
                         , callGasPrice = Just . Quantity $ gasPrice config
@@ -104,8 +106,8 @@ lndrLogs config currencyKey creditorM debtorM = rights . fmap interpretUcacLog <
                               , addressToBytes32 <$> B.lookup currencyKey (lndrUcacAddrs config)
                               , addressToBytes32 <$> creditorM
                               , addressToBytes32 <$> debtorM ])
-                        (Just . integerToHex' $ scanStartBlock config)
-                        Nothing)
+                        (BlockWithNumber . BlockNumber $ scanStartBlock config)
+                        Latest)
 
 
 -- | Parse a log 'Change' into an 'IssueCreditLog' if possible.

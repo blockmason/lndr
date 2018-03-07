@@ -308,6 +308,10 @@ basicSettlementTest = do
 
 verifySettlementTest :: Assertion
 verifySettlementTest = do
+
+    syncingE <- runLndrWeb3 Eth.syncing
+    assertEqual "confirm that blockchain is synced" syncingE (Right NotSyncing)
+
     (ucacAddr, _, _) <- loadUcacs
     let settleAmountInWei = 10 ^ 18
     -- testAddress1 is the person revieving eth, thus the credit must record

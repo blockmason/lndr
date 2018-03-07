@@ -153,7 +153,9 @@ calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ uca
             Just "JPY" -> jpy prices
             Just "KRW" -> krw prices
             Nothing    -> error "ucac not found"
-        settlementAmount = floor $ fromIntegral amount / currencyPerEth * 10 ^ 18
+        settlementAmountRaw = floor $ fromIntegral amount / currencyPerEth * 10 ^ 18
+        -- round settlement amount to megawei
+        settlementAmount = settlementAmountRaw - (settlementAmountRaw `mod` 10 ^ 6)
     in cr { settlementAmount = Just settlementAmount
           , settlementBlocknumber = Just blockNumber
           }

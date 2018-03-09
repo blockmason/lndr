@@ -2,7 +2,7 @@ FROM debian:stretch
 
 RUN set -e;\
   apt-get update;\
-  apt-get install curl libpq-dev -y;\
+  apt-get install curl libpq-dev libtinfo-dev -y;\
   apt-get --purge autoremove;\
   apt-get clean;
 

@@ -16,6 +16,7 @@ module Lndr.Server
 
 import           Control.Concurrent
 import           Control.Concurrent.STM
+import           Control.Exception          (SomeException, catch)
 import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
@@ -190,7 +191,7 @@ freshState = do
 
 
 runHeartbeat :: ServerState -> IO ThreadId
-runHeartbeat state = forkIO . forever $ heartbeat state
+runHeartbeat state = forkIO . forever $ catch (heartbeat state) (print :: SomeException -> IO ())
 
 
 heartbeat :: ServerState -> IO ()

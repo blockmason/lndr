@@ -137,7 +137,6 @@ verifySettlementPayment :: BilateralCreditRecord -> IO (Either String ())
 verifySettlementPayment (BilateralCreditRecord creditRecord _ _ (Just txHash)) = do
     transactionME <- runLndrWeb3 . Eth.getTransactionByHash $ addHexPrefix txHash
     case transactionME of
-
         Right (Just transaction) ->
             let fromMatch = txFrom transaction == creditor creditRecord
                 toMatch = txTo transaction == Just (debtor creditRecord)
@@ -152,7 +151,7 @@ verifySettlementPayment (BilateralCreditRecord creditRecord _ _ (Just txHash)) =
                                                  ++ "tx value: " ++ show transactionValue
                                                  ++ ", settlementValue: " ++ show settlementValue
                 (True, True, True) -> pure $ Right ()
-        Left _ -> pure . Left $ "transaction not found, tx_hash: " ++ T.unpack txHash
+        _ -> pure . Left $ "transaction not found, tx_hash: " ++ T.unpack txHash
 verifySettlementPayment _ = pure $ Left "Incompelete settlement record"
 
 

@@ -53,8 +53,10 @@ import           Data.Default
 import           Data.Either                 (rights)
 import           Data.List.Safe              ((!!))
 import qualified Data.Map                    as M
-import           Data.Sized                  hiding (fmap, (!!))
+import           Data.Maybe                  (fromMaybe)
+import           Data.Sized                  hiding (fmap, (!!), (++))
 import           Data.Text                   (Text)
+import qualified Data.Text                   as T
 import qualified Data.Text.Encoding          as T
 import           Data.Tuple
 import           Lndr.NetworkStatistics
@@ -131,17 +133,27 @@ interpretUcacLog change = do
 -- | Verify that a settlement payment was made using a 'txHash' corresponding to
 -- an Ethereum transaction on the blockchain and the associated addresses and
 -- eth settlment amount.
-verifySettlementPayment :: BilateralCreditRecord -> IO Bool
+verifySettlementPayment :: BilateralCreditRecord -> IO (Either String ())
 verifySettlementPayment (BilateralCreditRecord creditRecord _ _ (Just txHash)) = do
     transactionME <- runLndrWeb3 . Eth.getTransactionByHash $ addHexPrefix txHash
     case transactionME of
+
         Right (Just transaction) ->
             let fromMatch = txFrom transaction == creditor creditRecord
                 toMatch = txTo transaction == Just (debtor creditRecord)
-                valueMatch = Just (hexToInteger $ txValue transaction) == settlementAmount creditRecord
-            in return $ fromMatch && toMatch && valueMatch
-        _                        -> pure False
-verifySettlementPayment _ = pure False
+                transactionValue = hexToInteger $ txValue transaction
+                settlementValue = fromMaybe 0 $ settlementAmount creditRecord
+                valueMatch = transactionValue == settlementValue
+                creditHash = T.unpack $ hash creditRecord
+            in case (fromMatch, toMatch, valueMatch) of
+                (False, _, _)      -> pure . Left $ "Bad from match, hash: " ++ creditHash
+                (_, False, _)      -> pure . Left $ "Bad to match, hash: " ++ creditHash
+                (_, _, False)      -> pure . Left $ "Bad value match, hash: " ++ creditHash
+                                                 ++ "tx value: " ++ show transactionValue
+                                                 ++ ", settlementValue: " ++ show settlementValue
+                (True, True, True) -> pure $ Right ()
+        Left _ -> pure . Left $ "transaction not found, tx_hash: " ++ T.unpack txHash
+verifySettlementPayment _ = pure $ Left "Incompelete settlement record"
 
 
 calculateSettlementCreditRecord :: ServerConfig -> CreditRecord -> CreditRecord
@@ -156,8 +168,6 @@ calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ uca
             Just "KRW" -> krw prices
             Nothing    -> error "ucac not found"
         settlementAmountRaw = floor $ fromIntegral amount / currencyPerEth * 10 ^ 18
-        -- round settlement amount to megawei
-        settlementAmount = settlementAmountRaw - (settlementAmountRaw `mod` 10 ^ 6)
-    in cr { settlementAmount = Just settlementAmount
+    in cr { settlementAmount = Just $ roundToMegaWei settlementAmountRaw
           , settlementBlocknumber = Just blockNumber
           }

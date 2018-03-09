@@ -5,6 +5,7 @@ module Main where
 
 import           Control.Concurrent             (threadDelay)
 import           Control.Monad.Trans.Maybe
+import           Data.Either                    (isRight)
 import           Data.Either.Combinators        (fromRight)
 import           Data.Maybe                     (fromJust)
 import qualified Data.Map                       as M
@@ -340,7 +341,7 @@ verifySettlementTest = do
                                                                               (Just 0)
                                                                ) "" "" (Just txHash))
     -- txHash testAddress4 testAddress1 (10 ^ 18)
-    assertBool "payment properly verified" verified
+    assertBool "payment properly verified" (isRight verified)
 
 
 blocknumberTest :: Assertion

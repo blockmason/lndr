@@ -20,6 +20,7 @@ import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
 import           Data.ByteString.Lazy       (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as B
 import           Data.Either                (either)
 import           Data.Maybe                 (fromMaybe)
 import           Data.Pool                  (createPool, withResource)
@@ -240,10 +241,13 @@ verifyIndividualRecord (ServerState pool configTVar loggerSet) creditHash = do
     let recordNotFound = throwError $
             err404 { errBody = "Credit hash does not refer to pending bilateral settlement record" }
     bilateralCreditRecord <- maybe recordNotFound pure recordM
-    verified <- liftIO $ verifySettlementPayment bilateralCreditRecord
-    if verified
+    verifiedE <- liftIO $ verifySettlementPayment bilateralCreditRecord
+    case verifiedE of
         -- TODO unify it with other finalizeTransaction
-        then do liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
-                web3Result <- liftIO $ finalizeTransaction config bilateralCreditRecord
-                liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result
-        else throwError $ err400 { errBody = "Unable to verify debt settlement" }
+        Right _ -> do
+            liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
+            web3Result <- liftIO $ finalizeTransaction config bilateralCreditRecord
+            liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result
+        Left err -> do
+            liftIO $ pushLogStrLn loggerSet . toLogStr . ("Settlement Error: " ++) . show $ err
+            throwError $ err400 { errBody = B.pack err }

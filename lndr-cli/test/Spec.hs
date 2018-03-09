@@ -5,6 +5,7 @@ module Main where
 
 import           Control.Concurrent             (threadDelay)
 import           Control.Monad.Trans.Maybe
+import           Data.Either                    (isRight)
 import           Data.Either.Combinators        (fromRight)
 import           Data.Maybe                     (fromJust)
 import qualified Data.Map                       as M
@@ -308,6 +309,10 @@ basicSettlementTest = do
 
 verifySettlementTest :: Assertion
 verifySettlementTest = do
+
+    syncingE <- runLndrWeb3 Eth.syncing
+    assertEqual "confirm that blockchain is synced" syncingE (Right NotSyncing)
+
     (ucacAddr, _, _) <- loadUcacs
     let settleAmountInWei = 10 ^ 18
     -- testAddress1 is the person revieving eth, thus the credit must record
@@ -336,7 +341,7 @@ verifySettlementTest = do
                                                                               (Just 0)
                                                                ) "" "" (Just txHash))
     -- txHash testAddress4 testAddress1 (10 ^ 18)
-    assertBool "payment properly verified" verified
+    assertBool "payment properly verified" (isRight verified)
 
 
 blocknumberTest :: Assertion

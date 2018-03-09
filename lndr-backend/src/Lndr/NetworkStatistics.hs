@@ -12,6 +12,7 @@ import           Lndr.Types
 import           Lndr.Util
 import           Lndr.Web3
 import           Network.Ethereum.Web3
+import           Network.Ethereum.Web3.Types
 import qualified Network.Ethereum.Web3.Eth as Eth
 import qualified Network.HTTP.Simple       as HTTP
 
@@ -37,5 +38,5 @@ currentBlockNumber :: MaybeT IO Integer
 currentBlockNumber = do
     blockNumberTextE <- runLndrWeb3 Eth.blockNumber
     return $ case blockNumberTextE of
-        Right numText -> hexToInteger numText
+        Right (BlockNumber number) -> number
         Left _        -> 0

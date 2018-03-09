@@ -1,7 +1,7 @@
 defaults: &defaults
   working_directory: ~
   docker:
-  - image: blockmason/lndr-circleci:1.0.0.0
+  - image: blockmason/lndr-circleci:1.0.1
 
 version: 2
 jobs:

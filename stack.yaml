@@ -5,7 +5,7 @@ packages:
 - lndr-cli/
 - location:
     git: git@github.com:aupiff/hs-web3.git
-    commit: fcb6fcf23fc673cade5f8d0be41f024b2d40ad7b
+    commit: 8599af274b836a59572e34caf5239bf4f4550549
   extra-dep: true
 - location:
     git: git@github.com:aupiff/ethereumhs-util.git
@@ -13,5 +13,11 @@ packages:
   extra-dep: true
 
 extra-deps:
-- secp256k1-0.5.2
+- equational-reasoning-0.5.0.0
 - dhall-1.8.0
+- ghc-typelits-presburger-0.1.1.1
+- monomorphic-0.0.3.3
+- presburger-1.3.1
+- secp256k1-0.5.2
+- sized-0.2.1.1
+- type-natural-0.7.1.4

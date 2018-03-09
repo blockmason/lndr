@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveGeneric             #-}
 {-# LANGUAGE DuplicateRecordFields     #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
@@ -52,7 +53,10 @@ import           Data.Default
 import           Data.Either                 (rights)
 import           Data.List.Safe              ((!!))
 import qualified Data.Map                    as M
+import           Data.Maybe                  (fromMaybe)
+import           Data.Sized                  hiding (fmap, (!!), (++))
 import           Data.Text                   (Text)
+import qualified Data.Text                   as T
 import qualified Data.Text.Encoding          as T
 import           Data.Tuple
 import           Lndr.NetworkStatistics
@@ -78,11 +82,11 @@ finalizeTransaction config (BilateralCreditRecord (CreditRecord creditor debtor 
           encodedMemo :: BytesN 32
           encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
       runLndrWeb3 $ issueCredit callVal
-                            ucac
-                            creditor debtor amount
-                            [ sig1r, sig1s, sig1v ]
-                            [ sig2r, sig2s, sig2v ]
-                            encodedMemo
+                                ucac
+                                creditor debtor (UIntN amount)
+                                (sig1r :< sig1s :< sig1v :< NilL)
+                                (sig2r :< sig2s :< sig2v :< NilL)
+                                encodedMemo
     where callVal = def { callFrom = Just $ executionAddress config
                         , callTo = creditProtocolAddress config
                         , callGasPrice = Just . Quantity $ gasPrice config
@@ -104,8 +108,8 @@ lndrLogs config currencyKey creditorM debtorM = rights . fmap interpretUcacLog <
                               , addressToBytes32 <$> B.lookup currencyKey (lndrUcacAddrs config)
                               , addressToBytes32 <$> creditorM
                               , addressToBytes32 <$> debtorM ])
-                        (Just . integerToHex' $ scanStartBlock config)
-                        Nothing)
+                        (BlockWithNumber . BlockNumber $ scanStartBlock config)
+                        Latest)
 
 
 -- | Parse a log 'Change' into an 'IssueCreditLog' if possible.
@@ -129,17 +133,26 @@ interpretUcacLog change = do
 -- | Verify that a settlement payment was made using a 'txHash' corresponding to
 -- an Ethereum transaction on the blockchain and the associated addresses and
 -- eth settlment amount.
-verifySettlementPayment :: BilateralCreditRecord -> IO Bool
+verifySettlementPayment :: BilateralCreditRecord -> IO (Either String ())
 verifySettlementPayment (BilateralCreditRecord creditRecord _ _ (Just txHash)) = do
     transactionME <- runLndrWeb3 . Eth.getTransactionByHash $ addHexPrefix txHash
     case transactionME of
         Right (Just transaction) ->
             let fromMatch = txFrom transaction == creditor creditRecord
                 toMatch = txTo transaction == Just (debtor creditRecord)
-                valueMatch = Just (hexToInteger $ txValue transaction) == settlementAmount creditRecord
-            in return $ fromMatch && toMatch && valueMatch
-        _                        -> pure False
-verifySettlementPayment _ = pure False
+                transactionValue = hexToInteger $ txValue transaction
+                settlementValue = fromMaybe 0 $ settlementAmount creditRecord
+                valueMatch = transactionValue == settlementValue
+                creditHash = T.unpack $ hash creditRecord
+            in case (fromMatch, toMatch, valueMatch) of
+                (False, _, _)      -> pure . Left $ "Bad from match, hash: " ++ creditHash
+                (_, False, _)      -> pure . Left $ "Bad to match, hash: " ++ creditHash
+                (_, _, False)      -> pure . Left $ "Bad value match, hash: " ++ creditHash
+                                                 ++ "tx value: " ++ show transactionValue
+                                                 ++ ", settlementValue: " ++ show settlementValue
+                (True, True, True) -> pure $ Right ()
+        _ -> pure . Left $ "transaction not found, tx_hash: " ++ T.unpack txHash
+verifySettlementPayment _ = pure $ Left "Incompelete settlement record"
 
 
 calculateSettlementCreditRecord :: ServerConfig -> CreditRecord -> CreditRecord
@@ -154,8 +167,6 @@ calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ uca
             Just "KRW" -> krw prices
             Nothing    -> error "ucac not found"
         settlementAmountRaw = floor $ fromIntegral amount / currencyPerEth * 10 ^ 18
-        -- round settlement amount to megawei
-        settlementAmount = settlementAmountRaw - (settlementAmountRaw `mod` 10 ^ 6)
-    in cr { settlementAmount = Just settlementAmount
+    in cr { settlementAmount = Just $ roundToMegaWei settlementAmountRaw
           , settlementBlocknumber = Just blockNumber
           }

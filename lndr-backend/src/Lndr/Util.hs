@@ -101,6 +101,9 @@ integerToHex' :: Integer -> Text
 integerToHex' x = T.append "0x" . T.pack $ showHex x ""
 
 
+roundToMegaWei :: Integer -> Integer
+roundToMegaWei int = int - (int `mod` 10 ^ 6)
+
 align :: Text -> (Text, Text)
 align v = (v <> zeros, zeros <> v)
   where zerosLen = 64 - (T.length v `mod` 64)

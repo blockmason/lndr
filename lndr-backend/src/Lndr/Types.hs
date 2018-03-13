@@ -42,7 +42,7 @@ module Lndr.Types
     ) where
 
 import           Control.Concurrent.STM.TVar
-import           Control.Lens                  (over, _head, makeLenses)
+import           Control.Lens                  (over, _head)
 import           Data.Aeson
 import           Data.Aeson.TH
 import qualified Data.Bimap                    as B
@@ -92,15 +92,14 @@ newtype Nonce = Nonce { unNonce :: Integer } deriving (Show, Generic)
 instance ToJSON Nonce where
     toJSON (Nonce x) = toJSON x
 
-data IssueCreditLog = IssueCreditLog { _ucac     :: Address
-                                     , _creditor :: Address
-                                     , _debtor   :: Address
-                                     , _amount   :: Integer
-                                     , _nonce    :: Integer
-                                     , _memo     :: Text
+data IssueCreditLog = IssueCreditLog { creditLogUcac     :: Address
+                                     , creditLogCreditor :: Address
+                                     , creditLogDebtor   :: Address
+                                     , creditLogAmount   :: Integer
+                                     , creditLogNonce    :: Integer
+                                     , creditLogMemo     :: Text
                                      } deriving (Show, Generic)
-$(makeLenses ''IssueCreditLog)
-$(deriveJSON defaultOptions { fieldLabelModifier = drop 1 } ''IssueCreditLog)
+$(deriveJSON defaultOptions { fieldLabelModifier = over _head toLower . drop 9 } ''IssueCreditLog)
 
 instance Eq IssueCreditLog where
     (==) (IssueCreditLog u1 c1 d1 a1 n1 _) (IssueCreditLog u2 c2 d2 a2 n2 _) =

@@ -68,6 +68,7 @@ type LndrAPI =
                :> QueryParam "nick" Nick
                :> Get '[JSON] UserInfo
    :<|> "friends" :> Capture "user" Address :> Get '[JSON] [UserInfo]
+   :<|> "friend_requests" :> Capture "user" Address :> Get '[JSON] [UserInfo]
    :<|> "add_friends" :> Capture "user" Address
                       :> ReqBody '[JSON] [Address]
                       :> PostNoContent '[JSON] NoContent
@@ -104,6 +105,7 @@ server = transactionsHandler
     :<|> photoUploadHandler
     :<|> userHandler
     :<|> friendHandler
+    :<|> friendRequestsHandler
     :<|> addFriendsHandler
     :<|> removeFriendsHandler
     :<|> counterpartiesHandler

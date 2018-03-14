@@ -164,8 +164,8 @@ app state = serve lndrAPI (readerServer state)
 -- When credits are recovered from blockchain, we lose 'submitter' information
 -- so 'submitter' is set to be equal to 'creditor'
 updateDbFromLndrLogs :: ServerState -> IO ()
-updateDbFromLndrLogs (ServerState pool configMVar _) = void $ do
-    config <- atomically $ readTVar configMVar
+updateDbFromLndrLogs (ServerState pool configTVar _) = void $ do
+    config <- atomically $ readTVar configTVar
     logs <- runLndrWeb3 $ join <$> sequence [ lndrLogs config "USD" Nothing Nothing
                                             , lndrLogs config "JPY" Nothing Nothing
                                             , lndrLogs config "KRW" Nothing Nothing ]
@@ -185,7 +185,13 @@ freshState = do
         , DB.connectPassword = T.unpack $ dbUserPassword serverConfig
         , DB.connectDatabase = T.unpack $ dbName serverConfig
         }
-    ServerState <$> createPool (DB.connect dbConfig) DB.close 1 10 95
+        subpools = 1
+        unusedKeepAliveSeconds = 10
+        maximumResourcesPerSubpool = 95
+    ServerState <$> createPool (DB.connect dbConfig) DB.close
+                               subpools
+                               unusedKeepAliveSeconds
+                               maximumResourcesPerSubpool
                 <*> newTVarIO serverConfig
                 <*> newStdoutLoggerSet defaultBufSize
 
@@ -195,9 +201,9 @@ runHeartbeat state = forkIO . forever $ catch (heartbeat state) (print :: SomeEx
 
 
 heartbeat :: ServerState -> IO ()
-heartbeat state@(ServerState _ configMVar loggerSet) = do
+heartbeat state@(ServerState _ configTVar loggerSet) = do
     -- update server config
-    updateServerConfig configMVar
+    updateServerConfig configTVar
     -- scan settlements table for any settlement eligible for deletion
     deleteExpiredSettlements state
     -- try to verify all settlements whose tx_hash column is populated
@@ -205,7 +211,7 @@ heartbeat state@(ServerState _ configMVar loggerSet) = do
     -- log hearbeat statistics
     pushLogStrLn loggerSet . toLogStr $ ("heartbeat" :: Text)
     -- sleep for time specified in config
-    config <- atomically $ readTVar configMVar
+    config <- atomically $ readTVar configTVar
     threadDelay (heartbeatInterval config * 10 ^ 6)
 
 
@@ -222,14 +228,14 @@ updateServerConfig configTVar = do
 
 
 deleteExpiredSettlements :: ServerState -> IO ()
-deleteExpiredSettlements (ServerState pool configMVar _) = do
-    config <- atomically $ readTVar configMVar
+deleteExpiredSettlements (ServerState pool configTVar _) = do
+    config <- atomically $ readTVar configTVar
     void $ withResource pool Db.deleteExpiredSettlementsAndAssociatedCredits
 
 
 verifySettlementsWithTxHash :: ServerState -> IO ()
-verifySettlementsWithTxHash state@(ServerState pool configMVar _) = do
-    config <- atomically $ readTVar configMVar
+verifySettlementsWithTxHash state@(ServerState pool configTVar _) = do
+    config <- atomically $ readTVar configTVar
     creditHashes <- withResource pool Db.settlementCreditsToVerify
     mapM_ (runExceptT . verifyIndividualRecord state) creditHashes
     return ()

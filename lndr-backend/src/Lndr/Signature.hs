@@ -63,7 +63,7 @@ instance VerifiableSignature VerifySettlementRequest where
     generateHash (VerifySettlementRequest creditHash txHash creditorAddress _) =
         EU.hashText . T.concat $
             stripHexPrefix <$> [ creditHash
-                               ,  txHash
+                               , txHash
                                , T.pack (show creditorAddress) ]
 
 instance VerifiableSignature PushRequest where

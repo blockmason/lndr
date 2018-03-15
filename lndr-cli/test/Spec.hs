@@ -125,9 +125,18 @@ nickTest = do
     -- user1 adds user2 as a friend
     httpCode <- addFriend testUrl testAddress3 testAddress4
     assertEqual "add friend success" 204 httpCode
-    -- verify that friend has been added
+    -- verify that friend has not been added yet
     friends <- getFriends testUrl testAddress3
-    assertEqual "friend properly added" [UserInfo testAddress4 (Just testNick1)] friends
+    assertEqual "unconfirmed friend properly not included" [] friends
+    -- user2 confirms user1 as a friend
+    httpCode <- addFriend testUrl testAddress4 testAddress3
+    assertEqual "confirm friend success" 204 httpCode
+    -- verify that friend has been added for user1
+    friends <- getFriends testUrl testAddress3
+    assertEqual "confirmed friend properly included for user1" [UserInfo testAddress4 (Just testNick1)] friends
+    -- verify that friend has been added for user2
+    friends <- getFriends testUrl testAddress4
+    assertEqual "confirmed friend properly included for user2" [UserInfo testAddress3 (Just testNick2)] friends
 
     -- user3 removes user4 from friends
     removeFriend testUrl testAddress3 testAddress4

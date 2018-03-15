@@ -14,7 +14,7 @@ addFriends addressPairs conn = fromIntegral <$>
 
 removeFriends :: Address -> [Address] -> Connection -> IO Int
 removeFriends addr addresses conn = fromIntegral <$>
-    execute conn "DELETE FROM friendships WHERE origin = ? AND friend in ?" (addr, In addresses)
+    execute conn "DELETE FROM friendships WHERE origin = ? AND friend in ? OR friend = ? AND origin in ?" (addr, In addresses, addr, In addresses)
 
 
 lookupFriends :: Address -> Connection -> IO [UserInfo]

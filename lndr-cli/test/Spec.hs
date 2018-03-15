@@ -125,18 +125,34 @@ nickTest = do
     -- user1 adds user2 as a friend
     httpCode <- addFriend testUrl testAddress3 testAddress4
     assertEqual "add friend success" 204 httpCode
+
     -- verify that friend has not been added yet
     friends <- getFriends testUrl testAddress3
-    assertEqual "unconfirmed friend properly not included" [] friends
+    assertEqual "target user is not yet a friend to the requesting user" [] friends
+
+    -- verify that friend has not been added yet
+    friends <- getFriends testUrl testAddress4
+    assertEqual "requesting user is not yet a friend to the target user" [] friends
+
+    -- verify that user2 has a friend request from user1
+    friends <- getFriendRequests testUrl testAddress4
+    assertEqual "target user has friend request from requesting user" [UserInfo testAddress3 (Just testNick2)] friends
+
+    -- verify that user1 does not have a friend request from user2
+    friends <- getFriendRequests testUrl testAddress3
+    assertEqual "requesting user does not have friend request from target user" [] friends
+
     -- user2 confirms user1 as a friend
     httpCode <- addFriend testUrl testAddress4 testAddress3
-    assertEqual "confirm friend success" 204 httpCode
+    assertEqual "target user confirms friend request" 204 httpCode
+
     -- verify that friend has been added for user1
     friends <- getFriends testUrl testAddress3
-    assertEqual "confirmed friend properly included for user1" [UserInfo testAddress4 (Just testNick1)] friends
+    assertEqual "target user is a friend to the requesting user" [UserInfo testAddress4 (Just testNick1)] friends
+
     -- verify that friend has been added for user2
     friends <- getFriends testUrl testAddress4
-    assertEqual "confirmed friend properly included for user2" [UserInfo testAddress3 (Just testNick2)] friends
+    assertEqual "requesting user is a friend to the target user" [UserInfo testAddress3 (Just testNick2)] friends
 
     -- user3 removes user4 from friends
     removeFriend testUrl testAddress3 testAddress4
@@ -144,6 +160,10 @@ nickTest = do
     -- verify that friend has been removed
     friends <- getFriends testUrl testAddress3
     assertEqual "friend properly removed" [] friends
+
+    -- verify that no friend request is present
+    friends <- getFriendRequests testUrl testAddress3
+    assertEqual "friend request not present for half-confirmed friendship" [] friends
 
     -- EMAIL TESTS
 

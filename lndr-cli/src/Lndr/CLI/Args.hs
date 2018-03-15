@@ -310,6 +310,12 @@ getFriends url userAddr = do
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 
+getFriendRequests :: String -> Address -> IO [UserInfo]
+getFriendRequests url userAddr = do
+    req <- HTTP.parseRequest $ url ++ "/friend_requests/" ++ show userAddr
+    HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
 getBalance :: String -> Address -> String -> IO Integer
 getBalance url userAddr currency = do
     req <- HTTP.parseRequest $ url ++ "/balance/" ++ show userAddr ++ "?currency=" ++ currency

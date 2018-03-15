@@ -29,6 +29,7 @@ module Lndr.CLI.Args (
     -- * friend-related requests
     , addFriend
     , getFriends
+    , getFriendRequests
     , removeFriend
     , setProfilePhoto
 

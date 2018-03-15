@@ -51,7 +51,13 @@ nickSearchHandler nick = do
 friendHandler :: Address -> LndrHandler [UserInfo]
 friendHandler addr = do
     pool <- asks dbConnectionPool
-    liftIO . withResource pool $ Db.lookupFriendsWithNick addr
+    liftIO . withResource pool $ Db.lookupFriends addr
+
+
+friendRequestsHandler :: Address -> LndrHandler [UserInfo]
+friendRequestsHandler address = do
+    pool <- asks dbConnectionPool
+    liftIO . withResource pool $ Db.lookupFriendRequests address
 
 
 userHandler :: Maybe EmailAddress -> Maybe Nick -> LndrHandler UserInfo

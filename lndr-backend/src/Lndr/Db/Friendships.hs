@@ -14,14 +14,14 @@ addFriends addressPairs conn = fromIntegral <$>
 
 removeFriends :: Address -> [Address] -> Connection -> IO Int
 removeFriends addr addresses conn = fromIntegral <$>
-    execute conn "DELETE FROM friendships WHERE origin = ? AND friend in ?" (addr, In addresses)
+    execute conn "DELETE FROM friendships WHERE origin = ? AND friend in ? OR friend = ? AND origin in ?" (addr, In addresses, addr, In addresses)
 
 
-lookupFriends :: Address -> Connection -> IO [Address]
-lookupFriends addr conn = fmap fromOnly <$>
-    (query conn "SELECT friend FROM friendships WHERE origin = ?" (Only addr) :: IO [Only Address])
+lookupFriends :: Address -> Connection -> IO [UserInfo]
+lookupFriends addr conn =
+    query conn "SELECT inbound.origin, nicknames.nickname FROM friendships inbound INNER JOIN friendships outbound ON inbound.friend = outbound.origin AND inbound.origin = outbound.friend LEFT JOIN nicknames ON nicknames.address = inbound.origin WHERE inbound.friend = ?" (Only addr) :: IO [UserInfo]
 
 
-lookupFriendsWithNick :: Address -> Connection -> IO [UserInfo]
-lookupFriendsWithNick addr conn =
-    query conn "SELECT friend, nickname FROM friendships LEFT JOIN nicknames ON nicknames.address = friendships.friend WHERE friendships.origin = ?" (Only addr) :: IO [UserInfo]
+lookupFriendRequests :: Address -> Connection -> IO [UserInfo]
+lookupFriendRequests addr conn =
+    query conn "SELECT inbound.origin, nicknames.nickname FROM friendships inbound LEFT JOIN friendships outbound ON inbound.friend = outbound.origin AND inbound.origin = outbound.friend LEFT JOIN nicknames ON nicknames.address = inbound.origin WHERE inbound.friend = ? AND outbound.friend IS NULL" (Only addr) :: IO [UserInfo]

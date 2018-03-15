@@ -29,6 +29,7 @@ module Lndr.CLI.Args (
     -- * friend-related requests
     , addFriend
     , getFriends
+    , getFriendRequests
     , removeFriend
     , setProfilePhoto
 
@@ -306,6 +307,12 @@ removeFriend url userAddr addr = do
 getFriends :: String -> Address -> IO [UserInfo]
 getFriends url userAddr = do
     req <- HTTP.parseRequest $ url ++ "/friends/" ++ show userAddr
+    HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
+getFriendRequests :: String -> Address -> IO [UserInfo]
+getFriendRequests url userAddr = do
+    req <- HTTP.parseRequest $ url ++ "/friend_requests/" ++ show userAddr
     HTTP.getResponseBody <$> HTTP.httpJSON req
 
 

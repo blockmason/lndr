@@ -19,9 +19,9 @@ removeFriends addr addresses conn = fromIntegral <$>
 
 lookupFriends :: Address -> Connection -> IO [UserInfo]
 lookupFriends addr conn =
-    query conn "SELECT DISTINCT inbound.origin, nicknames.nickname FROM friendships inbound INNER JOIN friendships outbound ON inbound.friend = outbound.origin AND inbound.origin = outbound.friend LEFT JOIN nicknames ON nicknames.address = inbound.origin WHERE inbound.friend = ?" (Only addr) :: IO [UserInfo]
+    query conn "SELECT inbound.origin, nicknames.nickname FROM friendships inbound INNER JOIN friendships outbound ON inbound.friend = outbound.origin AND inbound.origin = outbound.friend LEFT JOIN nicknames ON nicknames.address = inbound.origin WHERE inbound.friend = ?" (Only addr) :: IO [UserInfo]
 
 
 lookupFriendRequests :: Address -> Connection -> IO [UserInfo]
 lookupFriendRequests addr conn =
-    query conn "SELECT DISTINCT inbound.origin, nicknames.nickname FROM friendships inbound LEFT JOIN friendships outbound ON inbound.friend = outbound.origin AND inbound.origin = outbound.friend LEFT JOIN nicknames ON nicknames.address = inbound.origin WHERE inbound.friend = ? AND outbound.friend IS NULL" (Only addr) :: IO [UserInfo]
+    query conn "SELECT inbound.origin, nicknames.nickname FROM friendships inbound LEFT JOIN friendships outbound ON inbound.friend = outbound.origin AND inbound.origin = outbound.friend LEFT JOIN nicknames ON nicknames.address = inbound.origin WHERE inbound.friend = ? AND outbound.friend IS NULL" (Only addr) :: IO [UserInfo]

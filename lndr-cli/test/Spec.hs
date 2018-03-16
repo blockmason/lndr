@@ -187,8 +187,10 @@ nickTest = do
 basicLendTest :: Assertion
 basicLendTest = do
     (ucacAddr, ucacAddrKRW, ucacAddrJPY) <- loadUcacs
-    let testCredit' = CreditRecord testAddress1 testAddress2 100 "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
-        badTestCredit' = CreditRecord testAddress1 testAddress1 100 "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
+
+    let testAmount = 100
+        testCredit' = CreditRecord testAddress1 testAddress2 testAmount "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
+        badTestCredit' = CreditRecord testAddress1 testAddress1 testAmount "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
 
         creditHash = generateHash testCredit'
         testCredit = testCredit' { hash = creditHash }
@@ -234,10 +236,16 @@ basicLendTest = do
     assertEqual "one verified record found for user1" 1 (length verifiedRecords1)
 
     balance <- getBalance testUrl testAddress1 "USD"
-    assertEqual "user1's total balance is 100" 100 balance
+    assertEqual "user1's total balance is correct" testAmount balance
 
     twoPartyBalance <- getTwoPartyBalance testUrl testAddress1 testAddress2 "USD"
-    assertEqual "user1's two-party balance is 100" 100 twoPartyBalance
+    assertEqual "user1's two-party balance is correct" testAmount twoPartyBalance
+
+    balance <- getBalance testUrl testAddress2 "USD"
+    assertEqual "user2's total balance is correct" (-testAmount) balance
+
+    twoPartyBalance <- getTwoPartyBalance testUrl testAddress2 testAddress1 "USD"
+    assertEqual "user2's two-party balance is correct" (-testAmount) twoPartyBalance
 
     -- user1's counterparties list is [user2]
     counterparties <- getCounterparties testUrl testAddress1
@@ -281,7 +289,8 @@ basicSettlementTest = do
         Just prices -> assertBool "nonzero eth price retrieved from coinbase" (usd prices > 0)
         Nothing -> return ()
 
-    let testCredit' = CreditRecord testAddress5 testAddress6 100 "settlement" testAddress5 0 "" "" ucacAddr Nothing (Just "ETH") Nothing
+    let testAmount = 2939
+        testCredit' = CreditRecord testAddress5 testAddress6 testAmount "settlement" testAddress5 0 "" "" ucacAddr Nothing (Just "ETH") Nothing
         creditHash = generateHash testCredit'
         testCredit = testCredit' { hash = creditHash }
 
@@ -328,6 +337,12 @@ basicSettlementTest = do
     (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getSettlements testUrl testAddress5
     assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)
     assertEqual "post-verification: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
+
+    balance <- getBalance testUrl testAddress5 "USD"
+    assertEqual "user5's total balance is correct" testAmount balance
+
+    balance <- getBalance testUrl testAddress6 "USD"
+    assertEqual "user5's total balance is correct" (-testAmount) balance
 
     gottenTxHash <- getTxHash testUrl creditHash
     assertEqual "successful txHash retrieval" txHash (addHexPrefix gottenTxHash)

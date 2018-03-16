@@ -77,7 +77,22 @@ verifyCreditByHash hash conn = fromIntegral <$> execute conn "UPDATE settlements
 -- credits and transaction-verified bilateral settlementcredits
 userBalance :: Address -> Address -> Connection -> IO Integer
 userBalance addr ucac conn = do
-    [Only balance] <- query conn "SELECT (SELECT COALESCE(SUM(verified_credits.amount), 0) FROM verified_credits LEFT JOIN settlements USING(hash) WHERE creditor = ? AND ucac = ? AND verified IS DISTINCT FROM FALSE) - (SELECT COALESCE(SUM(verified_credits.amount), 0) FROM verified_credits LEFT JOIN settlements USING (hash) WHERE debtor = ? AND ucac = ? AND verified IS DISTINCT FROM FALSE)" (addr, ucac, addr, ucac) :: IO [Only Scientific]
+    let sql = "SELECT ( \
+              \  SELECT \
+              \      COALESCE(SUM(verified_credits.amount), 0) \
+              \  FROM \
+              \      verified_credits LEFT JOIN settlements USING(hash) \
+              \  WHERE \
+              \      creditor = ? AND ucac = ? AND verified IS DISTINCT FROM FALSE \
+              \ ) - ( \
+              \  SELECT \
+              \      COALESCE(SUM(verified_credits.amount), 0) \
+              \  FROM \
+              \      verified_credits LEFT JOIN settlements USING (hash) \
+              \  WHERE \
+              \      debtor = ? AND ucac = ? AND verified IS DISTINCT FROM FALSE \
+              \ )"
+    [Only balance] <- query conn sql (addr, ucac, addr, ucac) :: IO [Only Scientific]
     return . floor $ balance
 
 
@@ -85,7 +100,20 @@ userBalance addr ucac conn = do
 -- non-settlement credits and transaction-verified bilateral settlementcredits
 twoPartyBalance :: Address -> Address -> Address -> Connection -> IO Integer
 twoPartyBalance addr counterparty ucac conn = do
-    [Only balance] <- query conn "SELECT (SELECT COALESCE(SUM(verified_credits.amount), 0) FROM verified_credits LEFT JOIN settlements USING(hash) WHERE creditor = ? AND debtor = ? AND ucac = ? AND verified IS DISTINCT FROM FALSE) - (SELECT COALESCE(SUM(verified_credits.amount), 0) FROM verified_credits LEFT JOIN settlements USING(hash) WHERE creditor = ? AND debtor = ? AND ucac = ? AND verified IS DISTINCT FROM FALSE)" (addr, counterparty, ucac, counterparty, addr, ucac) :: IO [Only Scientific]
+    let sql = "SELECT ( \
+             \  SELECT  \
+             \      COALESCE(SUM(verified_credits.amount), 0) \
+             \  FROM \
+             \      verified_credits LEFT JOIN settlements USING(hash) \
+             \  WHERE creditor = ? AND debtor = ? AND ucac = ? AND verified IS DISTINCT FROM FALSE \
+             \ ) - ( \
+             \  SELECT \
+             \      COALESCE(SUM(verified_credits.amount), 0) \
+             \  FROM \
+             \      verified_credits LEFT JOIN settlements USING(hash) \
+             \  WHERE creditor = ? AND debtor = ? AND ucac = ? AND verified IS DISTINCT FROM FALSE \
+             \ )"
+    [Only balance] <- query conn sql (addr, counterparty, ucac, counterparty, addr, ucac) :: IO [Only Scientific]
     return . floor $ balance
 
 

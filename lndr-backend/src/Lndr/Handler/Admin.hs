@@ -32,23 +32,6 @@ unsubmittedHandler = do
     pure (length dbCredits, length blockchainCredits, dbCredits \\ blockchainCredits)
 
 
-resubmitHandler :: Text -> LndrHandler NoContent
-resubmitHandler txHash = do
-    (ServerState pool configTVar _) <- ask
-    (_, _, txs) <- unsubmittedHandler
-    let creditToResubmitM = find ((== txHash) . hashCreditLog) txs
-    case creditToResubmitM of
-        Just creditLog -> do
-            config <- liftIO . atomically $ readTVar configTVar
-            let creditHash = hashCreditLog creditLog
-            bcrM <- liftIO . withResource pool $ Db.lookupCreditByHash creditHash
-            case bcrM of
-                Just bilateralCreditRecord -> void . liftIO $ finalizeTransaction config bilateralCreditRecord
-                Nothing               -> pure ()
-        Nothing -> pure ()
-    pure NoContent
-
-
 registerPushHandler :: PushRequest -> LndrHandler NoContent
 registerPushHandler r@(PushRequest channelID platform addr _) = do
     unless (Right addr == recoverSigner r) $ throwError (err400 {errBody = "Bad signature."})

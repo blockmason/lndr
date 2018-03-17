@@ -19,9 +19,6 @@ module Lndr.CLI.Actions (
     , setEmail
     , takenEmail
 
-    -- * gas-related requests
-    , getGasPrice
-
     -- * friend-related requests
     , addFriend
     , getFriends
@@ -155,15 +152,6 @@ getCounterparties :: String -> Address -> IO [Address]
 getCounterparties url address = do
     initReq <- HTTP.parseRequest $ url ++ "/counterparties/" ++ show address
     HTTP.getResponseBody <$> HTTP.httpJSON initReq
-
-
-getGasPrice :: String -> IO Integer
-getGasPrice url = do
-    req <- HTTP.parseRequest $ url ++ "/gas_price"
-    resp <- HTTP.getResponseBody <$> HTTP.httpJSONEither req
-    return $ case resp of
-        Left a  -> -1
-        Right b -> b
 
 
 setNick :: String -> Text -> NickRequest -> IO Int

@@ -73,8 +73,8 @@ verifyCreditByHash :: Text -> Connection -> IO Int
 verifyCreditByHash hash conn = fromIntegral <$> execute conn "UPDATE settlements SET verified = TRUE WHERE hash = ?" (Only hash)
 
 
--- Balance is calculated per ucac and only includes bilateral non-settlement
--- credits and transaction-verified bilateral settlementcredits
+-- Balance is calculated per ucac and does not include pending
+-- bilateral settlements (for which settlements.verified = FALSE)
 userBalance :: Address -> Address -> Connection -> IO Integer
 userBalance addr ucac conn = do
     let sql = "SELECT ( \
@@ -96,8 +96,8 @@ userBalance addr ucac conn = do
     return . floor $ balance
 
 
--- Two-party balance is calculated per ucac and only includes bilateral
--- non-settlement credits and transaction-verified bilateral settlementcredits
+-- Two-party balance is calculated per ucac and does not include pending
+-- bilateral settlements (for which settlements.verified = FALSE)
 twoPartyBalance :: Address -> Address -> Address -> Connection -> IO Integer
 twoPartyBalance addr counterparty ucac conn = do
     let sql = "SELECT ( \

@@ -8,7 +8,7 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Default
 import qualified Data.Text.Lazy             as LT
 import qualified Dhall
-import           Lndr.CLI.Args
+import           Lndr.CLI.Actions
 import           Lndr.CLI.Config
 import           Network.Ethereum.Web3
 import           System.Console.CmdArgs     hiding (def)

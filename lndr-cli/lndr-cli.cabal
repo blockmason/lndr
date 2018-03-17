@@ -15,7 +15,8 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lndr.CLI.Args
+  exposed-modules:     Lndr.CLI.Actions
+                     , Lndr.CLI.CmdLine
                      , Lndr.CLI.Config
   build-depends:       base >= 4.7 && < 5
                      , base64-bytestring

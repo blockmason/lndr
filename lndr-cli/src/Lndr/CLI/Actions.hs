@@ -1,10 +1,7 @@
-{-# LANGUAGE DeriveDataTypeable    #-}
-{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings     #-}
 
-module Lndr.CLI.Args (
-      LndrCmd(..)
-    , programModes
+module Lndr.CLI.Actions (
+      programModes
     , runMode
     , userFromSK
 
@@ -24,7 +21,6 @@ module Lndr.CLI.Args (
 
     -- * gas-related requests
     , getGasPrice
-    , setGasPrice
 
     -- * friend-related requests
     , addFriend
@@ -41,7 +37,7 @@ module Lndr.CLI.Args (
     , getTwoPartyBalance
     , getCounterparties
     , getTransactions
-    , getSettlements
+    , getPendingSettlements
     , getTxHash
     , getTxHashFail
     , verifySettlement
@@ -64,68 +60,14 @@ import           Lndr.EthereumInterface          hiding (getNonce)
 import           Lndr.Signature
 import           Lndr.Types
 import           Lndr.Util
+import           Lndr.CLI.CmdLine
 import           Network.Ethereum.Util           (ecsign, hashPersonalMessage,
                                                   hashText, privateToAddress)
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address   as Addr
 import qualified Network.HTTP.Simple             as HTTP
-import           System.Console.CmdArgs          hiding (def)
-import           System.Console.CmdArgs.Explicit (HelpFormat (..), helpText,
-                                                  modeEmpty)
 import           Text.EmailAddress
 import qualified Text.Pretty.Simple              as Pr
-
-data LndrCmd = Transactions
-             | Pending
-             | RejectPending
-             | Lend { friend :: Text
-                    , amount :: Integer
-                    , memo   :: Text
-                    }
-             | Borrow { friend :: Text
-                      , amount :: Integer
-                      , memo   :: Text
-                      }
-             | Nick { nick :: Text }
-             | SearchNick { nick :: Text }
-             | GetNonce { friend :: Text }
-             | AddFriend { friend :: Text }
-             | RemoveFriend { friend :: Text }
-             | SetPhoto { photoPath :: String }
-             | GasPrice
-             | SetGasPrice { price :: Integer }
-             | Info
-             | Unsubmitted
-             | Settlements
-             | LndrConfig
-             deriving (Show, Data, Typeable)
-
-
-programModes = modes [ Transactions &= help "list all transactions processed by Lndr UCAC"
-                     , Pending &= help "list all pending transactions"
-                     , RejectPending
-                     , Lend "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf"
-                            123
-                            "default"
-                            &= help "submit a unilateral transaction as a creditor"
-                     , Borrow "0x198e13017d2333712bd942d8b028610b95c363da"
-                              123
-                              "default"
-                              &= help "submit a unilateral transaction as a debtor"
-                     , Nick "aupiff" &= help "set a nickname for default user"
-                     , SearchNick "aupiff" &= help "find address for a corresponding nickname"
-                     , GetNonce "0x198e13017d2333712bd942d8b028610b95c363da"
-                     , AddFriend "0x198e13017d2333712bd942d8b028610b95c363da"
-                     , RemoveFriend "0x198e13017d2333712bd942d8b028610b95c363da"
-                     , SetPhoto "image.jpeg"
-                     , GasPrice
-                     , SetGasPrice 2000000
-                     , Unsubmitted &= help "prints txs that are in lndr db but not yet on the blockchain"
-                     , Info &= help "prints config, nick, and friends"
-                     , Settlements &= help "list all settlements"
-                     , LndrConfig &= help "prints config endpoint response"
-                     ] &= help "Lend and borrow money" &= program "lndr" &= summary "lndr v0.1"
-
 
 runMode :: Config -> LndrCmd -> IO ()
 runMode (Config url sk _) Transactions = do
@@ -170,12 +112,6 @@ runMode (Config url sk _) (RemoveFriend friend) =
 runMode (Config url sk _) (SetPhoto photoPath) =
     print =<< setProfilePhoto (LT.unpack url) (LT.toStrict sk) photoPath
 
-runMode (Config url sk _) GasPrice = print =<< getGasPrice (LT.unpack url)
-
-runMode (Config url sk _) (SetGasPrice price) =
-    print =<< setGasPrice (LT.unpack url) (textToAddress $ userFromSK sk) price
-
-
 runMode (Config url sk _) (GetNonce friend) =
     print =<< getNonce (LT.unpack url) (textToAddress $ userFromSK sk) (textToAddress friend)
 
@@ -185,14 +121,16 @@ runMode (Config url sk _) Info =
 runMode (Config url sk _) Unsubmitted =
     print =<< getUnsubmitted (LT.unpack url)
 
-runMode (Config url sk _) Settlements =
-    print =<< getSettlements (LT.unpack url) (textToAddress $ userFromSK sk)
+runMode (Config url sk _) PendingSettlements =
+    print =<< getPendingSettlements (LT.unpack url) (textToAddress $ userFromSK sk)
 
 runMode (Config url sk _) LndrConfig =
     print =<< getConfig (LT.unpack url)
 
 userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
 
+-- TODO all cmdline actions should be put into `Reader Config` monad
+-- OR   we can use the servant autogen'd client code
 
 getUnsubmitted :: String -> IO (Int, Int, [(Text, IssueCreditLog)])
 getUnsubmitted url = do
@@ -207,8 +145,8 @@ getTransactions url address = do
     HTTP.getResponseBody <$> HTTP.httpJSON initReq
 
 
-getSettlements :: String -> Address -> IO SettlementsResponse
-getSettlements url address = do
+getPendingSettlements :: String -> Address -> IO SettlementsResponse
+getPendingSettlements url address = do
     initReq <- HTTP.parseRequest $ url ++ "/pending_settlements/" ++ show address
     HTTP.getResponseBody <$> HTTP.httpJSON initReq
 
@@ -217,14 +155,6 @@ getCounterparties :: String -> Address -> IO [Address]
 getCounterparties url address = do
     initReq <- HTTP.parseRequest $ url ++ "/counterparties/" ++ show address
     HTTP.getResponseBody <$> HTTP.httpJSON initReq
-
-
-setGasPrice :: String -> Address -> Integer -> IO Int
-setGasPrice url addr price = do
-    initReq <- HTTP.parseRequest $ url ++ "/gas_price"
-    let req = HTTP.setRequestBodyJSON price $
-                HTTP.setRequestMethod "PUT" initReq
-    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 
 
 getGasPrice :: String -> IO Integer
@@ -425,7 +355,7 @@ registerChannel :: String -> Text -> PushRequest -> IO Int
 registerChannel url privateKey pushReq = do
     initReq <- HTTP.parseRequest $ url ++ "/register_push"
     let Right signature = generateSignature pushReq privateKey
-        req = HTTP.setRequestBodyJSON (pushReq {pushRequestSignature = signature }) $
+        req = HTTP.setRequestBodyJSON (pushReq { pushRequestSignature = signature }) $
                     HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 

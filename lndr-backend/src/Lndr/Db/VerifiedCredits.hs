@@ -29,7 +29,7 @@ allCredits conn = query_ conn "SELECT ucac, creditor, debtor, amount, nonce, mem
 
 
 lookupCreditByAddress :: Address -> Connection -> IO [IssueCreditLog]
-lookupCreditByAddress addr conn = query conn "SELECT ucac, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND (settlements.hash IS NULL OR settlements.verified = TRUE) ORDER BY verified_credits.created_at DESC" (addr, addr)
+lookupCreditByAddress addr conn = query conn "SELECT ucac, creditor, debtor, verified_credits.amount, nonce, memo FROM verified_credits LEFT JOIN settlements USING(hash) WHERE (creditor = ? OR debtor = ?) AND (settlements.hash IS NULL OR settlements.verified = TRUE) ORDER BY verified_credits.created_at DESC" (addr, addr)
 
 
 deleteExpiredSettlementsAndAssociatedCredits :: Connection -> IO ()
@@ -55,7 +55,7 @@ updateSettlementTxHash hash txHash conn = fromIntegral <$> execute conn "UPDATE 
 
 
 lookupSettlementCreditByAddress :: Address -> Connection -> IO [BilateralCreditRecord]
-lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, ucac, creditor_signature, debtor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
+lookupSettlementCreditByAddress addr conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, ucac, creditor_signature, debtor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements USING(hash) WHERE (creditor = ? OR debtor = ?) AND verified = FALSE" (addr, addr)
 
 
 counterpartiesByAddress :: Address -> Connection -> IO [Address]
@@ -65,7 +65,7 @@ counterpartiesByAddress addr conn = fmap fromOnly <$>
 
 lookupCreditByHash :: Text -> Connection -> IO (Maybe BilateralCreditRecord)
 lookupCreditByHash hash conn = listToMaybe <$> query conn sql (Only hash)
-    where sql = "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, ucac, creditor_signature, debtor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements ON verified_credits.hash = settlements.hash WHERE verified_credits.hash = ?"
+    where sql = "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, ucac, creditor_signature, debtor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements USING(hash) WHERE verified_credits.hash = ?"
 
 
 -- Flips verified bit on once a settlement payment has been confirmed
@@ -73,8 +73,8 @@ verifyCreditByHash :: Text -> Connection -> IO Int
 verifyCreditByHash hash conn = fromIntegral <$> execute conn "UPDATE settlements SET verified = TRUE WHERE hash = ?" (Only hash)
 
 
--- Balance is calculated per ucac and only includes bilateral non-settlement
--- credits and transaction-verified bilateral settlementcredits
+-- Balance is calculated per ucac and does not include pending
+-- bilateral settlements (for which settlements.verified = FALSE)
 userBalance :: Address -> Address -> Connection -> IO Integer
 userBalance addr ucac conn = do
     let sql = "SELECT ( \
@@ -96,8 +96,8 @@ userBalance addr ucac conn = do
     return . floor $ balance
 
 
--- Two-party balance is calculated per ucac and only includes bilateral
--- non-settlement credits and transaction-verified bilateral settlementcredits
+-- Two-party balance is calculated per ucac and does not include pending
+-- bilateral settlements (for which settlements.verified = FALSE)
 twoPartyBalance :: Address -> Address -> Address -> Connection -> IO Integer
 twoPartyBalance addr counterparty ucac conn = do
     let sql = "SELECT ( \

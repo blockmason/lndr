@@ -29,7 +29,6 @@ module Lndr.Handler (
 
     -- * Admin Handlers
     , unsubmittedHandler
-    , resubmitHandler
     , registerPushHandler
     , configHandler
 

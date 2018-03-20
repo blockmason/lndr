@@ -1,0 +1,56 @@
+version: "3"
+services:
+  ethereum:
+    image: blockmason/monothereum:v0.1.0
+    networks:
+    - lndr
+  postgresql:
+    image: postgres:10.3
+    environment:
+      POSTGRES_DB: lndr
+      POSTGRES_USER: lndr
+      POSTGRES_PASSWORD: 4mqKZAV1kxDNrJoKNxF9TmNHSuWkqz7aK5z0L2c+TqV6
+    networks:
+    - lndr
+    volumes:
+    - ./.docker/postgresql/data:/var/lib/postgresql/data
+  schema:
+    image: postgres:10.3
+    depends_on:
+    - postgresql
+    environment:
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_USERNAME: lndr
+      DB_PASSWORD: 4mqKZAV1kxDNrJoKNxF9TmNHSuWkqz7aK5z0L2c+TqV6
+      DB_SCHEMA_FILE: /schema/create_tables.sql
+      DELAY: 4
+    networks:
+    - lndr
+    volumes:
+    - ./lndr-backend/db:/schema
+    command: /schema/bootstrap.sh
+  lndr:
+    build:
+      context: ./
+    image: blockmason/lndr-service:latest
+    depends_on:
+    - ethereum
+    - postgresql
+    - schema
+    environment:
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_NAME: lndr
+      DB_USER: lndr
+      DB_PASSWORD: 4mqKZAV1kxDNrJoKNxF9TmNHSuWkqz7aK5z0L2c+TqV6
+      ETHEREUM_CLIENT_URL: http://ethereum:8545
+    ports:
+    - 9800:80/tcp
+    volumes:
+    - ./:/lndr
+    networks:
+    - lndr
+    command: /lndr/docker-entrypoint.sh delay-start 6
+networks:
+  lndr:

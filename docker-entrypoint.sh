@@ -11,9 +11,18 @@ lndr_start() {
   lndr-server
 }
 
+lndr_delay() {
+  local DELAY="$1"
+  [ -n "${DELAY}" ] || DELAY="5"
+  sleep "${DELAY}"
+}
+
 case "$1" in
   start)
     lndr_start
+    ;;
+  delay-start)
+    lndr_delay && lndr_start
     ;;
   *)
     exec $*

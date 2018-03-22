@@ -72,14 +72,40 @@ submitted to the /verify_settlement endpoint.
 
 Web service API
 
+## GET /friend_requests/:user
+
+Provides a list of inbound friend requests to a user.
+
+#### Captures:
+
+- *user*: the address of the user whose friend requests will be returned
+
+#### Response:
+
+- Status code 200
+- Headers: []
+
+- Supported content types are:
+
+    - `application/json;charset=utf-8`
+    - `application/json`
+
+- Example (): `application/json`
+
+```javascript
+[
+  {
+    "nick": "alice",
+    "addr": "0xa4c29642cb055823754afc1255b817d9bf6409f2"
+  },
+  {
+    "nick": "bob",
+    "addr": "0xa1cf42b7b07a5d3e1cf081aeb4a3079ffca43a3d"
+  }
+]
+```
+
 ## POST /add_friends/:user
-
-#### Authentication
-
-
-
-Clients must supply the following data
-
 
 #### Captures:
 

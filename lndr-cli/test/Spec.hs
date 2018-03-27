@@ -27,7 +27,6 @@ import           Test.Framework
 import           Test.Framework.Providers.HUnit
 import           Test.HUnit                     hiding (Test)
 import qualified Text.EmailAddress              as Email
-import           System.Environment             (setEnv)
 import           System.Directory
 
 testUrl = "http://localhost:80"
@@ -63,9 +62,7 @@ loadUcacs = do
 
 
 main :: IO ()
-main = do
-    setEnv web3ProviderEnvVariable "http://localhost:8545"
-    defaultMain tests
+main = defaultMain tests
 
 
 tests :: [Test]
@@ -310,7 +307,7 @@ basicSettlementTest = do
     let settleAmount = fmap Quantity . settlementAmount . creditRecord $ head bilateralPendingSettlements
 
     -- user5 transfers eth to user6
-    txHashE <- runLndrWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)
+    txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)
                                                         testAddress6
                                                         (Just 21000)
                                                         Nothing
@@ -350,14 +347,14 @@ basicSettlementTest = do
 verifySettlementTest :: Assertion
 verifySettlementTest = do
 
-    syncingE <- runLndrWeb3 Eth.syncing
+    syncingE <- runWeb3 Eth.syncing
     assertEqual "confirm that blockchain is synced" syncingE (Right NotSyncing)
 
     (ucacAddr, _, _) <- loadUcacs
     let settleAmountInWei = 10 ^ 18
     -- testAddress1 is the person revieving eth, thus the credit must record
     -- this address as the debtor.
-    txHashE <- runLndrWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
+    txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
                                                         testAddress1
                                                         (Just 21000)
                                                         Nothing

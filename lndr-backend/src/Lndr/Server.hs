@@ -232,12 +232,7 @@ verifyIndividualRecord creditHash = do
     let recordNotFound = throwError $
             err404 { errBody = "Credit hash does not refer to pending bilateral settlement record" }
     bilateralCreditRecord <- maybe recordNotFound pure recordM
-    verifiedE <- liftIO $ verifySettlementPayment bilateralCreditRecord
-    case verifiedE of
-        Right _ -> do
-            liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
-            web3Result <- finalizeTransaction config bilateralCreditRecord
-            liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result
-        Left err -> do
-            liftIO $ pushLogStrLn loggerSet . toLogStr . ("Settlement Error: " ++) . show $ err
-            throwError $ err400 { errBody = B.pack err }
+    verifySettlementPayment bilateralCreditRecord
+    liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
+    web3Result <- finalizeTransaction config bilateralCreditRecord
+    liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result

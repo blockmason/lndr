@@ -26,6 +26,8 @@ liftEither = either throwError return
 eitherToLndr :: Show a => String -> Either a b -> LndrHandler b
 eitherToLndr error = liftEither . mapLeft (const (err400 { errBody = B.fromStrict . B.pack $ error }))
 
+lndrError :: String -> LndrHandler a
+lndrError error = throwError (err400 { errBody = B.fromStrict . B.pack $ error })
 
 ioEitherToLndr :: Show a => IO (Either a b) -> LndrHandler b
 ioEitherToLndr = LndrHandler . lift . ExceptT . fmap (mapLeft (\x -> err500 { errBody = B.fromStrict . B.pack $ show x }))

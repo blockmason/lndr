@@ -69,7 +69,6 @@ tests = [ testGroup "Nicks"
             [ testCase "setting nicks and friends" nickTest ]
         , testGroup "Credits"
             [ testCase "lend money to friend" basicLendTest
-            , testCase "verify payment" verifySettlementTest
             , testCase "settlement" basicSettlementTest
             ]
         , testGroup "Admin"
@@ -341,42 +340,6 @@ basicSettlementTest = do
 
     (dbCredits, blockchainCredits, _) <- getUnsubmitted testUrl
     assertBool "equal, non-zero number of transactions in db and blockchain" (dbCredits == blockchainCredits && dbCredits == 3)
-
-
-verifySettlementTest :: Assertion
-verifySettlementTest = do
-
-    syncingE <- runWeb3 Eth.syncing
-    assertEqual "confirm that blockchain is synced" syncingE (Right NotSyncing)
-
-    (ucacAddr, _, _) <- loadUcacs
-    let settleAmountInWei = 10 ^ 18
-    -- testAddress1 is the person revieving eth, thus the credit must record
-    -- this address as the debtor.
-    txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
-                                                        testAddress1
-                                                        (Just 21000)
-                                                        Nothing
-                                                        (Just settleAmountInWei)
-                                                        Nothing
-    let txHash = fromRight (error "error sending eth") txHashE
-        creditRecord = CreditRecord testAddress4
-                                    testAddress1
-                                    10
-                                    ""
-                                    testAddress4
-                                    0
-                                    ""
-                                    ""
-                                    ucacAddr
-                                    (Just $ unQuantity settleAmountInWei)
-                                    (Just "ETH")
-                                    (Just 0)
-
-    threadDelay (5 * 10 ^ 6)
-
-    verified <- verifySettlementPayment (BilateralCreditRecord creditRecord "" "" (Just txHash))
-    assertBool "payment properly verified" (isRight verified)
 
 
 blocknumberTest :: Assertion

@@ -71,9 +71,6 @@ tests = [ testGroup "Nicks"
             [ testCase "lend money to friend" basicLendTest
             , testCase "settlement" basicSettlementTest
             ]
-        , testGroup "Admin"
-            [ testCase "get current blocknumber" blocknumberTest
-            ]
         , testGroup "Notifications"
             [ testCase "registerChannel" basicNotificationsTest
             ]
@@ -340,15 +337,6 @@ basicSettlementTest = do
 
     (dbCredits, blockchainCredits, _) <- getUnsubmitted testUrl
     assertBool "equal, non-zero number of transactions in db and blockchain" (dbCredits == blockchainCredits && dbCredits == 3)
-
-
-blocknumberTest :: Assertion
-blocknumberTest = do
-    blockNumberM <- runMaybeT currentBlockNumber
-
-    case blockNumberM of
-        Just blockNumber -> assertBool "block number within expected bounds" (blockNumber < 4000)
-        Nothing -> return ()
 
 
 basicNotificationsTest :: Assertion

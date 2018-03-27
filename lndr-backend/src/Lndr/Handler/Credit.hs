@@ -159,6 +159,23 @@ createPendingRecord pool signedRecord = do
     void . liftIO . withResource pool $ Db.insertPending signedRecord
 
 
+calculateSettlementCreditRecord :: ServerConfig -> CreditRecord -> CreditRecord
+calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _) = cr
+calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ ucac _ (Just currency) _) =
+    let blockNumber = latestBlockNumber config
+        prices = ethereumPrices config
+        currencyPerEth = case B.lookupR ucac (lndrUcacAddrs config) of
+            Just "USD" -> usd prices * 100 -- mutliplying by 100 here since
+                                           -- usd amounts are stored in cents
+            Just "JPY" -> jpy prices
+            Just "KRW" -> krw prices
+            Nothing    -> error "ucac not found"
+        settlementAmountRaw = floor $ fromIntegral amount / currencyPerEth * 10 ^ 18
+    in cr { settlementAmount = Just $ roundToMegaWei settlementAmountRaw
+          , settlementBlocknumber = Just blockNumber
+          }
+
+
 createBilateralFriendship :: Pool Connection -> Address -> Address -> IO ()
 createBilateralFriendship pool addressA addressB =
     void . withResource pool $ Db.addFriends [(addressA, addressB), (addressB, addressA)]

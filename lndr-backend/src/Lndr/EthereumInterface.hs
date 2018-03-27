@@ -21,13 +21,12 @@ module Lndr.EthereumInterface (
       lndrLogs
     , finalizeTransaction
     , verifySettlementPayment
-    , calculateSettlementCreditRecord
 
     -- * functions defined via TH rendering of solidity ABI
     , getNonce
     , balances
     , createAndStakeUcac
-    , currentTxLevel
+    , currentBlockNumber
     , executeUcacTx
     , nonces
     , owner
@@ -155,18 +154,10 @@ verifySettlementPayment (BilateralCreditRecord creditRecord _ _ (Just txHash)) =
 verifySettlementPayment _ = pure $ Left "Incompelete settlement record"
 
 
-calculateSettlementCreditRecord :: ServerConfig -> CreditRecord -> CreditRecord
-calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _) = cr
-calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ ucac _ (Just currency) _) =
-    let blockNumber = latestBlockNumber config
-        prices = ethereumPrices config
-        currencyPerEth = case B.lookupR ucac (lndrUcacAddrs config) of
-            Just "USD" -> usd prices * 100 -- mutliplying by 100 here since
-                                           -- usd amounts are stored in cents
-            Just "JPY" -> jpy prices
-            Just "KRW" -> krw prices
-            Nothing    -> error "ucac not found"
-        settlementAmountRaw = floor $ fromIntegral amount / currencyPerEth * 10 ^ 18
-    in cr { settlementAmount = Just $ roundToMegaWei settlementAmountRaw
-          , settlementBlocknumber = Just blockNumber
-          }
+-- | Queries the blockchain for current blocknumber.
+currentBlockNumber :: MaybeT IO Integer
+currentBlockNumber = do
+    blockNumberTextE <- runLndrWeb3 Eth.blockNumber
+    return $ case blockNumberTextE of
+        Right (BlockNumber number) -> number
+        Left _        -> 0

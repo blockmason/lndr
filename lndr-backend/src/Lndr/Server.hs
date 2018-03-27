@@ -202,7 +202,7 @@ updateServerConfig configTVar = do
     config <- atomically $ readTVar configTVar
     currentPricesM <- runMaybeT queryEtheruemPrices
     currentGasPriceM <- runMaybeT querySafelow
-    blockNumberM <- runMaybeT currentBlockNumber
+    blockNumberM <- runMaybeT $ currentBlockNumber config
     atomically $ writeTVar configTVar
         config { ethereumPrices = fromMaybe (ethereumPrices config) currentPricesM
                , gasPrice = fromMaybe (gasPrice config) currentGasPriceM

@@ -167,9 +167,10 @@ verifySettlementPayment _ = lndrError "Incompelete settlement record"
 
 
 -- | Queries the blockchain for current blocknumber.
-currentBlockNumber :: MaybeT IO Integer
-currentBlockNumber = do
-    blockNumberTextE <- runWeb3 Eth.blockNumber
+currentBlockNumber :: ServerConfig -> MaybeT IO Integer
+currentBlockNumber config = do
+    let provider = HttpProvider (web3Url config)
+    blockNumberTextE <- runWeb3' provider Eth.blockNumber
     return $ case blockNumberTextE of
         Right (BlockNumber number) -> number
         Left _        -> 0

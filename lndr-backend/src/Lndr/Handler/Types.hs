@@ -21,7 +21,7 @@ liftEither :: MonadError e m => Either e a -> m a
 liftEither = either throwError return
 
 
-lndrWeb3 :: Web3 LndrProvider b -> LndrHandler b
+lndrWeb3 :: Web3 b -> LndrHandler b
 lndrWeb3 = ioEitherToLndr . runLndrWeb3
 
 

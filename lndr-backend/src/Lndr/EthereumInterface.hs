@@ -97,8 +97,8 @@ finalizeTransaction config (BilateralCreditRecord (CreditRecord creditor debtor 
 -- | Scan blockchain for 'IssueCredit' events emitted by the Credit Protocol
 -- smart contract. If 'Just addr' values are passed in for either 'creditorM'
 -- or 'debtorM', or both, logs are filtered to show matching results.
-lndrLogs :: Provider a => ServerConfig -> Text -> Maybe Address -> Maybe Address
-         -> Web3 a [IssueCreditLog]
+lndrLogs :: ServerConfig -> Text -> Maybe Address -> Maybe Address
+         -> Web3 [IssueCreditLog]
 lndrLogs config currencyKey creditorM debtorM = rights . fmap interpretUcacLog <$>
     Eth.getLogs (Filter (Just $ creditProtocolAddress config)
                         (Just [ Just (issueCreditEvent config)

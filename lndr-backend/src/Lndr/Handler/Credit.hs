@@ -53,7 +53,7 @@ borrowHandler creditRecord = submitHandler $ creditRecord { submitter = debtor c
 
 submitHandler :: CreditRecord -> LndrHandler NoContent
 submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress _ hash sig _ _ _ _) = do
-    state@(ServerState pool configTVar loggerSet) <- ask
+    (ServerState pool configTVar loggerSet) <- ask
     config <- liftIO . atomically $ readTVar configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
 
@@ -94,15 +94,12 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
     case pendingCredit of
         -- if the submitted credit record has a matching pending record,
         -- finalize the transaction on the blockchain
-        Just storedRecord -> liftIO . when (signature storedRecord /= signature signedRecord) $ do
+        Just storedRecord -> when (signature storedRecord /= signature signedRecord) $ do
             let (creditorSig, debtorSig) = if creditor /= submitterAddress
                                             then (signature storedRecord, signature signedRecord)
                                             else (signature signedRecord, signature storedRecord)
 
-            finalizeCredit pool config loggerSet  $ BilateralCreditRecord storedRecord
-                                                                          creditorSig
-                                                                          debtorSig
-                                                                          Nothing
+            finalizeCredit $ BilateralCreditRecord storedRecord creditorSig debtorSig Nothing
 
             -- send push notification to counterparty
             attemptToNotify (fromJust $ M.lookup (T.unpack currency) pendingConfirmationMap) CreditConfirmation
@@ -117,9 +114,11 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
     pure NoContent
 
 
--- TODO this should be able to fail, should log failures
-finalizeCredit :: Pool Connection -> ServerConfig -> LoggerSet -> BilateralCreditRecord -> IO ()
-finalizeCredit pool config loggerSet bilateralCredit = do
+finalizeCredit :: BilateralCreditRecord -> LndrHandler ()
+finalizeCredit bilateralCredit = do
+            (ServerState pool configTVar loggerSet) <- ask
+            config <- liftIO . atomically $ readTVar configTVar
+
             -- In case the record is a settlement, delay submitting credit to
             -- the blockchain until /verify_settlement is called
             -- (settlements will have 'Just _' for thier 'settlementAmount',
@@ -127,10 +126,10 @@ finalizeCredit pool config loggerSet bilateralCredit = do
             when (isNothing . settlementAmount . creditRecord $ bilateralCredit) $ do
                 -- should I move this into begin / commit block?
                 web3Result <- finalizeTransaction config bilateralCredit
-                pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result
+                liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result
 
             -- saving transaction record to 'verified_credits' table
-            withResource pool $ \conn -> do
+            liftIO . withResource pool $ \conn -> do
                 begin conn
                 Db.insertCredit bilateralCredit conn
                 -- delete pending record after transaction finalization

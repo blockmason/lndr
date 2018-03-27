@@ -86,13 +86,13 @@ lndrWeb3 web3Action = do
 
 -- | Submit a bilateral credit record to the Credit Protocol smart contract.
 finalizeTransaction :: ServerConfig -> BilateralCreditRecord
-                    -> IO (Either Web3Error TxHash)
+                    -> LndrHandler TxHash
 finalizeTransaction config (BilateralCreditRecord (CreditRecord creditor debtor amount memo _ _ _ _ ucac _ _ _) sig1 sig2 _) = do
       let (sig1r, sig1s, sig1v) = decomposeSig sig1
           (sig2r, sig2s, sig2v) = decomposeSig sig2
           encodedMemo :: BytesN 32
           encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
-      runWeb3 $ issueCredit callVal
+      lndrWeb3 $ issueCredit callVal
                              ucac
                              creditor debtor (UIntN amount)
                              (sig1r :< sig1s :< sig1v :< NilL)

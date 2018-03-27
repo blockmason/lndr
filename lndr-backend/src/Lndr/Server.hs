@@ -9,7 +9,6 @@ module Lndr.Server
     , lndrAPI
     , LndrHandler(..)
     , freshState
-    , updateDbFromLndrLogs
     , app
     , runHeartbeat
     ) where
@@ -37,7 +36,6 @@ import           Lndr.EthereumInterface
 import           Lndr.Handler
 import           Lndr.NetworkStatistics
 import           Lndr.Types
-import           Lndr.Web3
 import           Network.Ethereum.Web3      hiding (convert)
 import           Network.HTTP.Types
 import           Network.Wai
@@ -153,25 +151,6 @@ readerServer state = enter (lndrHandlerToHandler state) server
 
 app :: ServerState -> Application
 app state = serve lndrAPI (readerServer state)
-
-
--- | Scans blockchain for previously-submitted credit records and inserts them
--- into 'verified_credits' table if missing.
---
--- This function is called at startup to ensure database consistency with the
--- blockchain. All credit-related queries use database data so without these
--- consistency checks at startup, it's possible user's transaction history
--- would be inaccurately represented.
---
--- When credits are recovered from blockchain, we lose 'submitter' information
--- so 'submitter' is set to be equal to 'creditor'
-updateDbFromLndrLogs :: ServerState -> IO ()
-updateDbFromLndrLogs (ServerState pool configTVar _) = void $ do
-    config <- atomically $ readTVar configTVar
-    logs <- runLndrWeb3 $ join <$> sequence [ lndrLogs config "USD" Nothing Nothing
-                                            , lndrLogs config "JPY" Nothing Nothing
-                                            , lndrLogs config "KRW" Nothing Nothing ]
-    withResource pool . Db.insertCredits $ either (const []) id logs
 
 
 -- | Load required server configuration and create database connection pool.

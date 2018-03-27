@@ -18,7 +18,8 @@
 -- contract abi are populated, including 'getNonce', etc.
 
 module Lndr.EthereumInterface (
-      lndrLogs
+      lndrWeb3
+    , lndrLogs
     , finalizeTransaction
     , verifySettlementPayment
 
@@ -42,8 +43,10 @@ module Lndr.EthereumInterface (
     , unstakeTokens
     ) where
 
+import           Control.Concurrent.STM
 import           Control.Exception
 import           Control.Monad
+import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
 import qualified Data.Bimap                  as B
 import qualified Data.ByteArray              as BA
@@ -60,8 +63,8 @@ import qualified Data.Text.Encoding          as T
 import           Data.Tuple
 import           Lndr.NetworkStatistics
 import           Lndr.Types
+import           Lndr.Handler.Types
 import           Lndr.Util
-import           Lndr.Web3
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Eth   as Eth
 import           Network.Ethereum.Web3.TH
@@ -72,6 +75,15 @@ import           Prelude                     hiding (lookup, (!!))
 -- Create functions to call CreditProtocol contract.
 [abiFrom|data/CreditProtocol.abi|]
 
+
+lndrWeb3 :: Web3 b -> LndrHandler b
+lndrWeb3 web3Action = do
+    configTVar <- asks serverConfig
+    config <- liftIO . atomically $ readTVar configTVar
+    let provider = HttpProvider (web3Url config)
+    ioEitherToLndr $ runWeb3' provider web3Action
+
+
 -- | Submit a bilateral credit record to the Credit Protocol smart contract.
 finalizeTransaction :: ServerConfig -> BilateralCreditRecord
                     -> IO (Either Web3Error TxHash)
@@ -80,12 +92,12 @@ finalizeTransaction config (BilateralCreditRecord (CreditRecord creditor debtor 
           (sig2r, sig2s, sig2v) = decomposeSig sig2
           encodedMemo :: BytesN 32
           encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
-      runLndrWeb3 $ issueCredit callVal
-                                ucac
-                                creditor debtor (UIntN amount)
-                                (sig1r :< sig1s :< sig1v :< NilL)
-                                (sig2r :< sig2s :< sig2v :< NilL)
-                                encodedMemo
+      runWeb3 $ issueCredit callVal
+                             ucac
+                             creditor debtor (UIntN amount)
+                             (sig1r :< sig1s :< sig1v :< NilL)
+                             (sig2r :< sig2s :< sig2v :< NilL)
+                             encodedMemo
     where callVal = def { callFrom = Just $ executionAddress config
                         , callTo = creditProtocolAddress config
                         , callGasPrice = Just . Quantity $ gasPrice config
@@ -134,7 +146,7 @@ interpretUcacLog change = do
 -- eth settlment amount.
 verifySettlementPayment :: BilateralCreditRecord -> IO (Either String ())
 verifySettlementPayment (BilateralCreditRecord creditRecord _ _ (Just txHash)) = do
-    transactionME <- runLndrWeb3 . Eth.getTransactionByHash $ addHexPrefix txHash
+    transactionME <- runWeb3 . Eth.getTransactionByHash $ addHexPrefix txHash
     case transactionME of
         Right (Just transaction) ->
             let fromMatch = txFrom transaction == creditor creditRecord
@@ -157,7 +169,7 @@ verifySettlementPayment _ = pure $ Left "Incompelete settlement record"
 -- | Queries the blockchain for current blocknumber.
 currentBlockNumber :: MaybeT IO Integer
 currentBlockNumber = do
-    blockNumberTextE <- runLndrWeb3 Eth.blockNumber
+    blockNumberTextE <- runWeb3 Eth.blockNumber
     return $ case blockNumberTextE of
         Right (BlockNumber number) -> number
         Left _        -> 0

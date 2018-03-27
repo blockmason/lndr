@@ -19,7 +19,6 @@ library
                  , Lndr.Types
                  , Lndr.Util
                  , Lndr.Signature
-                 , Lndr.Web3
   other-modules: Lndr.Db
                , Lndr.Db.Friendships
                , Lndr.Db.Nicknames

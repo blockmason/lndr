@@ -9,7 +9,6 @@ module Lndr.Server
     , lndrAPI
     , LndrHandler(..)
     , freshState
-    , updateDbFromLndrLogs
     , app
     , runHeartbeat
     ) where
@@ -37,7 +36,6 @@ import           Lndr.EthereumInterface
 import           Lndr.Handler
 import           Lndr.NetworkStatistics
 import           Lndr.Types
-import           Lndr.Web3
 import           Network.Ethereum.Web3      hiding (convert)
 import           Network.HTTP.Types
 import           Network.Wai
@@ -155,25 +153,6 @@ app :: ServerState -> Application
 app state = serve lndrAPI (readerServer state)
 
 
--- | Scans blockchain for previously-submitted credit records and inserts them
--- into 'verified_credits' table if missing.
---
--- This function is called at startup to ensure database consistency with the
--- blockchain. All credit-related queries use database data so without these
--- consistency checks at startup, it's possible user's transaction history
--- would be inaccurately represented.
---
--- When credits are recovered from blockchain, we lose 'submitter' information
--- so 'submitter' is set to be equal to 'creditor'
-updateDbFromLndrLogs :: ServerState -> IO ()
-updateDbFromLndrLogs (ServerState pool configTVar _) = void $ do
-    config <- atomically $ readTVar configTVar
-    logs <- runLndrWeb3 $ join <$> sequence [ lndrLogs config "USD" Nothing Nothing
-                                            , lndrLogs config "JPY" Nothing Nothing
-                                            , lndrLogs config "KRW" Nothing Nothing ]
-    withResource pool . Db.insertCredits $ either (const []) id logs
-
-
 -- | Load required server configuration and create database connection pool.
 -- Called at server startup.
 freshState :: IO ServerState
@@ -199,22 +178,23 @@ freshState = do
 
 
 runHeartbeat :: ServerState -> IO ThreadId
-runHeartbeat state = forkIO . forever $ catch (heartbeat state) (print :: SomeException -> IO ())
+runHeartbeat state = forkIO . forever $ catch (void . runExceptT $ runReaderT (runLndr heartbeat) state) (print :: SomeException -> IO ())
 
 
-heartbeat :: ServerState -> IO ()
-heartbeat state@(ServerState _ configTVar loggerSet) = do
+heartbeat :: LndrHandler ()
+heartbeat = do
+    (ServerState _ configTVar loggerSet) <- ask
     -- update server config
-    updateServerConfig configTVar
+    liftIO $ updateServerConfig configTVar
     -- scan settlements table for any settlement eligible for deletion
-    deleteExpiredSettlements state
+    deleteExpiredSettlements
     -- try to verify all settlements whose tx_hash column is populated
-    verifySettlementsWithTxHash state
+    verifySettlementsWithTxHash
     -- log hearbeat statistics
-    pushLogStrLn loggerSet . toLogStr $ ("heartbeat" :: Text)
+    liftIO $ pushLogStrLn loggerSet . toLogStr $ ("heartbeat" :: Text)
     -- sleep for time specified in config
-    config <- atomically $ readTVar configTVar
-    threadDelay (heartbeatInterval config * 10 ^ 6)
+    config <- liftIO . atomically $ readTVar configTVar
+    liftIO $ threadDelay (heartbeatInterval config * 10 ^ 6)
 
 
 updateServerConfig :: TVar ServerConfig -> IO ()
@@ -222,41 +202,37 @@ updateServerConfig configTVar = do
     config <- atomically $ readTVar configTVar
     currentPricesM <- runMaybeT queryEtheruemPrices
     currentGasPriceM <- runMaybeT querySafelow
-    blockNumberM <- runMaybeT currentBlockNumber
+    blockNumberM <- runMaybeT $ currentBlockNumber config
     atomically $ writeTVar configTVar
         config { ethereumPrices = fromMaybe (ethereumPrices config) currentPricesM
                , gasPrice = fromMaybe (gasPrice config) currentGasPriceM
                , latestBlockNumber = fromMaybe (latestBlockNumber config) blockNumberM }
 
 
-deleteExpiredSettlements :: ServerState -> IO ()
-deleteExpiredSettlements (ServerState pool configTVar _) = do
-    config <- atomically $ readTVar configTVar
-    void $ withResource pool Db.deleteExpiredSettlementsAndAssociatedCredits
+deleteExpiredSettlements :: LndrHandler ()
+deleteExpiredSettlements = do
+    (ServerState pool configTVar _) <- ask
+    config <- liftIO . atomically $ readTVar configTVar
+    void . liftIO $ withResource pool Db.deleteExpiredSettlementsAndAssociatedCredits
 
 
-verifySettlementsWithTxHash :: ServerState -> IO ()
-verifySettlementsWithTxHash state@(ServerState pool configTVar _) = do
-    config <- atomically $ readTVar configTVar
-    creditHashes <- withResource pool Db.settlementCreditsToVerify
-    mapM_ (runExceptT . verifyIndividualRecord state) creditHashes
-    return ()
+verifySettlementsWithTxHash :: LndrHandler ()
+verifySettlementsWithTxHash = do
+    (ServerState pool configTVar _) <- ask
+    config <- liftIO . atomically $ readTVar configTVar
+    creditHashes <- liftIO $ withResource pool Db.settlementCreditsToVerify
+    mapM_ verifyIndividualRecord creditHashes
 
 
-verifyIndividualRecord :: ServerState -> TransactionHash -> ExceptT ServantErr IO ()
-verifyIndividualRecord (ServerState pool configTVar loggerSet) creditHash = do
+verifyIndividualRecord :: TransactionHash -> LndrHandler ()
+verifyIndividualRecord creditHash = do
+    (ServerState pool configTVar loggerSet) <- ask
     config <- liftIO $ atomically $ readTVar configTVar
     recordM <- liftIO $ withResource pool $ Db.lookupCreditByHash creditHash
     let recordNotFound = throwError $
             err404 { errBody = "Credit hash does not refer to pending bilateral settlement record" }
     bilateralCreditRecord <- maybe recordNotFound pure recordM
-    verifiedE <- liftIO $ verifySettlementPayment bilateralCreditRecord
-    case verifiedE of
-        -- TODO unify it with other finalizeTransaction
-        Right _ -> do
-            liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
-            web3Result <- liftIO $ finalizeTransaction config bilateralCreditRecord
-            liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result
-        Left err -> do
-            liftIO $ pushLogStrLn loggerSet . toLogStr . ("Settlement Error: " ++) . show $ err
-            throwError $ err400 { errBody = B.pack err }
+    verifySettlementPayment bilateralCreditRecord
+    liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
+    web3Result <- finalizeTransaction config bilateralCreditRecord
+    liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result

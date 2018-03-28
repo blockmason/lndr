@@ -10,7 +10,6 @@ import           Control.Monad.Trans.Maybe
 import           Data.Either.Combinators
 import           Lndr.Types
 import           Lndr.Util
-import           Lndr.Web3
 import           Network.Ethereum.Web3
 import           Network.Ethereum.Web3.Types
 import qualified Network.Ethereum.Web3.Eth as Eth
@@ -31,12 +30,3 @@ queryEtheruemPrices :: MaybeT IO EthereumPrices
 queryEtheruemPrices = do
     req <- lift $ HTTP.parseRequest "https://api.coinbase.com/v2/exchange-rates?currency=ETH"
     MaybeT $ rightToMaybe . HTTP.getResponseBody <$> HTTP.httpJSONEither req
-
-
--- | Queries the blockchain for current blocknumber.
-currentBlockNumber :: MaybeT IO Integer
-currentBlockNumber = do
-    blockNumberTextE <- runLndrWeb3 Eth.blockNumber
-    return $ case blockNumberTextE of
-        Right (BlockNumber number) -> number
-        Left _        -> 0

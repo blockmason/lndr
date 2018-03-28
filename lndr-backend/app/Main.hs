@@ -10,7 +10,7 @@ main = do
     emptyState <- freshState
     runHeartbeat emptyState
     withStdoutLogger $ \aplogger -> do
-        address = bindAddress serverConfig emptyState
-        port = bindPort serverConfig emptyState
+        let address = bindAddress serverConfig emptyState
+        let port = bindPort serverConfig emptyState
         let settings = W.setHost address $ W.setPort port $ W.setLogger aplogger W.defaultSettings
         W.runSettings settings $ app emptyState

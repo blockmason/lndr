@@ -9,6 +9,7 @@ module Lndr.Server
     , lndrAPI
     , LndrHandler(..)
     , freshState
+    , currentConfig
     , app
     , runHeartbeat
     ) where
@@ -177,6 +178,10 @@ freshState = do
                 <*> newStdoutLoggerSet defaultBufSize
 
 
+currentConfig :: ServerState -> IO ServerConfig
+currentConfig state = atomically . readTVar $ serverConfig state
+
+
 runHeartbeat :: ServerState -> IO ThreadId
 runHeartbeat state = forkIO . forever $ catch (void . runExceptT $ runReaderT (runLndr heartbeat) state) (print :: SomeException -> IO ())
 
@@ -227,7 +232,7 @@ verifySettlementsWithTxHash = do
 verifyIndividualRecord :: TransactionHash -> LndrHandler ()
 verifyIndividualRecord creditHash = do
     (ServerState pool configTVar loggerSet) <- ask
-    config <- liftIO $ atomically $ readTVar configTVar
+    config <- liftIO . atomically $ readTVar configTVar
     recordM <- liftIO $ withResource pool $ Db.lookupCreditByHash creditHash
     let recordNotFound = throwError $
             err404 { errBody = "Credit hash does not refer to pending bilateral settlement record" }

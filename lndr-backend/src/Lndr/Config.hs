@@ -21,6 +21,8 @@ loadConfig = do
     return $ ServerConfig (B.fromList [ ("USD", loadEntry "lndr-ucacs.usd")
                                       , ("JPY", loadEntry "lndr-ucacs.jpy")
                                       , ("KRW", loadEntry "lndr-ucacs.krw") ])
+                          (loadEntry "bind-address")
+                          (loadEntry "bind-port")
                           (loadEntry "credit-protocol-address")
                           (loadEntry "issue-credit-event")
                           (loadEntry "scan-start-block")

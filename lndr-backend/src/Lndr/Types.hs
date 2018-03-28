@@ -229,6 +229,8 @@ instance FromJSON EthereumPrices where
             return $ EthereumPrices usd jpy krw
 
 data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Address
+                                 , bindAddress              :: !Text
+                                 , bindPort                 :: !Integer
                                  , creditProtocolAddress    :: !Address
                                  , issueCreditEvent         :: !Text
                                  , scanStartBlock           :: !Integer

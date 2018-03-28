@@ -30,7 +30,7 @@ import qualified Text.EmailAddress              as Email
 import           System.Environment             (setEnv)
 import           System.Directory
 
-testUrl = "http://localhost:80"
+testUrl = "http://localhost:7402"
 testPrivkey0 = "7920ca01d3d1ac463dfd55b5ddfdcbb64ae31830f31be045ce2d51a305516a37"
 testPrivkey1 = "bb63b692f9d8f21f0b978b596dc2b8611899f053d68aec6c1c20d1df4f5b6ee2"
 testPrivkey2 = "2f615ea53711e0d91390e97cdd5ce97357e345e441aa95d255094164f44c8652"

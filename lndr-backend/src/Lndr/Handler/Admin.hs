@@ -13,7 +13,6 @@ import           Lndr.EthereumInterface
 import           Lndr.Signature
 import           Lndr.Types
 import           Lndr.Util
-import           Lndr.Web3
 import           Network.Ethereum.Web3
 import           Servant
 
@@ -22,12 +21,10 @@ unsubmittedHandler :: LndrHandler (Int, Int, [IssueCreditLog])
 unsubmittedHandler = do
     (ServerState pool configTVar _) <- ask
     config <- liftIO . atomically $ readTVar configTVar
-    blockchainCreditsE <- liftIO . runLndrWeb3 $
+    blockchainCredits <- lndrWeb3 $
         join <$> sequence [ lndrLogs config "USD" Nothing Nothing
                           , lndrLogs config "JPY" Nothing Nothing
                           , lndrLogs config "KRW" Nothing Nothing ]
-
-    let blockchainCredits = either (const []) id blockchainCreditsE
     dbCredits <- liftIO $ withResource pool Db.allCredits
     pure (length dbCredits, length blockchainCredits, dbCredits \\ blockchainCredits)
 

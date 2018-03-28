@@ -19,7 +19,6 @@ import           Lndr.Types
 import           Lndr.Util                      ( parseIssueCreditInput,
                                                   textToAddress,
                                                   addHexPrefix)
-import           Lndr.Web3
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Eth      as Eth
 import           Network.Ethereum.Web3.Types
@@ -27,7 +26,6 @@ import           Test.Framework
 import           Test.Framework.Providers.HUnit
 import           Test.HUnit                     hiding (Test)
 import qualified Text.EmailAddress              as Email
-import           System.Environment             (setEnv)
 import           System.Directory
 
 testUrl = "http://localhost:80"
@@ -63,9 +61,7 @@ loadUcacs = do
 
 
 main :: IO ()
-main = do
-    setEnv web3ProviderEnvVariable "http://localhost:8545"
-    defaultMain tests
+main = defaultMain tests
 
 
 tests :: [Test]
@@ -73,11 +69,7 @@ tests = [ testGroup "Nicks"
             [ testCase "setting nicks and friends" nickTest ]
         , testGroup "Credits"
             [ testCase "lend money to friend" basicLendTest
-            , testCase "verify payment" verifySettlementTest
             , testCase "settlement" basicSettlementTest
-            ]
-        , testGroup "Admin"
-            [ testCase "get current blocknumber" blocknumberTest
             ]
         , testGroup "Notifications"
             [ testCase "registerChannel" basicNotificationsTest
@@ -310,7 +302,7 @@ basicSettlementTest = do
     let settleAmount = fmap Quantity . settlementAmount . creditRecord $ head bilateralPendingSettlements
 
     -- user5 transfers eth to user6
-    txHashE <- runLndrWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)
+    txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress5)
                                                         testAddress6
                                                         (Just 21000)
                                                         Nothing
@@ -345,51 +337,6 @@ basicSettlementTest = do
 
     (dbCredits, blockchainCredits, _) <- getUnsubmitted testUrl
     assertBool "equal, non-zero number of transactions in db and blockchain" (dbCredits == blockchainCredits && dbCredits == 3)
-
-
-verifySettlementTest :: Assertion
-verifySettlementTest = do
-
-    syncingE <- runLndrWeb3 Eth.syncing
-    assertEqual "confirm that blockchain is synced" syncingE (Right NotSyncing)
-
-    (ucacAddr, _, _) <- loadUcacs
-    let settleAmountInWei = 10 ^ 18
-    -- testAddress1 is the person revieving eth, thus the credit must record
-    -- this address as the debtor.
-    txHashE <- runLndrWeb3 $ Eth.sendTransaction $ Call (Just testAddress4)
-                                                        testAddress1
-                                                        (Just 21000)
-                                                        Nothing
-                                                        (Just settleAmountInWei)
-                                                        Nothing
-    let txHash = fromRight (error "error sending eth") txHashE
-        creditRecord = CreditRecord testAddress4
-                                    testAddress1
-                                    10
-                                    ""
-                                    testAddress4
-                                    0
-                                    ""
-                                    ""
-                                    ucacAddr
-                                    (Just $ unQuantity settleAmountInWei)
-                                    (Just "ETH")
-                                    (Just 0)
-
-    threadDelay (5 * 10 ^ 6)
-
-    verified <- verifySettlementPayment (BilateralCreditRecord creditRecord "" "" (Just txHash))
-    assertBool "payment properly verified" (isRight verified)
-
-
-blocknumberTest :: Assertion
-blocknumberTest = do
-    blockNumberM <- runMaybeT currentBlockNumber
-
-    case blockNumberM of
-        Just blockNumber -> assertBool "block number within expected bounds" (blockNumber < 4000)
-        Nothing -> return ()
 
 
 basicNotificationsTest :: Assertion

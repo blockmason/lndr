@@ -335,7 +335,8 @@ basicSettlementTest = do
     gottenTxHash <- getTxHash testUrl creditHash
     assertEqual "successful txHash retrieval" txHash (addHexPrefix gottenTxHash)
 
-    (dbCredits, blockchainCredits, _) <- getUnsubmitted testUrl
+    s@(dbCredits, blockchainCredits, _) <- getUnsubmitted testUrl
+    print s
     assertBool "equal, non-zero number of transactions in db and blockchain" (dbCredits == blockchainCredits && dbCredits == 3)
 
 

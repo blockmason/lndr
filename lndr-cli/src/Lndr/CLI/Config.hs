@@ -19,7 +19,7 @@ data Config = Config { url          :: Text
 instance Interpret Config
 
 instance Default Config where
-    def = Config "http://localhost:80"
+    def = Config "http://localhost:7402"
                  "024f55d169862624eec05be973a38f52ad252b3bcc0f0ed1927defa4ab4ea101"
                  "869a8f2c3d22be392618ed06c8f548d1d5b5aed6"
 

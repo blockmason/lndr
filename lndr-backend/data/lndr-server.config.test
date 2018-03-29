@@ -27,7 +27,7 @@ db {
 }
 
 # configuration used for calling CP's 'issueCredit' function
-execution-address = "0x7292694902bcaf4e1620629e7198cdcb3f572a24"
+execution-private-key = "7920ca01d3d1ac463dfd55b5ddfdcbb64ae31830f31be045ce2d51a305516a37"
 gas-price = 200000000
 max-gas = 250000
 

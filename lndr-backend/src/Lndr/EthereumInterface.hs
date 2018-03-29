@@ -55,7 +55,7 @@ import           Data.Default
 import           Data.Either                 (rights)
 import           Data.List.Safe              ((!!))
 import qualified Data.Map                    as M
-import           Data.Maybe                  (fromMaybe)
+import           Data.Maybe                  (fromMaybe, fromJust)
 import           Data.Sized                  hiding (fmap, (!!), (++))
 import           Data.Text                   (Text)
 import qualified Data.Text                   as T
@@ -69,6 +69,7 @@ import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Eth   as Eth
 import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
+import           Network.Ethereum.Transaction
 import           Prelude                     hiding (lookup, (!!))
 
 
@@ -92,18 +93,21 @@ finalizeTransaction config (BilateralCreditRecord (CreditRecord creditor debtor 
           (sig2r, sig2s, sig2v) = decomposeSig sig2
           encodedMemo :: BytesN 32
           encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
-      lndrWeb3 $ issueCredit callVal
-                             ucac
-                             creditor debtor (UIntN amount)
-                             (sig1r :< sig1s :< sig1v :< NilL)
-                             (sig2r :< sig2s :< sig2v :< NilL)
-                             encodedMemo
+          issueCreditCall = issueCredit callVal
+                                        ucac
+                                        creditor debtor (UIntN amount)
+                                        (sig1r :< sig1s :< sig1v :< NilL)
+                                        (sig2r :< sig2s :< sig2v :< NilL)
+                                        encodedMemo
+      nonce <- fmap hexToInteger . lndrWeb3 $ Eth.getTransactionCount (executionAddress config) Latest
+      lndrWeb3 . Eth.sendRawTransaction . fromJust $ createRawTransaction issueCreditCall nonce chainId $ executionPrivateKey config
     where callVal = def { callFrom = Just $ executionAddress config
                         , callTo = creditProtocolAddress config
                         , callGasPrice = Just . Quantity $ gasPrice config
                         , callValue = Just . Quantity $ 0
                         , callGas = Just . Quantity $ maxGas config
                         }
+          chainId = 1
 
 
 -- | Scan blockchain for 'IssueCredit' events emitted by the Credit Protocol

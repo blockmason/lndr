@@ -177,10 +177,8 @@ freshState = do
                 <*> newTVarIO serverConfig
                 <*> newStdoutLoggerSet defaultBufSize
 
-
 currentConfig :: ServerState -> IO ServerConfig
 currentConfig state = atomically . readTVar $ serverConfig state
-
 
 runHeartbeat :: ServerState -> IO ThreadId
 runHeartbeat state = forkIO . forever $ catch (void . runExceptT $ runReaderT (runLndr heartbeat) state) (print :: SomeException -> IO ())

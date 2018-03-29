@@ -230,7 +230,7 @@ instance FromJSON EthereumPrices where
 
 data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Address
                                  , bindAddress              :: !Text
-                                 , bindPort                 :: !Integer
+                                 , bindPort                 :: !Int
                                  , creditProtocolAddress    :: !Address
                                  , issueCreditEvent         :: !Text
                                  , scanStartBlock           :: !Integer

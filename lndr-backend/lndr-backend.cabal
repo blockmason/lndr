@@ -74,6 +74,7 @@ library
                      , transformers
                      , unordered-containers
                      , wai
+                     , warp
                      , web3
   default-language:    Haskell2010
 

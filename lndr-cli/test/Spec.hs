@@ -318,9 +318,9 @@ basicSettlementTest = do
     httpCode <- verifySettlement testUrl creditHash txHash testPrivkey5
     assertEqual "verification success" 204 httpCode
 
-    -- ensure that tx registers in blockchain w/ a 7 second pause and
+    -- ensure that tx registers in blockchain w/ a 10 second pause and
     -- heartbeat has time to verify its validity
-    threadDelay (7 * 10 ^ 6)
+    threadDelay (10 * 10 ^ 6)
 
     (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getPendingSettlements testUrl testAddress5
     assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)

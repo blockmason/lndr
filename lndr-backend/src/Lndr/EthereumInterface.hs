@@ -55,7 +55,7 @@ import           Data.Default
 import           Data.Either                 (rights)
 import           Data.List.Safe              ((!!))
 import qualified Data.Map                    as M
-import           Data.Maybe                  (fromMaybe, fromJust)
+import           Data.Maybe                  (fromMaybe, maybe)
 import           Data.Sized                  hiding (fmap, (!!), (++))
 import           Data.Text                   (Text)
 import qualified Data.Text                   as T
@@ -71,6 +71,7 @@ import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
 import           Network.Ethereum.Transaction
 import           Prelude                     hiding (lookup, (!!))
+import           Servant
 
 
 -- Create functions to call CreditProtocol contract.
@@ -100,8 +101,11 @@ finalizeTransaction config (BilateralCreditRecord (CreditRecord creditor debtor 
                                         (sig2r :< sig2s :< sig2v :< NilL)
                                         encodedMemo
       nonce <- fmap unQuantity . lndrWeb3 $ Eth.getTransactionCount (executionAddress config) Latest
-      let rawTx = createRawTransaction issueCreditCall nonce chainId $ executionPrivateKey config
-      lndrWeb3 . Eth.sendRawTransaction $ fromJust rawTx
+      rawTx <- maybe (throwError (err500 {errBody = "Error generating txData."}))
+                     pure $ createRawTransaction issueCreditCall
+                                                 nonce chainId
+                                                 (executionPrivateKey config)
+      lndrWeb3 $ Eth.sendRawTransaction rawTx
     where callVal = def { callFrom = Just $ executionAddress config
                         , callTo = creditProtocolAddress config
                         , callGasPrice = Just . Quantity $ gasPrice config

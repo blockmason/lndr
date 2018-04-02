@@ -57,7 +57,17 @@ loadUcacs = do
     let Just ucacAddr = M.lookup "USD" ucacAddresses
         Just ucacAddrKRW = M.lookup "KRW" ucacAddresses
         Just ucacAddrJPY = M.lookup "JPY" ucacAddresses
-    return (ucacAddr, ucacAddrKRW, ucacAddrJPY)
+        Just ucacAddrDKK = M.lookup "DKK" ucacAddresses
+        Just ucacAddrCHF = M.lookup "CHF" ucacAddresses
+        Just ucacAddrCNY = M.lookup "CNY" ucacAddresses
+        Just ucacAddrEUR = M.lookup "EUR" ucacAddresses
+        Just ucacAddrAUD = M.lookup "AUD" ucacAddresses
+        Just ucacAddrGBP = M.lookup "GBP" ucacAddresses
+        Just ucacAddrCAD = M.lookup "CAD" ucacAddresses
+        Just ucacAddrNOK = M.lookup "NOK" ucacAddresses
+        Just ucacAddrSEK = M.lookup "SEK" ucacAddresses
+        Just ucacAddrNZD = M.lookup "NZD" ucacAddresses
+    return (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD)
 
 
 main :: IO ()
@@ -178,7 +188,7 @@ nickTest = do
 
 basicLendTest :: Assertion
 basicLendTest = do
-    (ucacAddr, ucacAddrKRW, ucacAddrJPY) <- loadUcacs
+    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD) <- loadUcacs
 
     let testAmount = 100
         testCredit' = CreditRecord testAddress1 testAddress2 testAmount "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
@@ -275,7 +285,7 @@ basicLendTest = do
 
 basicSettlementTest :: Assertion
 basicSettlementTest = do
-    (ucacAddr, ucacAddrKRW, ucacAddrJPY) <- loadUcacs
+    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD) <- loadUcacs
 
     let testAmount = 2939
         testCredit' = CreditRecord testAddress5 testAddress6 testAmount "settlement" testAddress5 0 "" "" ucacAddr Nothing (Just "ETH") Nothing

@@ -1,3 +1,6 @@
+bind-address = "127.0.0.1"
+bind-port = 7402
+
 # lndr addresses
 lndr-ucacs {
     usd = "0x6804f48233f6ff2b468f7636560d525ca951931e"

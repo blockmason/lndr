@@ -13,6 +13,7 @@ import           Data.Either.Combinators       (fromRight, mapLeft)
 import qualified Data.Map                      as M
 import           Data.Maybe                    (fromMaybe, isNothing)
 import           Data.Monoid                   ((<>))
+import           Data.String                   (fromString)
 import           Data.Text                     (Text)
 import qualified Data.Text                     as T
 import qualified Data.Text.Encoding            as T
@@ -20,7 +21,11 @@ import           Lndr.Types
 import qualified Network.Ethereum.Util         as EU
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address as Addr
+import qualified Network.Wai.Handler.Warp      as W
 import           Numeric                       (readHex, showHex)
+
+textToHostPreference :: Text -> W.HostPreference
+textToHostPreference = fromString . T.unpack
 
 
 hashCreditLog :: IssueCreditLog -> Text

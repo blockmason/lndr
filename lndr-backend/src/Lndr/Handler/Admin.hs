@@ -24,7 +24,17 @@ unsubmittedHandler = do
     blockchainCredits <- lndrWeb3 $
         join <$> sequence [ lndrLogs config "USD" Nothing Nothing
                           , lndrLogs config "JPY" Nothing Nothing
-                          , lndrLogs config "KRW" Nothing Nothing ]
+                          , lndrLogs config "KRW" Nothing Nothing
+                          , lndrLogs config "DKK" Nothing Nothing
+                          , lndrLogs config "CHF" Nothing Nothing
+                          , lndrLogs config "CNY" Nothing Nothing
+                          , lndrLogs config "EUR" Nothing Nothing
+                          , lndrLogs config "AUD" Nothing Nothing
+                          , lndrLogs config "GBP" Nothing Nothing
+                          , lndrLogs config "CAD" Nothing Nothing
+                          , lndrLogs config "NOK" Nothing Nothing
+                          , lndrLogs config "SEK" Nothing Nothing
+                          , lndrLogs config "NZD" Nothing Nothing ]
     dbCredits <- liftIO $ withResource pool Db.allCredits
     pure (length dbCredits, length blockchainCredits, dbCredits \\ blockchainCredits)
 

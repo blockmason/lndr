@@ -213,11 +213,21 @@ instance ToJSON Notification where
 data EthereumPrices = EthereumPrices { usd :: Double
                                      , jpy :: Double
                                      , krw :: Double
+                                     , dkk :: Double
+                                     , chf :: Double
+                                     , cny :: Double
+                                     , eur :: Double
+                                     , aud :: Double
+                                     , gbp :: Double
+                                     , cad :: Double
+                                     , nok :: Double
+                                     , sek :: Double
+                                     , nzd :: Double
                                      } deriving (Show, Generic)
 $(deriveToJSON defaultOptions ''EthereumPrices)
 
 instance Default EthereumPrices where
-    def = EthereumPrices 864.78 92481 925859
+    def = EthereumPrices 420 45000 460000 2500 400 2600 340 550 300 540 3250 3450 575
 
 instance FromJSON EthereumPrices where
         parseJSON (Object v) = do
@@ -226,7 +236,17 @@ instance FromJSON EthereumPrices where
             usd <- read <$> ratesObject .: "USD"
             jpy <- read <$> ratesObject .: "JPY"
             krw <- read <$> ratesObject .: "KRW"
-            return $ EthereumPrices usd jpy krw
+            dkk <- read <$> ratesObject .: "DKK"
+            chf <- read <$> ratesObject .: "CHF"
+            cny <- read <$> ratesObject .: "CNY"
+            eur <- read <$> ratesObject .: "EUR"
+            aud <- read <$> ratesObject .: "AUD"
+            gbp <- read <$> ratesObject .: "GBP"
+            cad <- read <$> ratesObject .: "CAD"
+            nok <- read <$> ratesObject .: "NOK"
+            sek <- read <$> ratesObject .: "SEK"
+            nzd <- read <$> ratesObject .: "NZD"
+            return $ EthereumPrices usd jpy krw dkk chf cny eur aud gbp cad nok sek nzd
 
 data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Address
                                  , bindAddress              :: !Text
@@ -274,6 +294,16 @@ instance FromJSON ConfigResponse where
         ethereumPrices <- EthereumPrices <$> ethereumPricesObject .: "usd"
                                          <*> ethereumPricesObject .: "jpy"
                                          <*> ethereumPricesObject .: "krw"
+                                         <*> ethereumPricesObject .: "dkk"
+                                         <*> ethereumPricesObject .: "chf"
+                                         <*> ethereumPricesObject .: "cny"
+                                         <*> ethereumPricesObject .: "eur"
+                                         <*> ethereumPricesObject .: "aud"
+                                         <*> ethereumPricesObject .: "gbp"
+                                         <*> ethereumPricesObject .: "cad"
+                                         <*> ethereumPricesObject .: "nok"
+                                         <*> ethereumPricesObject .: "sek"
+                                         <*> ethereumPricesObject .: "nzd"
         return $ ConfigResponse addressesObject creditProtocolAddress gasPrice
                                 ethereumPrices weekAgoBlock
 

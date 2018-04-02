@@ -4,8 +4,18 @@ bind-port = 7402
 # lndr addresses
 lndr-ucacs {
     usd = "0x6804f48233f6ff2b468f7636560d525ca951931e"
-    jpy  = "0x106c743c55d69afac2c49dae5fa9e75273c3bea4"
+    jpy = "0x106c743c55d69afac2c49dae5fa9e75273c3bea4"
     krw = "0xc643de39dd15b7787d1b87dd48e6e7e2b1a1f118"
+    aud = "0xb82acb57fcc7fec3438f02845dfdfad29a4589e4"
+    cad = "0xd75fcd5ca7b235eaeabc82fda406d7a87101bbc0"
+    chf = "0x519b1153e2c822e605d36ddb959ba233f658afd1"
+    cny = "0xe131b33e6a02ae1cd5152c3d2c2812188cdf7f4a"
+    dkk = "0x061a0d4f6e7f71ed18263f188c2fd29945fdce7f"
+    eur = "0xae0d61120070411bf96b1d0d42fe9f4023e9f8f1"
+    gbp = "0x5c433119ec13fdac42359838f7df93124d054d0c"
+    nok = "0x943b8e14145692f33082ca062ee48be49d48d476"
+    nzd = "0x28a2997d3c21087053b7bb5c244bf06bf84c984e"
+    sek = "0x55b1d21c802e74b5e2230e9f3af28d22f8128ddd"
 }
 
 # Credit Protocol contract address, called for 'issueCredit' among others

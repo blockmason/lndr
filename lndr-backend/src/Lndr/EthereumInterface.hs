@@ -100,7 +100,8 @@ finalizeTransaction config (BilateralCreditRecord (CreditRecord creditor debtor 
                                         (sig2r :< sig2s :< sig2v :< NilL)
                                         encodedMemo
       nonce <- fmap unQuantity . lndrWeb3 $ Eth.getTransactionCount (executionAddress config) Latest
-      lndrWeb3 . Eth.sendRawTransaction . fromJust $ createRawTransaction issueCreditCall nonce chainId $ executionPrivateKey config
+      let rawTx = createRawTransaction issueCreditCall nonce chainId $ executionPrivateKey config
+      lndrWeb3 . Eth.sendRawTransaction $ fromJust rawTx
     where callVal = def { callFrom = Just $ executionAddress config
                         , callTo = creditProtocolAddress config
                         , callGasPrice = Just . Quantity $ gasPrice config

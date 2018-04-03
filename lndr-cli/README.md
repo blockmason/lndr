@@ -23,9 +23,9 @@ Commands:
   nick                Set a nickname for default user
   searchnick          Find address for a corresponding nickname
   getnonce            Display nonce between default user and the indicated
-                      counterpary addess
+                      counterparty addess
   addfriend           Display nonce between default user and the indicated
-                      counterpary addess
+                      counterparty addess
   removefriend        Remove a friend with the indicated address from the
                       default user's friend list
   setphoto            Use a particular image file as the default user's

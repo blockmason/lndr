@@ -59,9 +59,9 @@ programModes = modes [ Transactions
                      , GetNonce { friend = "0x198e13017d2333712bd942d8b028610b95c363da"
                                     &= typ "<friend>"
                                 }
-                        &= help "Display nonce between default user and the indicated counterpary addess"
+                        &= help "Display nonce between default user and the indicated counterparty addess"
                      , AddFriend "0x198e13017d2333712bd942d8b028610b95c363da"
-                        &= help "Display nonce between default user and the indicated counterpary addess"
+                        &= help "Display nonce between default user and the indicated counterparty addess"
                      , RemoveFriend "0x198e13017d2333712bd942d8b028610b95c363da"
                         &= help "Remove a friend with the indicated address\
                                \ from the default user's friend list"

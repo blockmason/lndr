@@ -259,7 +259,6 @@ data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Addr
                                  , dbName                   :: !Text
                                  , dbHost                   :: !String
                                  , dbPort                   :: !Word16
-                                 , executionAddress         :: !Address
                                  , gasPrice                 :: !Integer
                                  , ethereumPrices           :: !EthereumPrices
                                  , maxGas                   :: !Integer
@@ -271,6 +270,9 @@ data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Addr
                                  , awsAccessKeyId           :: !ByteString
                                  , awsSecretAccessKey       :: !ByteString
                                  , web3Url                  :: !String
+                                 , executionPrivateKey      :: !Text
+                                 , executionAddress         :: !Address
+                                 , executionNonce           :: !Integer
                                  }
 
 -- 'ConfigResponse' contains all the server data that users have access to via

@@ -28,6 +28,7 @@ module Lndr.EthereumInterface (
     , balances
     , createAndStakeUcac
     , currentBlockNumber
+    , currentExecutionNonce
     , executeUcacTx
     , nonces
     , owner
@@ -55,7 +56,7 @@ import           Data.Default
 import           Data.Either                 (rights)
 import           Data.List.Safe              ((!!))
 import qualified Data.Map                    as M
-import           Data.Maybe                  (fromMaybe)
+import           Data.Maybe                  (fromMaybe, maybe)
 import           Data.Sized                  hiding (fmap, (!!), (++))
 import           Data.Text                   (Text)
 import qualified Data.Text                   as T
@@ -69,7 +70,9 @@ import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Eth   as Eth
 import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
+import           Network.Ethereum.Transaction
 import           Prelude                     hiding (lookup, (!!))
+import           Servant
 
 
 -- Create functions to call CreditProtocol contract.
@@ -85,27 +88,37 @@ lndrWeb3 web3Action = do
 
 
 -- | Submit a bilateral credit record to the Credit Protocol smart contract.
-finalizeTransaction :: ServerConfig -> BilateralCreditRecord
+finalizeTransaction :: TVar ServerConfig -> BilateralCreditRecord
                     -> LndrHandler TxHash
-finalizeTransaction config (BilateralCreditRecord (CreditRecord creditor debtor amount memo _ _ _ _ ucac _ _ _) sig1 sig2 _) = do
-      let (sig1r, sig1s, sig1v) = decomposeSig sig1
-          (sig2r, sig2s, sig2v) = decomposeSig sig2
-          encodedMemo :: BytesN 32
-          encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
-      lndrWeb3 $ issueCredit callVal
-                             ucac
-                             creditor debtor (UIntN amount)
-                             (sig1r :< sig1s :< sig1v :< NilL)
-                             (sig2r :< sig2s :< sig2v :< NilL)
-                             encodedMemo
-    where callVal = def { callFrom = Just $ executionAddress config
+finalizeTransaction configTVar (BilateralCreditRecord (CreditRecord creditor debtor amount memo _ _ _ _ ucac _ _ _) sig1 sig2 _) = do
+      config <- liftIO . atomically $ readTVar configTVar
+      let execNonce = executionNonce config
+          callVal = def { callFrom = Just $ executionAddress config
                         , callTo = creditProtocolAddress config
                         , callGasPrice = Just . Quantity $ gasPrice config
                         , callValue = Just . Quantity $ 0
                         , callGas = Just . Quantity $ maxGas config
                         }
+          chainId = 1 -- 1 is the mainnet chainId
+          (sig1r, sig1s, sig1v) = decomposeSig sig1
+          (sig2r, sig2s, sig2v) = decomposeSig sig2
+          encodedMemo :: BytesN 32
+          encodedMemo = BytesN . BA.convert . T.encodeUtf8 $ memo
+          issueCreditCall = issueCredit callVal
+                                        ucac
+                                        creditor debtor (UIntN amount)
+                                        (sig1r :< sig1s :< sig1v :< NilL)
+                                        (sig2r :< sig2s :< sig2v :< NilL)
+                                        encodedMemo
 
-
+      rawTx <- maybe (throwError (err500 {errBody = "Error generating txData."}))
+                     pure $ createRawTransaction issueCreditCall
+                                                 execNonce chainId
+                                                 (executionPrivateKey config)
+      result <- lndrWeb3 $ Eth.sendRawTransaction rawTx
+      -- increment the execution account's nonce
+      liftIO . atomically $ modifyTVar' configTVar (\x -> x { executionNonce = succ execNonce})
+      pure result
 -- | Scan blockchain for 'IssueCredit' events emitted by the Credit Protocol
 -- smart contract. If 'Just addr' values are passed in for either 'creditorM'
 -- or 'debtorM', or both, logs are filtered to show matching results.
@@ -174,3 +187,13 @@ currentBlockNumber config = do
     return $ case blockNumberTextE of
         Right (BlockNumber number) -> number
         Left _        -> 0
+
+
+-- | Queries the blockchain for current nonce of the execution address
+currentExecutionNonce :: ServerConfig -> MaybeT IO Integer
+currentExecutionNonce config = do
+    let provider = HttpProvider (web3Url config)
+    nonceE <- runWeb3' provider $ Eth.getTransactionCount (executionAddress config) Latest
+    return $ case nonceE of
+        Right (Quantity number) -> number
+        Left  _                 -> 0

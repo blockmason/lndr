@@ -4,8 +4,8 @@ packages:
 - lndr-backend/
 - lndr-cli/
 - location:
-    git: git@github.com:airalab/hs-web3.git
-    commit: 34813c966f180c533b55ccc390ada10f286c701c
+    git: git@github.com:aupiff/hs-web3.git
+    commit: 7adc22ba90a3cd1052837c355e84709176817602
   extra-dep: true
 - location:
     git: git@github.com:aupiff/ethereumhs-util.git
@@ -18,6 +18,7 @@ extra-deps:
 - ghc-typelits-presburger-0.1.1.1
 - monomorphic-0.0.3.3
 - presburger-1.3.1
+- relapse-1.0.0.0
 - secp256k1-0.5.2
 - sized-0.2.1.1
 - type-natural-0.7.1.4

@@ -49,29 +49,29 @@ import           Control.Exception
 import           Control.Monad
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
-import qualified Data.Bimap                  as B
-import qualified Data.ByteArray              as BA
-import qualified Data.ByteString.Base16      as BS16
+import qualified Data.Bimap                   as B
+import qualified Data.ByteArray               as BA
+import qualified Data.ByteString.Base16       as BS16
 import           Data.Default
-import           Data.Either                 (rights)
-import           Data.List.Safe              ((!!))
-import qualified Data.Map                    as M
-import           Data.Maybe                  (fromMaybe, maybe)
-import           Data.Sized                  hiding (fmap, (!!), (++))
-import           Data.Text                   (Text)
-import qualified Data.Text                   as T
-import qualified Data.Text.Encoding          as T
+import           Data.Either                  (rights)
+import           Data.List.Safe               ((!!))
+import qualified Data.Map                     as M
+import           Data.Maybe                   (fromMaybe, maybe)
+import           Data.Sized                   hiding (fmap, (!!), (++))
+import           Data.Text                    (Text)
+import qualified Data.Text                    as T
+import qualified Data.Text.Encoding           as T
 import           Data.Tuple
 import           Lndr.NetworkStatistics
 import           Lndr.Types
 import           Lndr.Handler.Types
 import           Lndr.Util
 import           Network.Ethereum.Web3
-import qualified Network.Ethereum.Web3.Eth   as Eth
+import qualified Network.Ethereum.Web3.Eth    as Eth
 import           Network.Ethereum.Web3.TH
 import           Network.Ethereum.Web3.Types
-import           Network.Ethereum.Transaction
-import           Prelude                     hiding (lookup, (!!))
+import           Network.Ethereum.Transaction (createRawTransaction)
+import           Prelude                      hiding (lookup, (!!))
 import           Servant
 
 

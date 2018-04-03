@@ -79,7 +79,6 @@ type LndrAPI =
                   :> Get '[JSON] Integer
    :<|> "balance" :> Capture "p1" Address :> Capture "p2" Address
                   :> QueryParam "currency" Text :> Get '[JSON] Integer
-   :<|> "unsubmitted" :> Get '[JSON] (Int, Int, [IssueCreditLog])
    :<|> "register_push" :> ReqBody '[JSON] PushRequest
                         :> PostNoContent '[JSON] NoContent
    :<|> "config" :> Get '[JSON] ConfigResponse
@@ -110,7 +109,6 @@ server = transactionsHandler
     :<|> counterpartiesHandler
     :<|> balanceHandler
     :<|> twoPartyBalanceHandler
-    :<|> unsubmittedHandler
     :<|> registerPushHandler
     :<|> configHandler
     :<|> Tagged serveDocs

@@ -44,6 +44,7 @@ module Lndr.CLI.Actions (
     , registerChannel
     ) where
 
+import           Control.Monad
 import qualified Data.ByteString                 as B
 import qualified Data.ByteString.Base64          as B64
 import           Data.Data
@@ -53,6 +54,7 @@ import qualified Data.Text                       as T
 import qualified Data.Text.Encoding              as T
 import qualified Data.Text.Lazy                  as LT
 import           Lndr.CLI.Config
+import           Lndr.Config
 import           Lndr.EthereumInterface          hiding (getNonce)
 import           Lndr.Signature
 import           Lndr.Types
@@ -62,6 +64,7 @@ import           Network.Ethereum.Util           (ecsign, hashPersonalMessage,
                                                   hashText, privateToAddress)
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address   as Addr
+import           Network.Ethereum.Web3.Types     (Provider(..))
 import qualified Network.HTTP.Simple             as HTTP
 import           Text.EmailAddress
 import qualified Text.Pretty.Simple              as Pr
@@ -358,3 +361,22 @@ setProfilePhoto url privateKey photoPath = do
         req = HTTP.setRequestBodyJSON signedPhotoRequest $
                     HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+
+
+scanBlockchain :: String -> IO (Either Web3Error [IssueCreditLog])
+scanBlockchain web3Url = do
+    config <- loadConfig
+    runWeb3' (HttpProvider web3Url) $
+        join <$> sequence [ lndrLogs config "USD" Nothing Nothing
+                          , lndrLogs config "JPY" Nothing Nothing
+                          , lndrLogs config "KRW" Nothing Nothing
+                          , lndrLogs config "DKK" Nothing Nothing
+                          , lndrLogs config "CHF" Nothing Nothing
+                          , lndrLogs config "CNY" Nothing Nothing
+                          , lndrLogs config "EUR" Nothing Nothing
+                          , lndrLogs config "AUD" Nothing Nothing
+                          , lndrLogs config "GBP" Nothing Nothing
+                          , lndrLogs config "CAD" Nothing Nothing
+                          , lndrLogs config "NOK" Nothing Nothing
+                          , lndrLogs config "SEK" Nothing Nothing
+                          , lndrLogs config "NZD" Nothing Nothing ]

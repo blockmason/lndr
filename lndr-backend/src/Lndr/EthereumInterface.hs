@@ -119,6 +119,8 @@ finalizeTransaction configTVar (BilateralCreditRecord (CreditRecord creditor deb
       -- increment the execution account's nonce
       liftIO . atomically $ modifyTVar' configTVar (\x -> x { executionNonce = succ execNonce})
       pure result
+
+
 -- | Scan blockchain for 'IssueCredit' events emitted by the Credit Protocol
 -- smart contract. If 'Just addr' values are passed in for either 'creditorM'
 -- or 'debtorM', or both, logs are filtered to show matching results.

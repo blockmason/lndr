@@ -33,6 +33,7 @@ data LndrCmd = Transactions
              | Unsubmitted
              | PendingSettlements
              | LndrConfig
+             | ScanBlockchain { web3Url :: String }
              deriving (Show, Data, Typeable)
 
 
@@ -76,6 +77,8 @@ programModes = modes [ Transactions
                         &= help "List all pending settlements"
                      , LndrConfig
                         &= help "Prints config endpoint response"
+                     , ScanBlockchain "http://127.0.0.1:8545"
+                        &= help "Scan blockchain for all CP transactions"
                      ] &= help "Lend and borrow money.\nServer URL, default user,\
                               \ and default ucac must be indicated in configuration file."
                        &= program "lndr"

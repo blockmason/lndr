@@ -19,6 +19,7 @@ module Lndr.Handler.Credit (
     ) where
 
 import           Control.Concurrent.STM
+import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
 import qualified Data.Bimap                 as B
@@ -121,11 +122,10 @@ finalizeCredit bilateralCredit = do
 
             -- In case the record is a settlement, delay submitting credit to
             -- the blockchain until /verify_settlement is called
-            -- (settlements will have 'Just _' for thier 'settlementAmount',
+            -- (settlements will have 'Just _' for their 'settlementAmount',
             -- non-settlements will have 'Nothing')
             when (isNothing . settlementAmount . creditRecord $ bilateralCredit) $ do
-                -- should I move this into begin / commit block?
-                web3Result <- finalizeTransaction config bilateralCredit
+                web3Result <- finalizeTransaction config bilateralCredit `catchError` (pure . T.pack . show)
                 liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result
 
             -- saving transaction record to 'verified_credits' table

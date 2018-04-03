@@ -112,7 +112,7 @@ finalizeTransaction config (BilateralCreditRecord (CreditRecord creditor debtor 
                         , callValue = Just . Quantity $ 0
                         , callGas = Just . Quantity $ maxGas config
                         }
-          chainId = 1
+          chainId = 1 -- 1 is the mainnet chainId
 
 
 -- | Scan blockchain for 'IssueCredit' events emitted by the Credit Protocol

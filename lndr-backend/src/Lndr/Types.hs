@@ -272,6 +272,7 @@ data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Addr
                                  , web3Url                  :: !String
                                  , executionPrivateKey      :: !Text
                                  , executionAddress         :: !Address
+                                 , executionNonce           :: !Integer
                                  }
 
 -- 'ConfigResponse' contains all the server data that users have access to via

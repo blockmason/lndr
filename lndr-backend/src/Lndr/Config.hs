@@ -60,11 +60,4 @@ loadConfig = do
                           (loadEntry "web3-url")
                           privateKey
                           execAddress
-
-
-web3ProviderEnvVariable :: String
-web3ProviderEnvVariable = "WEB3_PROVIDER"
-
-
-setEnvironmentConfigs :: ServerConfig -> IO ()
-setEnvironmentConfigs config = setEnv web3ProviderEnvVariable (web3Url config)
+                          0

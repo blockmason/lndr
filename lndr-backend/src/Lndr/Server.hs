@@ -159,7 +159,6 @@ app state = serve lndrAPI (readerServer state)
 freshState :: IO ServerState
 freshState = do
     serverConfig <- loadConfig
-    setEnvironmentConfigs serverConfig
     let dbConfig = DB.defaultConnectInfo {
           DB.connectHost = dbHost serverConfig
         , DB.connectPort = dbPort serverConfig
@@ -177,8 +176,10 @@ freshState = do
                 <*> newTVarIO serverConfig
                 <*> newStdoutLoggerSet defaultBufSize
 
+
 currentConfig :: ServerState -> IO ServerConfig
 currentConfig state = atomically . readTVar $ serverConfig state
+
 
 runHeartbeat :: ServerState -> IO ThreadId
 runHeartbeat state = forkIO . forever $ catch (void . runExceptT $ runReaderT (runLndr heartbeat) state) (print :: SomeException -> IO ())

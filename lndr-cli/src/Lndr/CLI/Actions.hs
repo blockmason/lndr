@@ -127,8 +127,9 @@ runMode (Config url sk _) PendingSettlements =
 runMode (Config url sk _) LndrConfig =
     print =<< getConfig (LT.unpack url)
 
-runMode (Config url sk _) (ScanBlockchain web3Url) =
-    print =<< scanBlockchain web3Url
+runMode (Config url sk _) ScanBlockchain = do
+    logs <- scanBlockchain
+    Pr.pPrintNoColor logs
 
 
 userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
@@ -367,10 +368,10 @@ setProfilePhoto url privateKey photoPath = do
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 
 
-scanBlockchain :: String -> IO (Either Web3Error [IssueCreditLog])
-scanBlockchain web3Url = do
+scanBlockchain :: IO (Either Web3Error [IssueCreditLog])
+scanBlockchain = do
     config <- loadConfig
-    runWeb3' (HttpProvider web3Url) $
+    runWeb3' (HttpProvider (web3Url config)) $
         join <$> sequence [ lndrLogs config "USD" Nothing Nothing
                           , lndrLogs config "JPY" Nothing Nothing
                           , lndrLogs config "KRW" Nothing Nothing

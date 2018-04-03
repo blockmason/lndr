@@ -41,7 +41,7 @@ programModes = modes [ Transactions
                      , Pending
                         &= help "List all pending transactions"
                      , RejectPending
-                        &= help "Start interactive credit rejection procss"
+                        &= help "Start interactive credit rejection proecss"
                      , Lend { friend = "0x8c12aab5ffbe1f95b890f60832002f3bbc6fa4cf" &= typ "<counterparty address>"
                             , amount = 123 &= typ "<currency units>"
                             , memo = "default" &= typ "<memo text>"

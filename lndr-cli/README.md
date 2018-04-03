@@ -17,7 +17,7 @@ Commands:
   transactions        List all transactions involving default user in default
                       Lndr UCAC
   pending             List all pending transactions
-  rejectpending       Start interactive credit rejection procss
+  rejectpending       Start interactive credit rejection process
   lend                Submit a unilateral transaction as a creditor
   borrow              Submit a unilateral transaction as a debtor
   nick                Set a nickname for default user

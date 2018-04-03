@@ -127,6 +127,10 @@ runMode (Config url sk _) PendingSettlements =
 runMode (Config url sk _) LndrConfig =
     print =<< getConfig (LT.unpack url)
 
+runMode (Config url sk _) (ScanBlockchain web3Url) =
+    print =<< scanBlockchain web3Url
+
+
 userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
 
 -- TODO all cmdline actions should be put into `Reader Config` monad

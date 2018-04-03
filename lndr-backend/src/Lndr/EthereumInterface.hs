@@ -91,7 +91,13 @@ lndrWeb3 web3Action = do
 finalizeTransaction :: TVar ServerConfig -> BilateralCreditRecord
                     -> LndrHandler TxHash
 finalizeTransaction configTVar (BilateralCreditRecord (CreditRecord creditor debtor amount memo _ _ _ _ ucac _ _ _) sig1 sig2 _) = do
-      config <- liftIO . atomically $ readTVar configTVar
+
+      config <- liftIO . atomically $ do
+        config <- readTVar configTVar
+        -- increment the execution account's nonce
+        modifyTVar' configTVar (\x -> x { executionNonce = succ (executionNonce config)})
+        pure config
+
       let execNonce = executionNonce config
           callVal = def { callFrom = Just $ executionAddress config
                         , callTo = creditProtocolAddress config
@@ -116,8 +122,6 @@ finalizeTransaction configTVar (BilateralCreditRecord (CreditRecord creditor deb
                                                  execNonce chainId
                                                  (executionPrivateKey config)
       result <- lndrWeb3 $ Eth.sendRawTransaction rawTx
-      -- increment the execution account's nonce
-      liftIO . atomically $ modifyTVar' configTVar (\x -> x { executionNonce = succ execNonce})
       pure result
 
 

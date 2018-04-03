@@ -158,8 +158,11 @@ app state = serve lndrAPI (readerServer state)
 -- Called at server startup.
 freshState :: IO ServerState
 freshState = do
-    serverConfig <- loadConfig
-    let dbConfig = DB.defaultConnectInfo {
+    serverConfig' <- loadConfig
+    nonce <- fromMaybe (error "Error retrieving execution account nonce") <$>
+                runMaybeT (currentExecutionNonce serverConfig')
+    let serverConfig = serverConfig' { executionNonce = nonce }
+        dbConfig = DB.defaultConnectInfo {
           DB.connectHost = dbHost serverConfig
         , DB.connectPort = dbPort serverConfig
         , DB.connectUser = T.unpack $ dbUser serverConfig
@@ -231,12 +234,12 @@ verifySettlementsWithTxHash = do
 verifyIndividualRecord :: TransactionHash -> LndrHandler ()
 verifyIndividualRecord creditHash = do
     (ServerState pool configTVar loggerSet) <- ask
-    config <- liftIO . atomically $ readTVar configTVar
     recordM <- liftIO $ withResource pool $ Db.lookupCreditByHash creditHash
     let recordNotFound = throwError $
             err404 { errBody = "Credit hash does not refer to pending bilateral settlement record" }
     bilateralCreditRecord <- maybe recordNotFound pure recordM
     verifySettlementPayment bilateralCreditRecord
     liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
-    web3Result <- finalizeTransaction config bilateralCreditRecord
+    web3Result <- finalizeTransaction configTVar bilateralCreditRecord
+                        `catchError` (pure . T.pack . show)
     liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result

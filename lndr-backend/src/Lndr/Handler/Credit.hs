@@ -118,14 +118,13 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
 finalizeCredit :: BilateralCreditRecord -> LndrHandler ()
 finalizeCredit bilateralCredit = do
             (ServerState pool configTVar loggerSet) <- ask
-            config <- liftIO . atomically $ readTVar configTVar
-
             -- In case the record is a settlement, delay submitting credit to
             -- the blockchain until /verify_settlement is called
             -- (settlements will have 'Just _' for their 'settlementAmount',
             -- non-settlements will have 'Nothing')
             when (isNothing . settlementAmount . creditRecord $ bilateralCredit) $ do
-                web3Result <- finalizeTransaction config bilateralCredit `catchError` (pure . T.pack . show)
+                web3Result <- finalizeTransaction configTVar bilateralCredit
+                                    `catchError` (pure . T.pack . show)
                 liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result
 
             -- saving transaction record to 'verified_credits' table

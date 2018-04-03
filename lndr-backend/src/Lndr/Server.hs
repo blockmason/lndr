@@ -180,7 +180,7 @@ freshState = do
 
 
 currentConfig :: ServerState -> IO ServerConfig
-currentConfig state = atomically . readTVar $ serverConfig state
+currentConfig state = readTVarIO $ serverConfig state
 
 
 runHeartbeat :: ServerState -> IO ThreadId
@@ -199,7 +199,7 @@ heartbeat = do
     -- log hearbeat statistics
     liftIO $ pushLogStrLn loggerSet . toLogStr $ ("heartbeat" :: Text)
     -- sleep for time specified in config
-    config <- liftIO . atomically $ readTVar configTVar
+    config <- liftIO $ readTVarIO configTVar
     liftIO $ threadDelay (heartbeatInterval config * 10 ^ 6)
 
 
@@ -220,14 +220,14 @@ updateServerConfig configTVar = do
 deleteExpiredSettlements :: LndrHandler ()
 deleteExpiredSettlements = do
     (ServerState pool configTVar _) <- ask
-    config <- liftIO . atomically $ readTVar configTVar
+    config <- liftIO $ readTVarIO configTVar
     void . liftIO $ withResource pool Db.deleteExpiredSettlementsAndAssociatedCredits
 
 
 verifySettlementsWithTxHash :: LndrHandler ()
 verifySettlementsWithTxHash = do
     (ServerState pool configTVar _) <- ask
-    config <- liftIO . atomically $ readTVar configTVar
+    config <- liftIO $ readTVarIO configTVar
     creditHashes <- liftIO $ withResource pool Db.settlementCreditsToVerify
     mapM_ verifyIndividualRecord creditHashes
 

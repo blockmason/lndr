@@ -28,4 +28,4 @@ registerPushHandler r@(PushRequest channelID platform addr _) = do
 configHandler :: LndrHandler ConfigResponse
 configHandler = do
     configTVar <- asks serverConfig
-    configToResponse <$> (liftIO . atomically $ readTVar configTVar)
+    configToResponse <$> liftIO (readTVarIO configTVar)

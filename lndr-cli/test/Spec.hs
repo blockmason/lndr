@@ -261,8 +261,6 @@ basicLendTest = do
     friends <- fmap addr <$> getFriends testUrl testAddress2
     assertEqual "user2's friends properly calculated" [testAddress1] friends
 
-    threadDelay (1 * 10 ^ 6)
-
     -- user1 and user2 create credit on JPY ucac
     let jpyValue = 200000
         testCreditJPY' = CreditRecord testAddress2 testAddress1 jpyValue "sushi" testAddress2 0 "" "" ucacAddrJPY Nothing Nothing Nothing
@@ -293,8 +291,6 @@ basicSettlementTest = do
         testCredit' = CreditRecord testAddress5 testAddress6 testAmount "settlement" testAddress5 0 "" "" ucacAddr Nothing (Just "ETH") Nothing
         creditHash = generateHash testCredit'
         testCredit = testCredit' { hash = creditHash }
-
-    threadDelay (1 * 10 ^ 6)
 
     -- user5 submits pending settlement credit to user6
     httpCode <- submitCredit testUrl testPrivkey5 testCredit

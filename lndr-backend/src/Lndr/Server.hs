@@ -205,14 +205,16 @@ heartbeat = do
 
 updateServerConfig :: TVar ServerConfig -> IO ()
 updateServerConfig configTVar = do
-    config <- atomically $ readTVar configTVar
+    config <- readTVarIO configTVar
     currentPricesM <- runMaybeT queryEtheruemPrices
     currentGasPriceM <- runMaybeT querySafelow
     blockNumberM <- runMaybeT $ currentBlockNumber config
-    atomically $ writeTVar configTVar
-        config { ethereumPrices = fromMaybe (ethereumPrices config) currentPricesM
-               , gasPrice = fromMaybe (gasPrice config) currentGasPriceM
-               , latestBlockNumber = fromMaybe (latestBlockNumber config) blockNumberM }
+    atomically $ do
+        config <- readTVar configTVar
+        writeTVar configTVar
+            config { ethereumPrices = fromMaybe (ethereumPrices config) currentPricesM
+                   , gasPrice = fromMaybe (gasPrice config) currentGasPriceM
+                   , latestBlockNumber = fromMaybe (latestBlockNumber config) blockNumberM }
 
 
 deleteExpiredSettlements :: LndrHandler ()

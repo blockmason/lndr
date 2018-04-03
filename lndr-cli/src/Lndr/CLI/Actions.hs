@@ -407,6 +407,8 @@ consistencyCheck :: IO (Integer, Integer, [(Text, IssueCreditLog)], [(Text, Issu
 consistencyCheck = do
    blockchainCredits <- fromRight [] <$> scanBlockchain
    dbCredits <- scanDB
-   return (0, 0, hashPair <$> dbCredits \\ blockchainCredits
-               , hashPair <$> blockchainCredits \\ dbCredits)
+   return ( length dbCredits
+          , length blockchainCredits
+          , hashPair <$> dbCredits \\ blockchainCredits
+          , hashPair <$> blockchainCredits \\ dbCredits)
     where hashPair creditLog = (hashCreditLog creditLog, creditLog)

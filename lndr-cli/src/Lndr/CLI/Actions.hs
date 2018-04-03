@@ -135,8 +135,8 @@ runMode (Config url sk _) ScanBlockchain = do
     Pr.pPrintNoColor logs
 
 runMode (Config url sk _) ConsistencyCheck = do
-    logs <- scanBlockchain
-    Pr.pPrintNoColor logs
+    checkOutput <- consistencyCheck
+    Pr.pPrintNoColor checkOutput
 
 
 userFromSK = fromMaybe "" . privateToAddress . LT.toStrict

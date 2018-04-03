@@ -30,6 +30,7 @@ library
                      , filepath
                      , http-conduit
                      , lndr-backend
+                     , postgresql-simple
                      , pretty-simple
                      , text
                      , web3

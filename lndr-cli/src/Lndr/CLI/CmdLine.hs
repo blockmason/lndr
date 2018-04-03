@@ -34,6 +34,7 @@ data LndrCmd = Transactions
              | PendingSettlements
              | LndrConfig
              | ScanBlockchain
+             | ConsistencyCheck
              deriving (Show, Data, Typeable)
 
 
@@ -79,6 +80,8 @@ programModes = modes [ Transactions
                         &= help "Prints config endpoint response"
                      , ScanBlockchain
                         &= help "Scan blockchain for all CP transactions"
+                     , ConsistencyCheck
+                        &= help "Check db & blockchain consistency"
                      ] &= help "Lend and borrow money.\nServer URL, default user,\
                               \ and default ucac must be indicated in configuration file."
                        &= program "lndr"

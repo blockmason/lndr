@@ -157,10 +157,10 @@ app state = serve lndrAPI (readerServer state)
 -- Called at server startup.
 freshState :: IO ServerState
 freshState = do
-    serverConfig' <- loadConfig $ "lndr-backend" </> "data" </> "lndr-server.config"
+    serverConfigTemp <- loadConfig $ "lndr-backend" </> "data" </> "lndr-server.config"
     nonce <- fromMaybe (error "Error retrieving execution account nonce") <$>
-                runMaybeT (currentExecutionNonce serverConfig')
-    let serverConfig = serverConfig' { executionNonce = nonce }
+                runMaybeT (currentExecutionNonce serverConfigTemp)
+    let serverConfig = serverConfigTemp { executionNonce = nonce }
         dbConfig = DB.defaultConnectInfo {
           DB.connectHost = dbHost serverConfig
         , DB.connectPort = dbPort serverConfig

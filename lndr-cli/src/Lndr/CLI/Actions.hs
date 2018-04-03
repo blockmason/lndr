@@ -48,13 +48,17 @@ import           Control.Monad
 import qualified Data.ByteString                 as B
 import qualified Data.ByteString.Base64          as B64
 import           Data.Data
+import           Data.Either                     (fromRight)
+import           Data.List                       ((\\), find)
 import           Data.Maybe                      (fromMaybe)
 import           Data.Text                       (Text)
 import qualified Data.Text                       as T
 import qualified Data.Text.Encoding              as T
 import qualified Data.Text.Lazy                  as LT
+import qualified Database.PostgreSQL.Simple as DB
 import           Lndr.CLI.Config
 import           Lndr.Config
+import qualified Lndr.Db                         as DB
 import           Lndr.EthereumInterface          hiding (getNonce)
 import           Lndr.Signature
 import           Lndr.Types
@@ -127,6 +131,10 @@ runMode (Config url sk _) LndrConfig =
     print =<< getConfig (LT.unpack url)
 
 runMode (Config url sk _) ScanBlockchain = do
+    logs <- scanBlockchain
+    Pr.pPrintNoColor logs
+
+runMode (Config url sk _) ConsistencyCheck = do
     logs <- scanBlockchain
     Pr.pPrintNoColor logs
 
@@ -379,8 +387,26 @@ scanBlockchain = do
                           , lndrLogs config "SEK" Nothing Nothing
                           , lndrLogs config "NZD" Nothing Nothing ]
 
--- getUnsubmitted :: String -> IO (Int, Int, [(Text, IssueCreditLog)])
--- getUnsubmitted url = do
---     initReq <- HTTP.parseRequest $ url ++ "/unsubmitted"
---     (x, y, logs) <- HTTP.getResponseBody <$> HTTP.httpJSON initReq
---     return (x, y, fmap (\x -> (hashCreditLog x, x)) logs)
+
+scanDB :: IO [IssueCreditLog]
+scanDB = do
+   home <- getHomeDirectory
+   config <- loadConfig $  home </> "lndr-server.config"
+   let dbConfig = DB.defaultConnectInfo {
+                     DB.connectHost = dbHost config
+                   , DB.connectPort = dbPort config
+                   , DB.connectUser = T.unpack $ dbUser config
+                   , DB.connectPassword = T.unpack $ dbUserPassword config
+                   , DB.connectDatabase = T.unpack $ dbName config
+                   }
+   connection <- DB.connect dbConfig
+   DB.allCredits connection
+
+
+consistencyCheck :: IO (Integer, Integer, [(Text, IssueCreditLog)], [(Text, IssueCreditLog)])
+consistencyCheck = do
+   blockchainCredits <- fromRight [] <$> scanBlockchain
+   dbCredits <- scanDB
+   return (0, 0, hashPair <$> dbCredits \\ blockchainCredits
+               , hashPair <$> blockchainCredits \\ dbCredits)
+    where hashPair creditLog = (hashCreditLog creditLog, creditLog)

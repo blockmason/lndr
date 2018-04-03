@@ -6,16 +6,16 @@ lndr-ucacs {
     usd = "0x6804f48233f6ff2b468f7636560d525ca951931e"
     jpy = "0x106c743c55d69afac2c49dae5fa9e75273c3bea4"
     krw = "0xc643de39dd15b7787d1b87dd48e6e7e2b1a1f118"
-    aud = "0xb82acb57fcc7fec3438f02845dfdfad29a4589e4"
-    cad = "0xd75fcd5ca7b235eaeabc82fda406d7a87101bbc0"
-    chf = "0x519b1153e2c822e605d36ddb959ba233f658afd1"
-    cny = "0xe131b33e6a02ae1cd5152c3d2c2812188cdf7f4a"
-    dkk = "0x061a0d4f6e7f71ed18263f188c2fd29945fdce7f"
-    eur = "0xae0d61120070411bf96b1d0d42fe9f4023e9f8f1"
-    gbp = "0x5c433119ec13fdac42359838f7df93124d054d0c"
-    nok = "0x943b8e14145692f33082ca062ee48be49d48d476"
-    nzd = "0x28a2997d3c21087053b7bb5c244bf06bf84c984e"
-    sek = "0x55b1d21c802e74b5e2230e9f3af28d22f8128ddd"
+    aud = "0x3599a0abda08069e8e66544a2860e628c5dc1190"
+    cad = "0xc40aed3a0e5a7996d11802c33190e3cc2a4be054"
+    chf = "0xc75dc45521f4dd3852db72a95c581b2fd89992fa"
+    cny = "0x6f22641557cc768057443255a9d3d0f21f8264b2"
+    dkk = "0x449d75537c56e18c9d5e0438f7847628bbd981f7"
+    eur = "0xececfc5436bd8ee0c8e98379f3d99dfde6e15fb9"
+    gbp = "0x92571ad90b03ea60419fc66353db9c39ff9db5e1"
+    nok = "0x385540be0f17e1fae8ed83e46f5fb52545dc588b"
+    nzd = "0xce12dfd31dbc83bd24af7fd2e193f3073e3b53ec"
+    sek = "0x6fd660b6f92395901544f637e06ca4b67a30f7c9"
 }
 
 # Credit Protocol contract address, called for 'issueCredit' among others
@@ -40,7 +40,7 @@ db {
 }
 
 # configuration used for calling CP's 'issueCredit' function
-execution-private-key = "7920ca01d3d1ac463dfd55b5ddfdcbb64ae31830f31be045ce2d51a305516a37"
+execution-private-key = "edc63d0e14b29aaa26c7585e962f93abb59bd7d8b01b585e073dc03d052a000b"
 gas-price = 200000000
 max-gas = 250000
 

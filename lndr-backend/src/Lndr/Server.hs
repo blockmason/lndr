@@ -42,6 +42,7 @@ import           Network.HTTP.Types
 import           Network.Wai
 import           Servant
 import           Servant.Docs
+import           System.FilePath
 import           System.Log.FastLogger
 import           Text.EmailAddress
 
@@ -156,7 +157,7 @@ app state = serve lndrAPI (readerServer state)
 -- Called at server startup.
 freshState :: IO ServerState
 freshState = do
-    serverConfig' <- loadConfig
+    serverConfig' <- loadConfig $ "lndr-backend" </> "data" </> "lndr-server.config"
     nonce <- fromMaybe (error "Error retrieving execution account nonce") <$>
                 runMaybeT (currentExecutionNonce serverConfig')
     let serverConfig = serverConfig' { executionNonce = nonce }

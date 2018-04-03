@@ -37,8 +37,8 @@ module Lndr.CLI.Actions (
     , getPendingSettlements
     , getTxHash
     , getTxHashFail
+    , scanBlockchain
     , verifySettlement
-    , getUnsubmitted
 
     -- * notifications-related requests
     , registerChannel
@@ -66,6 +66,8 @@ import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address   as Addr
 import           Network.Ethereum.Web3.Types     (Provider(..))
 import qualified Network.HTTP.Simple             as HTTP
+import           System.Directory
+import           System.FilePath
 import           Text.EmailAddress
 import qualified Text.Pretty.Simple              as Pr
 
@@ -118,9 +120,6 @@ runMode (Config url sk _) (GetNonce friend) =
 runMode (Config url sk _) Info =
     print =<< getInfo (LT.unpack url) (userFromSK sk)
 
-runMode (Config url sk _) Unsubmitted =
-    print =<< getUnsubmitted (LT.unpack url)
-
 runMode (Config url sk _) PendingSettlements =
     print =<< getPendingSettlements (LT.unpack url) (textToAddress $ userFromSK sk)
 
@@ -136,13 +135,6 @@ userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
 
 -- TODO all cmdline actions should be put into `Reader Config` monad
 -- OR   we can use the servant autogen'd client code
-
-getUnsubmitted :: String -> IO (Int, Int, [(Text, IssueCreditLog)])
-getUnsubmitted url = do
-    initReq <- HTTP.parseRequest $ url ++ "/unsubmitted"
-    (x, y, logs) <- HTTP.getResponseBody <$> HTTP.httpJSON initReq
-    return (x, y, fmap (\x -> (hashCreditLog x, x)) logs)
-
 
 getTransactions :: String -> Address -> IO [IssueCreditLog]
 getTransactions url address = do
@@ -370,7 +362,8 @@ setProfilePhoto url privateKey photoPath = do
 
 scanBlockchain :: IO (Either Web3Error [IssueCreditLog])
 scanBlockchain = do
-    config <- loadConfig
+    home <- getHomeDirectory
+    config <- loadConfig $  home </> "lndr-server.config"
     runWeb3' (HttpProvider (web3Url config)) $
         join <$> sequence [ lndrLogs config "USD" Nothing Nothing
                           , lndrLogs config "JPY" Nothing Nothing
@@ -385,3 +378,9 @@ scanBlockchain = do
                           , lndrLogs config "NOK" Nothing Nothing
                           , lndrLogs config "SEK" Nothing Nothing
                           , lndrLogs config "NZD" Nothing Nothing ]
+
+-- getUnsubmitted :: String -> IO (Int, Int, [(Text, IssueCreditLog)])
+-- getUnsubmitted url = do
+--     initReq <- HTTP.parseRequest $ url ++ "/unsubmitted"
+--     (x, y, logs) <- HTTP.getResponseBody <$> HTTP.httpJSON initReq
+--     return (x, y, fmap (\x -> (hashCreditLog x, x)) logs)

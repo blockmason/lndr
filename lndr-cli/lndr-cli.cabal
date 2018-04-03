@@ -27,6 +27,7 @@ library
                      , directory
                      , emailaddress
                      , ethereumhs-util
+                     , filepath
                      , http-conduit
                      , lndr-backend
                      , pretty-simple

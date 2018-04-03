@@ -403,12 +403,12 @@ scanDB = do
    DB.allCredits connection
 
 
-consistencyCheck :: IO (Integer, Integer, [(Text, IssueCreditLog)], [(Text, IssueCreditLog)])
+consistencyCheck :: IO (Int, Int, [(Text, IssueCreditLog)], [(Text, IssueCreditLog)])
 consistencyCheck = do
    blockchainCredits <- fromRight [] <$> scanBlockchain
    dbCredits <- scanDB
-   return ( length dbCredits
-          , length blockchainCredits
-          , hashPair <$> dbCredits \\ blockchainCredits
-          , hashPair <$> blockchainCredits \\ dbCredits)
+   pure ( length dbCredits
+        , length blockchainCredits
+        , hashPair <$> dbCredits \\ blockchainCredits
+        , hashPair <$> blockchainCredits \\ dbCredits)
     where hashPair creditLog = (hashCreditLog creditLog, creditLog)

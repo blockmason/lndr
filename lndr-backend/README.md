@@ -34,10 +34,6 @@ submitted to the /verify_settlement endpoint.
 
 Web service API
 
-## LNDR Server
-
-Web service API
-
 ## POST /add_friends/:user
 
 #### Authentication

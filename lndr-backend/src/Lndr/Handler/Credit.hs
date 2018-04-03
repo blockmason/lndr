@@ -162,21 +162,21 @@ calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _
 calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ ucac _ (Just currency) _) =
     let blockNumber = latestBlockNumber config
         prices = ethereumPrices config
+        priceAdjustmentForCents = 100
         currencyPerEth = case B.lookupR ucac (lndrUcacAddrs config) of
-            Just "USD" -> usd prices * 100 -- mutliplying by 100 here since
-                                           -- usd amounts are stored in cents
+            Just "USD" -> usd prices * priceAdjustmentForCents
             Just "JPY" -> jpy prices
             Just "KRW" -> krw prices
-            Just "DKK" -> dkk prices * 100
-            Just "CHF" -> chf prices * 100
-            Just "CNY" -> cny prices * 100
-            Just "EUR" -> eur prices * 100
-            Just "AUD" -> aud prices * 100
-            Just "GBP" -> gbp prices * 100
-            Just "CAD" -> cad prices * 100
-            Just "NOK" -> nok prices * 100
-            Just "SEK" -> sek prices * 100
-            Just "NZD" -> nzd prices * 100
+            Just "DKK" -> dkk prices * priceAdjustmentForCents
+            Just "CHF" -> chf prices * priceAdjustmentForCents
+            Just "CNY" -> cny prices * priceAdjustmentForCents
+            Just "EUR" -> eur prices * priceAdjustmentForCents
+            Just "AUD" -> aud prices * priceAdjustmentForCents
+            Just "GBP" -> gbp prices * priceAdjustmentForCents
+            Just "CAD" -> cad prices * priceAdjustmentForCents
+            Just "NOK" -> nok prices * priceAdjustmentForCents
+            Just "SEK" -> sek prices * priceAdjustmentForCents
+            Just "NZD" -> nzd prices * priceAdjustmentForCents
             Nothing    -> error "ucac not found"
         settlementAmountRaw = floor $ fromIntegral amount / currencyPerEth * 10 ^ 18
     in cr { settlementAmount = Just $ roundToMegaWei settlementAmountRaw

@@ -167,16 +167,16 @@ calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ uca
                                            -- usd amounts are stored in cents
             Just "JPY" -> jpy prices
             Just "KRW" -> krw prices
-            Just "DKK" -> dkk prices
-            Just "CHF" -> chf prices
-            Just "CNY" -> cny prices
-            Just "EUR" -> eur prices
-            Just "AUD" -> aud prices
-            Just "GBP" -> gbp prices
-            Just "CAD" -> cad prices
-            Just "NOK" -> nok prices
-            Just "SEK" -> sek prices
-            Just "NZD" -> nzd prices
+            Just "DKK" -> dkk prices * 100
+            Just "CHF" -> chf prices * 100
+            Just "CNY" -> cny prices * 100
+            Just "EUR" -> eur prices * 100
+            Just "AUD" -> aud prices * 100
+            Just "GBP" -> gbp prices * 100
+            Just "CAD" -> cad prices * 100
+            Just "NOK" -> nok prices * 100
+            Just "SEK" -> sek prices * 100
+            Just "NZD" -> nzd prices * 100
             Nothing    -> error "ucac not found"
         settlementAmountRaw = floor $ fromIntegral amount / currencyPerEth * 10 ^ 18
     in cr { settlementAmount = Just $ roundToMegaWei settlementAmountRaw

@@ -7,7 +7,7 @@ import           Control.Concurrent             (threadDelay)
 import           Control.Monad.Trans.Maybe
 import           Data.Either                    (isRight)
 import           Data.Either.Combinators        (fromRight)
-import           Data.Maybe                     (fromJust)
+import           Data.Maybe                     (fromMaybe)
 import qualified Data.Map                       as M
 import qualified Data.Text.Lazy                 as LT
 import           Lndr.CLI.Actions
@@ -49,7 +49,7 @@ testSearch = "test"
 testNick1 = "test1"
 testNick2 = "test2"
 testEmailText = "tim@blockmason.io"
-testEmail = fromJust $ Email.emailAddressFromText testEmailText
+testEmail = fromMaybe (error "bad test email") $ Email.emailAddressFromText testEmailText
 
 
 loadUcacs = do
@@ -345,8 +345,7 @@ basicSettlementTest = do
     gottenTxHash <- getTxHash testUrl creditHash
     assertEqual "successful txHash retrieval" txHash (addHexPrefix gottenTxHash)
 
-    s@(dbCredits, blockchainCredits, _) <- getUnsubmitted testUrl
-    print s
+    (dbCredits, blockchainCredits, _) <- getUnsubmitted testUrl
     assertBool "equal, non-zero number of transactions in db and blockchain" (dbCredits == blockchainCredits && dbCredits == 3)
 
 

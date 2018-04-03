@@ -34,40 +34,18 @@ submitted to the /verify_settlement endpoint.
 
 Web service API
 
-## GET /friend_requests/:user
+## LNDR Server
 
-Provides a list of inbound friend requests to a user.
-
-#### Captures:
-
-- *user*: the address of the user whose friend requests will be returned
-
-#### Response:
-
-- Status code 200
-- Headers: []
-
-- Supported content types are:
-
-    - `application/json;charset=utf-8`
-    - `application/json`
-
-- Example (): `application/json`
-
-```javascript
-[
-  {
-    "nick": "alice",
-    "addr": "0xa4c29642cb055823754afc1255b817d9bf6409f2"
-  },
-  {
-    "nick": "bob",
-    "addr": "0xa1cf42b7b07a5d3e1cf081aeb4a3079ffca43a3d"
-  }
-]
-```
+Web service API
 
 ## POST /add_friends/:user
+
+#### Authentication
+
+
+
+Clients must supply the following data
+
 
 #### Captures:
 
@@ -289,13 +267,13 @@ Clients must supply the following data
 -
 
 ```javascript
-{"lndrAddresses":{"USD":"0x7899b83071d9704af0b132859a04bb1698a3acaf"},"creditProtocolAddress":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","gasPrice":1000,"ethereumPrices":{"usd":864.78,"jpy":92481.0,"krw":925859.0},"weekAgoBlock":5122553}
+{"lndrAddresses":{"USD":"0x7899b83071d9704af0b132859a04bb1698a3acaf"},"creditProtocolAddress":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","gasPrice":1000,"ethereumPrices":{"usd":420.0,"jpy":45000.0,"krw":460000.0,"dkk":2500.0,"chf":400.0,"cny":2600.0,"eur":340.0,"aud":550.0,"gbp":300.0,"cad":540.0,"nok":3250.0,"sek":3450.0,"nzd":575.0},"weekAgoBlock":5122553}
 ```
 
 -
 
 ```javascript
-{"lndrAddresses":{"USD":"0x7899b83071d9704af0b132859a04bb1698a3acaf"},"creditProtocolAddress":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","gasPrice":1000,"ethereumPrices":{"usd":864.78,"jpy":92481.0,"krw":925859.0},"weekAgoBlock":5122553}
+{"lndrAddresses":{"USD":"0x7899b83071d9704af0b132859a04bb1698a3acaf"},"creditProtocolAddress":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","gasPrice":1000,"ethereumPrices":{"usd":420.0,"jpy":45000.0,"krw":460000.0,"dkk":2500.0,"chf":400.0,"cny":2600.0,"eur":340.0,"aud":550.0,"gbp":300.0,"cad":540.0,"nok":3250.0,"sek":3450.0,"nzd":575.0},"weekAgoBlock":5122553}
 ```
 
 ## GET /counterparties/:user
@@ -452,7 +430,7 @@ Clients must supply the following data
 "tim@blockmason.io"
 ```
 
-## GET /friends/:user
+## GET /friend_requests/:user
 
 #### Authentication
 
@@ -505,7 +483,7 @@ Clients must supply the following data
 [{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"},{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"}]
 ```
 
-## GET /gas_price
+## GET /friends/:user
 
 #### Authentication
 
@@ -513,6 +491,10 @@ Clients must supply the following data
 
 Clients must supply the following data
 
+
+#### Captures:
+
+- *user*: the address of the user whose friends will be returned
 
 #### Response:
 
@@ -527,63 +509,31 @@ Clients must supply the following data
 -
 
 ```javascript
-19
+[]
 ```
 
 -
 
 ```javascript
-19
-```
-
-## PUT /gas_price
-
-#### Authentication
-
-
-
-Clients must supply the following data
-
-
-#### Request:
-
-- Supported content types are:
-
-    - `application/json;charset=utf-8`
-    - `application/json`
-
-- Example (): `application/json;charset=utf-8`
-
-```javascript
-19
-```
-
-- Example (): `application/json`
-
-```javascript
-19
-```
-
-#### Response:
-
-- Status code 204
-- Headers: []
-
-- Supported content types are:
-
-    - `application/json;charset=utf-8`
-    - `application/json`
-
--
-
-```javascript
-
+[]
 ```
 
 -
 
 ```javascript
+[{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"}]
+```
 
+-
+
+```javascript
+[{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"}]
+```
+
+-
+
+```javascript
+[{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"},{"nick":"aupiff","addr":"0x11edd217a875063583dd1b638d16810c5d34d54b"}]
 ```
 
 ## POST /lend
@@ -1067,41 +1017,6 @@ Clients must supply the following data
 
 ```
 
-## POST /resubmit/:hash
-
-#### Authentication
-
-
-
-Clients must supply the following data
-
-
-#### Captures:
-
-- *hash*: the hash by which to identify a credit record among candidates for resubmission
-
-#### Response:
-
-- Status code 204
-- Headers: []
-
-- Supported content types are:
-
-    - `application/json;charset=utf-8`
-    - `application/json`
-
--
-
-```javascript
-
-```
-
--
-
-```javascript
-
-```
-
 ## GET /search_nick/:nick
 
 #### Authentication
@@ -1244,55 +1159,6 @@ Clients must supply the following data
 
 ```javascript
 "aupiff"
-```
-
-## GET /unsubmitted
-
-#### Authentication
-
-
-
-Clients must supply the following data
-
-
-#### Response:
-
-- Status code 200
-- Headers: []
-
-- Supported content types are:
-
-    - `application/json;charset=utf-8`
-    - `application/json`
-
--
-
-```javascript
-[19,19,[]]
-```
-
--
-
-```javascript
-[19,19,[]]
-```
-
--
-
-```javascript
-[19,19,[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]]
-```
-
--
-
-```javascript
-[19,19,[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]]
-```
-
--
-
-```javascript
-[19,19,[{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"},{"ucac":"0xd5ec73eac35fc9dd6c3f440bce314779fed09f60","creditor":"0x11edd217a875063583dd1b638d16810c5d34d54b","debtor":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","amount":69,"nonce":0,"memo":"simple memo"}]]
 ```
 
 ## GET /user

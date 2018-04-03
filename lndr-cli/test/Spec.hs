@@ -345,9 +345,9 @@ basicSettlementTest = do
     gottenTxHash <- getTxHash testUrl creditHash
     assertEqual "successful txHash retrieval" txHash (addHexPrefix gottenTxHash)
 
-    blockchainCredits <- scanBlockchain
-    print blockchainCredits
-    assertEqual "correct number of transactions on blockchain" (Right 3) (length <$> blockchainCredits)
+    (numDbCredits, numBlockchainCredits, _, _) <- consistencyCheck
+    assertEqual "correct number of transactions on blockchain" 3 numBlockchainCredits
+    assertEqual "correct number of transactions in db" 3 numDbCredits
 
 
 basicNotificationsTest :: Assertion

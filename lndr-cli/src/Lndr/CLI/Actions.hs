@@ -38,6 +38,7 @@ module Lndr.CLI.Actions (
     , getTxHash
     , getTxHashFail
     , scanBlockchain
+    , consistencyCheck
     , verifySettlement
 
     -- * notifications-related requests

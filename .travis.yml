@@ -42,6 +42,7 @@ before_install:
 
 script:
     - cp lndr-backend/data/lndr-server.config.test lndr-backend/data/lndr-server.config
+    - cp lndr-backend/data/lndr-server.config.test ~/lndr-server.config
     - sudo /home/travis/.local/bin/lndr-server &
     - stack test lndr-cli
 

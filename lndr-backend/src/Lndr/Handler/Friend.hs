@@ -109,7 +109,7 @@ emailLookupHandler addr = do
 photoUploadHandler :: ProfilePhotoRequest -> LndrHandler NoContent
 photoUploadHandler r@(ProfilePhotoRequest photo sig) = do
     configTVar <- asks serverConfig
-    config <- liftIO . atomically $ readTVar configTVar
+    config <- liftIO $ readTVarIO configTVar
     let Right address = recoverSigner r
         elementName = Aws.ObjectKey . stripHexPrefix . T.pack $ show address ++ ".jpeg"
         body = Aws.toBody . B64.decodeLenient $ T.encodeUtf8 photo

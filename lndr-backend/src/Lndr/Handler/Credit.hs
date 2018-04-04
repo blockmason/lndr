@@ -55,7 +55,7 @@ borrowHandler creditRecord = submitHandler $ creditRecord { submitter = debtor c
 submitHandler :: CreditRecord -> LndrHandler NoContent
 submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress _ hash sig _ _ _ _) = do
     (ServerState pool configTVar loggerSet) <- ask
-    config <- liftIO . atomically $ readTVar configTVar
+    config <- liftIO $ readTVarIO configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
 
     -- check that credit submission is valid
@@ -207,7 +207,7 @@ rejectHandler(RejectRequest hash sig) = do
 sendRejectionNotification :: CreditRecord -> Address -> LndrHandler ()
 sendRejectionNotification pendingRecord signerAddress = do
     (ServerState pool configTVar loggerSet) <- ask
-    config <- liftIO . atomically $ readTVar configTVar
+    config <- liftIO $ readTVarIO configTVar
     currency <- liftIO $ B.lookupR (ucac pendingRecord) (lndrUcacAddrs config)
     let counterparty = if creditor pendingRecord /= signerAddress
                             then creditor pendingRecord
@@ -227,7 +227,7 @@ verifyHandler r@(VerifySettlementRequest creditHash txHash creditorAddress signa
     unless (Right creditorAddress == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
 
     (ServerState pool configTVar _) <- ask
-    config <- liftIO . atomically $ readTVar configTVar
+    config <- liftIO $ readTVarIO configTVar
 
     -- write txHash to settlement record
     liftIO . withResource pool . Db.updateSettlementTxHash creditHash $ stripHexPrefix txHash
@@ -279,12 +279,12 @@ counterpartiesHandler addr = do
 balanceHandler :: Address -> Maybe Text -> LndrHandler Integer
 balanceHandler addr currency = do
     (ServerState pool configTVar _) <- ask
-    ucacAddresses <- fmap lndrUcacAddrs . liftIO . atomically $ readTVar configTVar
+    ucacAddresses <- fmap lndrUcacAddrs . liftIO $ readTVarIO configTVar
     liftIO . withResource pool $ Db.userBalance addr (getUcac ucacAddresses currency)
 
 
 twoPartyBalanceHandler :: Address -> Address -> Maybe Text -> LndrHandler Integer
 twoPartyBalanceHandler p1 p2 currency = do
     (ServerState pool configTVar _) <- ask
-    ucacAddresses <- fmap lndrUcacAddrs . liftIO . atomically $ readTVar configTVar
+    ucacAddresses <- fmap lndrUcacAddrs . liftIO $ readTVarIO configTVar
     liftIO . withResource pool $ Db.twoPartyBalance p1 p2 (getUcac ucacAddresses currency)

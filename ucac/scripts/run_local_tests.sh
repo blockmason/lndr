@@ -14,6 +14,7 @@ function cleanup {
 
 trap cleanup EXIT
 cp ../lndr-backend/data/lndr-server.config.test ../lndr-backend/data/lndr-server.config
+cp ../lndr-backend/data/lndr-server.config.test ~/lndr-server.config
 
 ganache_pid=`npm run ganache`
 echo "Started ganache, pid ${ganache_pid}"

@@ -28,7 +28,6 @@ module Lndr.Handler (
     , photoUploadHandler
 
     -- * Admin Handlers
-    , unsubmittedHandler
     , registerPushHandler
     , configHandler
 

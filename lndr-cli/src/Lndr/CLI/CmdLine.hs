@@ -33,6 +33,8 @@ data LndrCmd = Transactions
              | Unsubmitted
              | PendingSettlements
              | LndrConfig
+             | ScanBlockchain
+             | ConsistencyCheck
              deriving (Show, Data, Typeable)
 
 
@@ -76,6 +78,10 @@ programModes = modes [ Transactions
                         &= help "List all pending settlements"
                      , LndrConfig
                         &= help "Prints config endpoint response"
+                     , ScanBlockchain
+                        &= help "Scan blockchain for all CP transactions"
+                     , ConsistencyCheck
+                        &= help "Check db & blockchain consistency"
                      ] &= help "Lend and borrow money.\nServer URL, default user,\
                               \ and default ucac must be indicated in configuration file."
                        &= program "lndr"

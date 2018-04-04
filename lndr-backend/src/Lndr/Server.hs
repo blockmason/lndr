@@ -42,6 +42,7 @@ import           Network.HTTP.Types
 import           Network.Wai
 import           Servant
 import           Servant.Docs
+import           System.FilePath
 import           System.Log.FastLogger
 import           Text.EmailAddress
 
@@ -79,7 +80,6 @@ type LndrAPI =
                   :> Get '[JSON] Integer
    :<|> "balance" :> Capture "p1" Address :> Capture "p2" Address
                   :> QueryParam "currency" Text :> Get '[JSON] Integer
-   :<|> "unsubmitted" :> Get '[JSON] (Int, Int, [IssueCreditLog])
    :<|> "register_push" :> ReqBody '[JSON] PushRequest
                         :> PostNoContent '[JSON] NoContent
    :<|> "config" :> Get '[JSON] ConfigResponse
@@ -110,7 +110,6 @@ server = transactionsHandler
     :<|> counterpartiesHandler
     :<|> balanceHandler
     :<|> twoPartyBalanceHandler
-    :<|> unsubmittedHandler
     :<|> registerPushHandler
     :<|> configHandler
     :<|> Tagged serveDocs
@@ -158,10 +157,10 @@ app state = serve lndrAPI (readerServer state)
 -- Called at server startup.
 freshState :: IO ServerState
 freshState = do
-    serverConfig' <- loadConfig
+    serverConfigTemp <- loadConfig $ "lndr-backend" </> "data" </> "lndr-server.config"
     nonce <- fromMaybe (error "Error retrieving execution account nonce") <$>
-                runMaybeT (currentExecutionNonce serverConfig')
-    let serverConfig = serverConfig' { executionNonce = nonce }
+                runMaybeT (currentExecutionNonce serverConfigTemp)
+    let serverConfig = serverConfigTemp { executionNonce = nonce }
         dbConfig = DB.defaultConnectInfo {
           DB.connectHost = dbHost serverConfig
         , DB.connectPort = dbPort serverConfig
@@ -181,7 +180,7 @@ freshState = do
 
 
 currentConfig :: ServerState -> IO ServerConfig
-currentConfig state = atomically . readTVar $ serverConfig state
+currentConfig state = readTVarIO $ serverConfig state
 
 
 runHeartbeat :: ServerState -> IO ThreadId
@@ -200,33 +199,35 @@ heartbeat = do
     -- log hearbeat statistics
     liftIO $ pushLogStrLn loggerSet . toLogStr $ ("heartbeat" :: Text)
     -- sleep for time specified in config
-    config <- liftIO . atomically $ readTVar configTVar
+    config <- liftIO $ readTVarIO configTVar
     liftIO $ threadDelay (heartbeatInterval config * 10 ^ 6)
 
 
 updateServerConfig :: TVar ServerConfig -> IO ()
 updateServerConfig configTVar = do
-    config <- atomically $ readTVar configTVar
+    config <- readTVarIO configTVar
     currentPricesM <- runMaybeT queryEtheruemPrices
     currentGasPriceM <- runMaybeT querySafelow
     blockNumberM <- runMaybeT $ currentBlockNumber config
-    atomically $ writeTVar configTVar
-        config { ethereumPrices = fromMaybe (ethereumPrices config) currentPricesM
-               , gasPrice = fromMaybe (gasPrice config) currentGasPriceM
-               , latestBlockNumber = fromMaybe (latestBlockNumber config) blockNumberM }
+    atomically $ do
+        config <- readTVar configTVar
+        writeTVar configTVar
+            config { ethereumPrices = fromMaybe (ethereumPrices config) currentPricesM
+                   , gasPrice = fromMaybe (gasPrice config) currentGasPriceM
+                   , latestBlockNumber = fromMaybe (latestBlockNumber config) blockNumberM }
 
 
 deleteExpiredSettlements :: LndrHandler ()
 deleteExpiredSettlements = do
     (ServerState pool configTVar _) <- ask
-    config <- liftIO . atomically $ readTVar configTVar
+    config <- liftIO $ readTVarIO configTVar
     void . liftIO $ withResource pool Db.deleteExpiredSettlementsAndAssociatedCredits
 
 
 verifySettlementsWithTxHash :: LndrHandler ()
 verifySettlementsWithTxHash = do
     (ServerState pool configTVar _) <- ask
-    config <- liftIO . atomically $ readTVar configTVar
+    config <- liftIO $ readTVarIO configTVar
     creditHashes <- liftIO $ withResource pool Db.settlementCreditsToVerify
     mapM_ verifyIndividualRecord creditHashes
 

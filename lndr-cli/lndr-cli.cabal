@@ -27,8 +27,10 @@ library
                      , directory
                      , emailaddress
                      , ethereumhs-util
+                     , filepath
                      , http-conduit
                      , lndr-backend
+                     , postgresql-simple
                      , pretty-simple
                      , text
                      , web3

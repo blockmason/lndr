@@ -15,11 +15,10 @@ import           Lndr.Types
 import qualified Network.Ethereum.Web3.Address as Addr
 import           Network.Ethereum.Util
 import           System.Environment      (setEnv)
-import           System.FilePath
 
-loadConfig :: IO ServerConfig
-loadConfig = do
-    config <- getMap =<< load [Required $ "lndr-backend" </> "data" </> "lndr-server.config"]
+loadConfig :: FilePath -> IO ServerConfig
+loadConfig configPath = do
+    config <- getMap =<< load [Required configPath]
     let loadEntry x = fromMaybe (error $ T.unpack x) $ convert =<< H.lookup x config
         privateKey = loadEntry "execution-private-key"
         execAddress = fromRight (error "bad privkey") . Addr.fromText

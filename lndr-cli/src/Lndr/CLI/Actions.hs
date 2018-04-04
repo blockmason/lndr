@@ -37,22 +37,29 @@ module Lndr.CLI.Actions (
     , getPendingSettlements
     , getTxHash
     , getTxHashFail
+    , scanBlockchain
+    , consistencyCheck
     , verifySettlement
-    , getUnsubmitted
 
     -- * notifications-related requests
     , registerChannel
     ) where
 
+import           Control.Monad
 import qualified Data.ByteString                 as B
 import qualified Data.ByteString.Base64          as B64
 import           Data.Data
+import           Data.Either                     (fromRight)
+import           Data.List                       ((\\), find)
 import           Data.Maybe                      (fromMaybe)
 import           Data.Text                       (Text)
 import qualified Data.Text                       as T
 import qualified Data.Text.Encoding              as T
 import qualified Data.Text.Lazy                  as LT
+import qualified Database.PostgreSQL.Simple as DB
 import           Lndr.CLI.Config
+import           Lndr.Config
+import qualified Lndr.Db                         as DB
 import           Lndr.EthereumInterface          hiding (getNonce)
 import           Lndr.Signature
 import           Lndr.Types
@@ -62,7 +69,10 @@ import           Network.Ethereum.Util           (ecsign, hashPersonalMessage,
                                                   hashText, privateToAddress)
 import           Network.Ethereum.Web3
 import qualified Network.Ethereum.Web3.Address   as Addr
+import           Network.Ethereum.Web3.Types     (Provider(..))
 import qualified Network.HTTP.Simple             as HTTP
+import           System.Directory
+import           System.FilePath
 import           Text.EmailAddress
 import qualified Text.Pretty.Simple              as Pr
 
@@ -115,26 +125,25 @@ runMode (Config url sk _) (GetNonce friend) =
 runMode (Config url sk _) Info =
     print =<< getInfo (LT.unpack url) (userFromSK sk)
 
-runMode (Config url sk _) Unsubmitted =
-    print =<< getUnsubmitted (LT.unpack url)
-
 runMode (Config url sk _) PendingSettlements =
     print =<< getPendingSettlements (LT.unpack url) (textToAddress $ userFromSK sk)
 
 runMode (Config url sk _) LndrConfig =
     print =<< getConfig (LT.unpack url)
 
+runMode (Config url sk _) ScanBlockchain = do
+    logs <- scanBlockchain
+    Pr.pPrintNoColor logs
+
+runMode (Config url sk _) ConsistencyCheck = do
+    checkOutput <- consistencyCheck
+    Pr.pPrintNoColor checkOutput
+
+
 userFromSK = fromMaybe "" . privateToAddress . LT.toStrict
 
 -- TODO all cmdline actions should be put into `Reader Config` monad
 -- OR   we can use the servant autogen'd client code
-
-getUnsubmitted :: String -> IO (Int, Int, [(Text, IssueCreditLog)])
-getUnsubmitted url = do
-    initReq <- HTTP.parseRequest $ url ++ "/unsubmitted"
-    (x, y, logs) <- HTTP.getResponseBody <$> HTTP.httpJSON initReq
-    return (x, y, fmap (\x -> (hashCreditLog x, x)) logs)
-
 
 getTransactions :: String -> Address -> IO [IssueCreditLog]
 getTransactions url address = do
@@ -358,3 +367,49 @@ setProfilePhoto url privateKey photoPath = do
         req = HTTP.setRequestBodyJSON signedPhotoRequest $
                     HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+
+
+scanBlockchain :: IO (Either Web3Error [IssueCreditLog])
+scanBlockchain = do
+    home <- getHomeDirectory
+    config <- loadConfig $  home </> "lndr-server.config"
+    runWeb3' (HttpProvider (web3Url config)) $
+        join <$> sequence [ lndrLogs config "USD" Nothing Nothing
+                          , lndrLogs config "JPY" Nothing Nothing
+                          , lndrLogs config "KRW" Nothing Nothing
+                          , lndrLogs config "DKK" Nothing Nothing
+                          , lndrLogs config "CHF" Nothing Nothing
+                          , lndrLogs config "CNY" Nothing Nothing
+                          , lndrLogs config "EUR" Nothing Nothing
+                          , lndrLogs config "AUD" Nothing Nothing
+                          , lndrLogs config "GBP" Nothing Nothing
+                          , lndrLogs config "CAD" Nothing Nothing
+                          , lndrLogs config "NOK" Nothing Nothing
+                          , lndrLogs config "SEK" Nothing Nothing
+                          , lndrLogs config "NZD" Nothing Nothing ]
+
+
+scanDB :: IO [IssueCreditLog]
+scanDB = do
+   home <- getHomeDirectory
+   config <- loadConfig $  home </> "lndr-server.config"
+   let dbConfig = DB.defaultConnectInfo {
+                     DB.connectHost = dbHost config
+                   , DB.connectPort = dbPort config
+                   , DB.connectUser = T.unpack $ dbUser config
+                   , DB.connectPassword = T.unpack $ dbUserPassword config
+                   , DB.connectDatabase = T.unpack $ dbName config
+                   }
+   connection <- DB.connect dbConfig
+   DB.allCredits connection
+
+
+consistencyCheck :: IO (Int, Int, [(Text, IssueCreditLog)], [(Text, IssueCreditLog)])
+consistencyCheck = do
+   blockchainCredits <- fromRight [] <$> scanBlockchain
+   dbCredits <- scanDB
+   pure ( length dbCredits
+        , length blockchainCredits
+        , hashPair <$> dbCredits \\ blockchainCredits
+        , hashPair <$> blockchainCredits \\ dbCredits)
+    where hashPair creditLog = (hashCreditLog creditLog, creditLog)

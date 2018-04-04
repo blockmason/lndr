@@ -14,13 +14,13 @@ library
   hs-source-dirs:      src
   exposed-modules: Lndr.Config
                  , Lndr.EthereumInterface
+                 , Lndr.Db
                  , Lndr.NetworkStatistics
                  , Lndr.Server
                  , Lndr.Types
                  , Lndr.Util
                  , Lndr.Signature
-  other-modules: Lndr.Db
-               , Lndr.Db.Friendships
+  other-modules: Lndr.Db.Friendships
                , Lndr.Db.Nicknames
                , Lndr.Db.PendingCredits
                , Lndr.Db.PushData

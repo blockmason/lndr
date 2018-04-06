@@ -12,6 +12,7 @@ const LndrCNY = artifacts.require('./LndrCNY.sol');
 const LndrDKK = artifacts.require('./LndrDKK.sol');
 const LndrEUR = artifacts.require('./LndrEUR.sol');
 const LndrGBP = artifacts.require('./LndrGBP.sol');
+const LndrHKD = artifacts.require('./LndrHKD.sol');
 const LndrNOK = artifacts.require('./LndrNOK.sol');
 const LndrNZD = artifacts.require('./LndrNZD.sol');
 const LndrSEK = artifacts.require('./LndrSEK.sol');
@@ -28,6 +29,7 @@ module.exports = async function (deployer, network, accounts) {
         const dkk = web3.fromAscii("DKK");
         const eur = web3.fromAscii("EUR");
         const gbp = web3.fromAscii("GBP");
+        const hkd = web3.fromAscii("HKD");
         const nok = web3.fromAscii("NOK");
         const nzd = web3.fromAscii("NZD");
         const sek = web3.fromAscii("SEK");
@@ -37,6 +39,17 @@ module.exports = async function (deployer, network, accounts) {
         var lndrUsdContract;
         var lndrJpyContract;
         var lndrKrwContract;
+        var lndrAudContract;
+        var lndrCadContract;
+        var lndrChfContract;
+        var lndrCnyContract;
+        var lndrDkkContract;
+        var lndrEurContract;
+        var lndrGbpContract;
+        var lndrHkdContract;
+        var lndrNokContract;
+        var lndrNzdContract;
+        var lndrSekContract;
 
         await deployer.deploy(CPToken,{from: web3.eth.accounts[0]})
         cpTokenContract = await CPToken.deployed();;
@@ -56,6 +69,7 @@ module.exports = async function (deployer, network, accounts) {
         await deployer.deploy(LndrDKK, {from: web3.eth.accounts[0]});
         await deployer.deploy(LndrEUR, {from: web3.eth.accounts[0]});
         await deployer.deploy(LndrGBP, {from: web3.eth.accounts[0]});
+        await deployer.deploy(LndrHKD, {from: web3.eth.accounts[0]});
         await deployer.deploy(LndrNOK, {from: web3.eth.accounts[0]});
         await deployer.deploy(LndrNZD, {from: web3.eth.accounts[0]});
         await deployer.deploy(LndrSEK, {from: web3.eth.accounts[0]});
@@ -69,6 +83,7 @@ module.exports = async function (deployer, network, accounts) {
         lndrDkkContract = await LndrDKK.deployed();
         lndrEurContract = await LndrEUR.deployed();
         lndrGbpContract = await LndrGBP.deployed();
+        lndrHkdContract = await LndrHKD.deployed();
         lndrNokContract = await LndrNOK.deployed();
         lndrNzdContract = await LndrNZD.deployed();
         lndrSekContract = await LndrSEK.deployed();
@@ -89,6 +104,50 @@ module.exports = async function (deployer, network, accounts) {
                                                        , {from: web3.eth.accounts[0]});
         await creditProtocolContract.createAndStakeUcac( lndrKrwContract.address
                                                        , krw
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrAudContract.address
+                                                       , aud
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrCadContract.address
+                                                       , cad
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrChfContract.address
+                                                       , chf
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrCnyContract.address
+                                                       , cny
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrDkkContract.address
+                                                       , dkk
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrEurContract.address
+                                                       , eur
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrGbpContract.address
+                                                       , gbp
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrHkdContract.address
+                                                       , hkd
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrNokContract.address
+                                                       , nok
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrNzdContract.address
+                                                       , nzd
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrSekContract.address
+                                                       , sek
                                                        , web3.toWei(100)
                                                        , {from: web3.eth.accounts[0]});
     }

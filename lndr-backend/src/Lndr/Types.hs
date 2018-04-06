@@ -219,6 +219,7 @@ data EthereumPrices = EthereumPrices { usd :: Double
                                      , eur :: Double
                                      , aud :: Double
                                      , gbp :: Double
+                                     , hkd :: Double
                                      , cad :: Double
                                      , nok :: Double
                                      , sek :: Double
@@ -227,7 +228,7 @@ data EthereumPrices = EthereumPrices { usd :: Double
 $(deriveToJSON defaultOptions ''EthereumPrices)
 
 instance Default EthereumPrices where
-    def = EthereumPrices 420 45000 460000 2500 400 2600 340 550 300 540 3250 3450 575
+    def = EthereumPrices 420 45000 460000 2500 400 2600 340 550 300 3000 540 3250 3450 575
 
 instance FromJSON EthereumPrices where
         parseJSON (Object v) = do
@@ -242,11 +243,12 @@ instance FromJSON EthereumPrices where
             eur <- read <$> ratesObject .: "EUR"
             aud <- read <$> ratesObject .: "AUD"
             gbp <- read <$> ratesObject .: "GBP"
+            hkd <- read <$> ratesObject .: "HKD"
             cad <- read <$> ratesObject .: "CAD"
             nok <- read <$> ratesObject .: "NOK"
             sek <- read <$> ratesObject .: "SEK"
             nzd <- read <$> ratesObject .: "NZD"
-            return $ EthereumPrices usd jpy krw dkk chf cny eur aud gbp cad nok sek nzd
+            return $ EthereumPrices usd jpy krw dkk chf cny eur aud gbp hkd cad nok sek nzd
 
 data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Address
                                  , bindAddress              :: !Text
@@ -302,6 +304,7 @@ instance FromJSON ConfigResponse where
                                          <*> ethereumPricesObject .: "eur"
                                          <*> ethereumPricesObject .: "aud"
                                          <*> ethereumPricesObject .: "gbp"
+                                         <*> ethereumPricesObject .: "hkd"
                                          <*> ethereumPricesObject .: "cad"
                                          <*> ethereumPricesObject .: "nok"
                                          <*> ethereumPricesObject .: "sek"

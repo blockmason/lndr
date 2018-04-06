@@ -32,6 +32,7 @@ loadConfig configPath = do
                                       , ("EUR", loadEntry "lndr-ucacs.eur")
                                       , ("AUD", loadEntry "lndr-ucacs.aud")
                                       , ("GBP", loadEntry "lndr-ucacs.gbp")
+                                      , ("HKD", loadEntry "lndr-ucacs.hkd")
                                       , ("CAD", loadEntry "lndr-ucacs.cad")
                                       , ("NOK", loadEntry "lndr-ucacs.nok")
                                       , ("SEK", loadEntry "lndr-ucacs.sek")

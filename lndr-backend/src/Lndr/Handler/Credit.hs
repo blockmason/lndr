@@ -173,6 +173,7 @@ calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ uca
             Just "EUR" -> eur prices * priceAdjustmentForCents
             Just "AUD" -> aud prices * priceAdjustmentForCents
             Just "GBP" -> gbp prices * priceAdjustmentForCents
+            Just "HKD" -> hkd prices * priceAdjustmentForCents
             Just "CAD" -> cad prices * priceAdjustmentForCents
             Just "NOK" -> nok prices * priceAdjustmentForCents
             Just "SEK" -> sek prices * priceAdjustmentForCents

@@ -13,6 +13,7 @@ lndr-ucacs {
     dkk = "0x449d75537c56e18c9d5e0438f7847628bbd981f7"
     eur = "0xececfc5436bd8ee0c8e98379f3d99dfde6e15fb9"
     gbp = "0x92571ad90b03ea60419fc66353db9c39ff9db5e1"
+    hkd = "0xb52a2db8ae67a51b1906e4b333930641d62272fd"
     nok = "0x385540be0f17e1fae8ed83e46f5fb52545dc588b"
     nzd = "0xce12dfd31dbc83bd24af7fd2e193f3073e3b53ec"
     sek = "0x6fd660b6f92395901544f637e06ca4b67a30f7c9"

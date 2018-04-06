@@ -383,6 +383,7 @@ scanBlockchain = do
                           , lndrLogs config "EUR" Nothing Nothing
                           , lndrLogs config "AUD" Nothing Nothing
                           , lndrLogs config "GBP" Nothing Nothing
+                          , lndrLogs config "HKD" Nothing Nothing
                           , lndrLogs config "CAD" Nothing Nothing
                           , lndrLogs config "NOK" Nothing Nothing
                           , lndrLogs config "SEK" Nothing Nothing

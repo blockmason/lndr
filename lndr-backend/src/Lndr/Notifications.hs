@@ -26,15 +26,48 @@ notificationMessages = "Pending credit confirmation from "
 
 pendingRejectionMap :: M.Map String String
 pendingRejectionMap = M.fromList [ ("USD", "Pending credit rejected by %s")
+                                 , ("AUD", "Pending credit rejected by %s")
+                                 , ("CAD", "Pending credit rejected by %s")
+                                 , ("CHF", "Pending credit rejected by %s")
+                                 , ("CNY", "Pending credit rejected by %s")
+                                 , ("DKK", "Pending credit rejected by %s")
+                                 , ("EUR", "Pending credit rejected by %s")
+                                 , ("GBP", "Pending credit rejected by %s")
+                                 , ("HKD", "Pending credit rejected by %s")
+                                 , ("NOK", "Pending credit rejected by %s")
+                                 , ("NZD", "Pending credit rejected by %s")
+                                 , ("SEK", "Pending credit rejected by %s")
                                  , ("JPY", "%sにより拒否された、保留状態のクレジット")
                                  , ("KRW", "계류중거래 %s 께서 거절 했습니다") ]
 
 pendingConfirmationMap :: M.Map String String
 pendingConfirmationMap = M.fromList [ ("USD", "Pending credit confirmation by %s")
+                                    , ("AUD", "Pending credit confirmation by %s")
+                                    , ("CAD", "Pending credit confirmation by %s")
+                                    , ("CHF", "Pending credit confirmation by %s")
+                                    , ("CNY", "Pending credit confirmation by %s")
+                                    , ("DKK", "Pending credit confirmation by %s")
+                                    , ("EUR", "Pending credit confirmation by %s")
+                                    , ("GBP", "Pending credit confirmation by %s")
+                                    , ("HKD", "Pending credit confirmation by %s")
+                                    , ("NOK", "Pending credit confirmation by %s")
+                                    , ("NZD", "Pending credit confirmation by %s")
+                                    , ("SEK", "Pending credit confirmation by %s")
                                     , ("JPY", "%sが承認した、保留状態のクレジット")
                                     , ("KRW", "계류중거래 %s 께서 승인 했습니다") ]
 
 newPendingMap :: M.Map String String
 newPendingMap = M.fromList [ ("USD", "New pending credit from %s")
+                           , ("AUD", "New pending credit from %s")
+                           , ("CAD", "New pending credit from %s")
+                           , ("CHF", "New pending credit from %s")
+                           , ("CNY", "New pending credit from %s")
+                           , ("DKK", "New pending credit from %s")
+                           , ("EUR", "New pending credit from %s")
+                           , ("GBP", "New pending credit from %s")
+                           , ("HKD", "New pending credit from %s")
+                           , ("NOK", "New pending credit from %s")
+                           , ("NZD", "New pending credit from %s")
+                           , ("SEK", "New pending credit from %s")
                            , ("JPY", "%sからの保留になっている新しいクレジット")
                            , ("KRW", "새로운 계류중거래 %s 께서 추가 했습니다") ]

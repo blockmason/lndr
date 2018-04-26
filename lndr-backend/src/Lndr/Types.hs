@@ -224,11 +224,19 @@ data EthereumPrices = EthereumPrices { usd :: Double
                                      , nok :: Double
                                      , sek :: Double
                                      , nzd :: Double
+                                     , idr :: Double
+                                     , myr :: Double
+                                     , sgd :: Double
+                                     , thb :: Double
+                                     , vnd :: Double
+                                     , ils :: Double
+                                     , rub :: Double
+                                     , try :: Double
                                      } deriving (Show, Generic)
 $(deriveToJSON defaultOptions ''EthereumPrices)
 
 instance Default EthereumPrices where
-    def = EthereumPrices 420 45000 460000 2500 400 2600 340 550 300 3000 540 3250 3450 575
+    def = EthereumPrices 640 70018 690713 3939 633 4056 529 847 459 5022 824 5117 5545 906 8891939 2508 850 20240 14580140 2294 40134 2603
 
 instance FromJSON EthereumPrices where
         parseJSON (Object v) = do
@@ -248,7 +256,15 @@ instance FromJSON EthereumPrices where
             nok <- read <$> ratesObject .: "NOK"
             sek <- read <$> ratesObject .: "SEK"
             nzd <- read <$> ratesObject .: "NZD"
-            return $ EthereumPrices usd jpy krw dkk chf cny eur aud gbp hkd cad nok sek nzd
+            idr <- read <$> ratesObject .: "IDR"
+            myr <- read <$> ratesObject .: "MYR"
+            sgd <- read <$> ratesObject .: "SGD"
+            thb <- read <$> ratesObject .: "THB"
+            vnd <- read <$> ratesObject .: "VND"
+            ils <- read <$> ratesObject .: "ILS"
+            rub <- read <$> ratesObject .: "RUB"
+            try <- read <$> ratesObject .: "TRY"
+            return $ EthereumPrices usd jpy krw dkk chf cny eur aud gbp hkd cad nok sek nzd idr myr sgd thb vnd ils rub try
 
 data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Address
                                  , bindAddress              :: !Text
@@ -309,6 +325,14 @@ instance FromJSON ConfigResponse where
                                          <*> ethereumPricesObject .: "nok"
                                          <*> ethereumPricesObject .: "sek"
                                          <*> ethereumPricesObject .: "nzd"
+                                         <*> ethereumPricesObject .: "idr"
+                                         <*> ethereumPricesObject .: "myr"
+                                         <*> ethereumPricesObject .: "sgd"
+                                         <*> ethereumPricesObject .: "thb"
+                                         <*> ethereumPricesObject .: "vnd"
+                                         <*> ethereumPricesObject .: "ils"
+                                         <*> ethereumPricesObject .: "rub"
+                                         <*> ethereumPricesObject .: "try"
         return $ ConfigResponse addressesObject creditProtocolAddress gasPrice
                                 ethereumPrices weekAgoBlock
 

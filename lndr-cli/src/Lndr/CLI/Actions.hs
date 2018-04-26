@@ -387,7 +387,15 @@ scanBlockchain = do
                           , lndrLogs config "CAD" Nothing Nothing
                           , lndrLogs config "NOK" Nothing Nothing
                           , lndrLogs config "SEK" Nothing Nothing
-                          , lndrLogs config "NZD" Nothing Nothing ]
+                          , lndrLogs config "NZD" Nothing Nothing
+                          , lndrLogs config "IDR" Nothing Nothing
+                          , lndrLogs config "MYR" Nothing Nothing
+                          , lndrLogs config "SGD" Nothing Nothing
+                          , lndrLogs config "THB" Nothing Nothing
+                          , lndrLogs config "VND" Nothing Nothing
+                          , lndrLogs config "ILS" Nothing Nothing
+                          , lndrLogs config "RUB" Nothing Nothing
+                          , lndrLogs config "TRY" Nothing Nothing ]
 
 
 scanDB :: IO [IssueCreditLog]

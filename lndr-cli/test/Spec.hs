@@ -68,7 +68,15 @@ loadUcacs = do
         Just ucacAddrNOK = M.lookup "NOK" ucacAddresses
         Just ucacAddrSEK = M.lookup "SEK" ucacAddresses
         Just ucacAddrNZD = M.lookup "NZD" ucacAddresses
-    return (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD)
+        Just ucacAddrIDR = M.lookup "IDR" ucacAddresses
+        Just ucacAddrMYR = M.lookup "MYR" ucacAddresses
+        Just ucacAddrSGD = M.lookup "SGD" ucacAddresses
+        Just ucacAddrTHB = M.lookup "THB" ucacAddresses
+        Just ucacAddrVND = M.lookup "VND" ucacAddresses
+        Just ucacAddrILS = M.lookup "ILS" ucacAddresses
+        Just ucacAddrRUB = M.lookup "RUB" ucacAddresses
+        Just ucacAddrTRY = M.lookup "TRY" ucacAddresses
+    return (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY)
 
 
 main :: IO ()
@@ -189,7 +197,7 @@ nickTest = do
 
 basicLendTest :: Assertion
 basicLendTest = do
-    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD) <- loadUcacs
+    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY) <- loadUcacs
 
     let testAmount = 100
         testCredit' = CreditRecord testAddress1 testAddress2 testAmount "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
@@ -286,7 +294,7 @@ basicLendTest = do
 
 basicSettlementTest :: Assertion
 basicSettlementTest = do
-    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD) <- loadUcacs
+    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY) <- loadUcacs
 
     let testAmount = 2939
         testCredit' = CreditRecord testAddress5 testAddress6 testAmount "settlement" testAddress5 0 "" "" ucacAddr Nothing (Just "ETH") Nothing

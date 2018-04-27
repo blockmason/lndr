@@ -17,6 +17,14 @@ lndr-ucacs {
     nok = "0x385540be0f17e1fae8ed83e46f5fb52545dc588b"
     nzd = "0xce12dfd31dbc83bd24af7fd2e193f3073e3b53ec"
     sek = "0x6fd660b6f92395901544f637e06ca4b67a30f7c9"
+    idr = "0xfc0f4fe61f23ca895f7e8a51d4e08462f4926687"
+    myr = "0x79a5f8d6cc432c1f017648c4fae840dff4cfcaf2"
+    sgd = "0x3ac772c0f927df3c07cd90c17b536fcab86e0a53"
+    thb = "0x9a76e6a7a56b72d8750f00240363dc06d09c7161"
+    vnd = "0x815dcbb2008757a469d0daf8c310fae2fc41e96b"
+    ils = "0x77ee746c16a817109567b895ff9b9a75bf354bf4"
+    rub = "0x14eb816e20af23ef81cc1deeba71d8642edcb621"
+    try = "0xfe2bbfbe30f835096ccbc9c12a38ac749d8402b2"
 }
 
 # Credit Protocol contract address, called for 'issueCredit' among others

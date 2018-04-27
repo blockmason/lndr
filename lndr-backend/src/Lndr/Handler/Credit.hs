@@ -178,6 +178,14 @@ calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ uca
             Just "NOK" -> nok prices * priceAdjustmentForCents
             Just "SEK" -> sek prices * priceAdjustmentForCents
             Just "NZD" -> nzd prices * priceAdjustmentForCents
+            Just "IDR" -> idr prices
+            Just "MYR" -> myr prices * priceAdjustmentForCents
+            Just "SGD" -> sgd prices * priceAdjustmentForCents
+            Just "THB" -> thb prices * priceAdjustmentForCents
+            Just "VND" -> vnd prices
+            Just "ILS" -> ils prices * priceAdjustmentForCents
+            Just "RUB" -> rub prices * priceAdjustmentForCents
+            Just "TRY" -> try prices * priceAdjustmentForCents
             Nothing    -> error "ucac not found"
         settlementAmountRaw = floor $ fromIntegral amount / currencyPerEth * 10 ^ 18
     in cr { settlementAmount = Just $ roundToMegaWei settlementAmountRaw

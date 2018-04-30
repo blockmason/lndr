@@ -65,6 +65,7 @@ loadConfig configPath = do
                           (loadEntry "aws.photo-bucket")
                           (loadEntry "aws.access-key-id")
                           (loadEntry "aws.secret-access-key")
+                          (loadEntry "aws.notification-api-key")
                           (loadEntry "web3-url")
                           privateKey
                           execAddress

@@ -67,7 +67,8 @@ heartbeat-interval = 3
 aws {
     photo-bucket = "lndr-avatars"
     access-key-id = "AAAAAAAAAAAAAAAAAAAA"
-    secret-access-key= "6444444444444444444444444444444444444444"
+    secret-access-key = "6444444444444444444444444444444444444444"
+    notification-api-key = "bobloblawlobslawbomb"
 }
 
 # ethereum node config

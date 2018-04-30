@@ -184,12 +184,12 @@ instance ToJSON DevicePlatform where
    toJSON Ios     = String "ios"
    toJSON Android = String "android"
 
--- This should probably be called 'Push Object' to match the Urban Airship docs
--- here: https://docs.urbanairship.com/api/ua/#push-object
+-- This should match the field names used in the Lambda service
+-- here: hhttps://github.com/blockmason/lndr-notifications
 data Notification = Notification { channelID :: Text
                                  , platform  :: DevicePlatform
-                                 , message   :: Text
-                                 , action    :: NotificationAction
+                                 , user   :: Text
+                                 , notificationType  :: NotificationAction
                                  } deriving Show
 
 instance ToJSON Notification where
@@ -287,6 +287,7 @@ data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Addr
                                  , awsPhotoBucket           :: !Text
                                  , awsAccessKeyId           :: !ByteString
                                  , awsSecretAccessKey       :: !ByteString
+                                 , notificationApiKey       :: !ByteString
                                  , web3Url                  :: !String
                                  , executionPrivateKey      :: !Text
                                  , executionAddress         :: !Address

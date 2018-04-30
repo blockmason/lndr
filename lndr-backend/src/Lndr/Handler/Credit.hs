@@ -79,15 +79,14 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
     currency <- liftIO $ B.lookupR (ucac signedRecord) (lndrUcacAddrs config)
 
     -- creating function to query urban airship api
-    let attemptToNotify msg notifyAction = do
+    let attemptToNotify notifyAction = do
             let counterparty = if creditor /= submitterAddress then creditor else debtor
             pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
             nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
-            let fullMsg = T.pack $ printf msg (fromMaybe "..." nicknameM)
 
             forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
-                repsonseCode <- sendNotification config (Notification channelID platform fullMsg notifyAction)
-                let logMsg = "UrbanAirship response (" ++ T.unpack currency ++ "): " ++ show repsonseCode
+                responseCode <- sendNotification config (Notification channelID platform nicknameM notifyAction)
+                let logMsg = "Notification response (" ++ T.unpack currency ++ "): " ++ show responseCode
                 pushLogStrLn loggerSet . toLogStr $ logMsg
 
     -- check if hash is already registered in pending txs
@@ -103,14 +102,14 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
             finalizeCredit $ BilateralCreditRecord storedRecord creditorSig debtorSig Nothing
 
             -- send push notification to counterparty
-            attemptToNotify (fromJust $ M.lookup (T.unpack currency) pendingConfirmationMap) CreditConfirmation
+            attemptToNotify CreditConfirmation
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
             let processedRecord = calculateSettlementCreditRecord config signedRecord
             createPendingRecord pool processedRecord
             -- send push notification to counterparty
-            attemptToNotify (fromJust $ M.lookup (T.unpack currency) newPendingMap) NewPendingCredit
+            attemptToNotify NewPendingCredit
 
     pure NoContent
 
@@ -223,11 +222,9 @@ sendRejectionNotification pendingRecord signerAddress = do
                             else debtor pendingRecord
     pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
     nicknameM <- liftIO . withResource pool $ Db.lookupNick signerAddress
-    let msgTemplate = fromJust $ M.lookup (T.unpack currency) pendingRejectionMap
-        fullMsg = T.pack $ printf msgTemplate (fromMaybe "..." nicknameM)
     forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
-            responseCode <- sendNotification config (Notification channelID platform fullMsg PendingCreditRejection)
-            let logMsg =  "UrbanAirship response (" ++ T.unpack currency ++ "): " ++ show responseCode
+            responseCode <- sendNotification config (Notification channelID platform nicknameM PendingCreditRejection)
+            let logMsg =  "Notification response (" ++ T.unpack currency ++ "): " ++ show responseCode
             pushLogStrLn loggerSet . toLogStr $ logMsg
 
 

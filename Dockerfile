@@ -68,7 +68,7 @@ ENV \
 
   S3_PHOTO_BUCKET="lndr-avatars" \
   SCAN_START_BLOCK="0" \
-  NOTIFICATIONS_API_KEY=""
+  NOTIFICATIONS_API_KEY="" \
   NOTIFICATIONS_API_URL=""
 
 ENTRYPOINT ["./docker-entrypoint.sh"]

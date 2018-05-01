@@ -50,12 +50,11 @@ aws {
   photo-bucket = "{{S3_PHOTO_BUCKET}}"
   access-key-id = "{{AWS_ACCESS_KEY_ID}}"
   secret-access-key = "{{AWS_SECRET_ACCESS_KEY}}"
-  notification-api-key = "{{NOTIFICATION_API_KEY}}"
 }
 
 notifications {
-  api-url = ""
-  api-key = ""
+  api-url = "{{NOTIFICATIONS_API_URL}}"
+  api-key = "{{NOTIFICATIONS_API_KEY}}"
 }
 
 web3-url = "{{ETHEREUM_CLIENT_URL}}"

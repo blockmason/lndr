@@ -277,8 +277,8 @@ data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Addr
                                  , awsPhotoBucket           :: !Text
                                  , awsAccessKeyId           :: !ByteString
                                  , awsSecretAccessKey       :: !ByteString
-                                 , notificationsApiUrl       :: !ByteString
-                                 , notificationsApiKey       :: !ByteString
+                                 , notificationsApiUrl      :: !ByteString
+                                 , notificationsApiKey      :: !ByteString
                                  , web3Url                  :: !String
                                  , executionPrivateKey      :: !Text
                                  , executionAddress         :: !Address

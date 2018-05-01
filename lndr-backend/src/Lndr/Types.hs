@@ -188,7 +188,7 @@ instance ToJSON DevicePlatform where
 -- here: https://github.com/blockmason/lndr-notifications
 data Notification = Notification { channelID :: Text
                                  , platform  :: DevicePlatform
-                                 , user   :: Text
+                                 , user   :: Maybe Text
                                  , notificationType  :: NotificationAction
                                  } deriving Show
 

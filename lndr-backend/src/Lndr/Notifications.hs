@@ -20,6 +20,6 @@ sendNotification config notification = do
                     HTTP.setRequestBodyJSON notification $ HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
     where acceptContent = "application/json"
-          notificationsApiUrl = notificationsApiUrl config
+          notificationsApiUrl = (notificationsApiUrl config)
 
 notificationMessages = "Pending credit confirmation from "

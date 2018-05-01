@@ -16,10 +16,10 @@ sendNotification :: ServerConfig -> Notification -> IO Int
 sendNotification config notification = do
     initReq <- HTTP.parseRequest awsApiUrl
     let req = HTTP.addRequestHeader HTTP.hAccept acceptContent $
-                    HTTP.addRequestHeader "x-api-key" (config.notificationApiKey) $
+                    HTTP.addRequestHeader "x-api-key" (config.notificationsApiKey) $
                     HTTP.setRequestBodyJSON notification $ HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
     where acceptContent = "application/json"
-          awsApiUrl = "https://7s26ot4a6j.execute-api.us-east-2.amazonaws.com/prod/testNotificationUA"
+          awsApiUrl = (config.notificationsApiUrl)
 
 notificationMessages = "Pending credit confirmation from "

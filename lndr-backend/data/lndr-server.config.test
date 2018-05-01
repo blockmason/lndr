@@ -53,12 +53,6 @@ execution-private-key = "edc63d0e14b29aaa26c7585e962f93abb59bd7d8b01b585e073dc03
 gas-price = 200000000
 max-gas = 250000
 
-# urban airship credentials used for push notifications
-urban-airship {
-    key = "4_88888888888mmmmmmmmm"
-    secret = "rrrrrrrrrrrrrrrrrrrrrr"
-}
-
 # how often to run the heartbeat function in seconds. The heartbeat is
 # responsible for confirming settlement transactions.
 heartbeat-interval = 3
@@ -68,7 +62,11 @@ aws {
     photo-bucket = "lndr-avatars"
     access-key-id = "AAAAAAAAAAAAAAAAAAAA"
     secret-access-key = "6444444444444444444444444444444444444444"
-    notification-api-key = "bobloblawlobslawbomb"
+}
+
+notifications {
+    api-key = "bobloblawlobslawbomb"
+    api-url = "https://testing.test/notifications"
 }
 
 # ethereum node config

@@ -44,11 +44,6 @@ execution-private-key = "{{ETHEREUM_PRIVATE_KEY}}"
 gas-price = {{ETHEREUM_GAS_PRICE}}
 max-gas = {{ETHEREUM_MAX_GAS}}
 
-urban-airship {
-  key = "{{URBAN_AIRSHIP_KEY}}"
-  secret = "{{URBAN_AIRSHIP_SECRET}}"
-}
-
 heartbeat-interval = {{HEARTBEAT_INTERVAL}}
 
 aws {
@@ -56,6 +51,11 @@ aws {
   access-key-id = "{{AWS_ACCESS_KEY_ID}}"
   secret-access-key = "{{AWS_SECRET_ACCESS_KEY}}"
   notification-api-key = "{{NOTIFICATION_API_KEY}}"
+}
+
+notifications {
+  api-url = ""
+  api-key = ""
 }
 
 web3-url = "{{ETHEREUM_CLIENT_URL}}"

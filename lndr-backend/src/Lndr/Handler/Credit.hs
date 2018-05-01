@@ -78,7 +78,7 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
 
     currency <- liftIO $ B.lookupR (ucac signedRecord) (lndrUcacAddrs config)
 
-    -- creating function to query urban airship api
+    -- creating function to send notification to lambda service api
     let attemptToNotify notifyAction = do
             let counterparty = if creditor /= submitterAddress then creditor else debtor
             pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty

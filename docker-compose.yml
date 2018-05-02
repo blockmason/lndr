@@ -46,7 +46,7 @@ services:
       DB_PASSWORD: 4mqKZAV1kxDNrJoKNxF9TmNHSuWkqz7aK5z0L2c+TqV6
       ETHEREUM_CLIENT_URL: http://ethereum:8545
     ports:
-    - 9800:80/tcp
+    - 7402:7402/tcp
     volumes:
     - ./:/lndr
     networks:

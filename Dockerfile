@@ -68,8 +68,8 @@ ENV \
 
   S3_PHOTO_BUCKET="lndr-avatars" \
   SCAN_START_BLOCK="0" \
-  URBAN_AIRSHIP_KEY="" \
-  URBAN_AIRSHIP_SECRET=""
+  NOTIFICATIONS_API_KEY="" \
+  NOTIFICATIONS_API_URL=""
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["start"]

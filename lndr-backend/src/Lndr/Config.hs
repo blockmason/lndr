@@ -59,12 +59,12 @@ loadConfig configPath = do
                           def
                           (loadEntry "max-gas")
                           0
-                          (loadEntry "urban-airship.key")
-                          (loadEntry "urban-airship.secret")
                           (loadEntry "heartbeat-interval")
                           (loadEntry "aws.photo-bucket")
                           (loadEntry "aws.access-key-id")
                           (loadEntry "aws.secret-access-key")
+                          (loadEntry "notifications.api-url")
+                          (loadEntry "notifications.api-key")
                           (loadEntry "web3-url")
                           privateKey
                           execAddress

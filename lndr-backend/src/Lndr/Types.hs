@@ -184,28 +184,20 @@ instance ToJSON DevicePlatform where
    toJSON Ios     = String "ios"
    toJSON Android = String "android"
 
--- This should probably be called 'Push Object' to match the Urban Airship docs
--- here: https://docs.urbanairship.com/api/ua/#push-object
+-- This should match the field names used in the Notifications API
+-- here: https://github.com/blockmason/lndr-notifications
 data Notification = Notification { channelID :: Text
                                  , platform  :: DevicePlatform
-                                 , message   :: Text
-                                 , action    :: NotificationAction
+                                 , user   :: Maybe Text
+                                 , notificationType  :: NotificationAction
                                  } deriving Show
 
 instance ToJSON Notification where
-    toJSON (Notification channelID platform message action) =
-        object [ "audience" .= object [ deviceChannel platform .= channelID ]
-               , "notification" .=
-                    object [ "alert" .= message
-                           , "actions" .=
-                                 object [ "app_defined" .=
-                                             object [ "LNDR_ACTIONS" .= [ action ] ]
-                                        ]
-                           ]
-               , "device_types" .= [ platform ]
-               ]
-        where deviceChannel Ios     = "ios_channel"
-              deviceChannel Android = "android_channel"
+    toJSON (Notification channelID platform user notificationType) =
+        object [ "channelID" .= channelID
+               , "platform" .= platform
+               , "user" .= user
+               , "notificationType" .= notificationType ]
 
 -- A newtype wrapper is used for this 'Double' value which holds an Ethereum
 -- price expressed in USD. This is necessary in order to have easy decoding
@@ -281,12 +273,12 @@ data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Addr
                                  , ethereumPrices           :: !EthereumPrices
                                  , maxGas                   :: !Integer
                                  , latestBlockNumber        :: !Integer
-                                 , urbanAirshipKey          :: !ByteString
-                                 , urbanAirshipSecret       :: !ByteString
                                  , heartbeatInterval        :: !Int
                                  , awsPhotoBucket           :: !Text
                                  , awsAccessKeyId           :: !ByteString
                                  , awsSecretAccessKey       :: !ByteString
+                                 , notificationsApiUrl      :: !String
+                                 , notificationsApiKey      :: !ByteString
                                  , web3Url                  :: !String
                                  , executionPrivateKey      :: !Text
                                  , executionAddress         :: !Address

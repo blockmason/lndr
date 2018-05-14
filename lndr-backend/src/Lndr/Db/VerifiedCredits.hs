@@ -68,6 +68,10 @@ lookupCreditByHash hash conn = listToMaybe <$> query conn sql (Only hash)
     where sql = "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, ucac, creditor_signature, debtor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements USING(hash) WHERE verified_credits.hash = ?"
 
 
+lookupCreditsByTxHash :: TransactionHash -> Connection -> IO [BilateralCreditRecord]
+lookupCreditsByTxHash txHash conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, ucac, creditor_signature, debtor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM settlements JOIN verified_credits USING(hash) WHERE settlements.tx_hash = ?" (Only txHash)
+
+
 -- Flips verified bit on once a settlement payment has been confirmed
 verifyCreditByHash :: Text -> Connection -> IO Int
 verifyCreditByHash hash conn = fromIntegral <$> execute conn "UPDATE settlements SET verified = TRUE WHERE hash = ?" (Only hash)
@@ -117,7 +121,7 @@ twoPartyBalance addr counterparty ucac conn = do
     return . floor $ balance
 
 
-twoPartyNonce :: Address -> Address -> Connection -> IO Nonce
-twoPartyNonce addr counterparty conn = do
+twoPartyNonce :: Address -> Address -> Integer -> Connection -> IO Nonce
+twoPartyNonce addr counterparty increment conn = do
     [Only nonce] <- query conn "SELECT COALESCE(MAX(nonce) + 1, 0) FROM verified_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
-    return . Nonce . floor $ nonce
+    return ( Nonce ( ( floor $ nonce ) + increment ) )

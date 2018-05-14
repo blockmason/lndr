@@ -170,6 +170,7 @@ $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 12
 data NotificationAction = NewPendingCredit
                         | CreditConfirmation
                         | PendingCreditRejection
+                        | Blank
                         deriving Show
 $(deriveJSON defaultOptions ''NotificationAction)
 

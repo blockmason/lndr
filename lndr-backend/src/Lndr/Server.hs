@@ -56,6 +56,7 @@ type LndrAPI =
    :<|> "lend" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "borrow" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "reject" :> ReqBody '[JSON] RejectRequest :> PostNoContent '[JSON] NoContent
+   :<|> "multi_settlement" :> ReqBody '[JSON] [CreditRecord] :> PostNoContent '[JSON] NoContent
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
    :<|> "nick" :> Capture "user" Address :> Get '[JSON] Text
@@ -95,6 +96,7 @@ server = transactionsHandler
     :<|> lendHandler
     :<|> borrowHandler
     :<|> rejectHandler
+    :<|> multiSettlementHandler
     :<|> nonceHandler
     :<|> nickHandler
     :<|> nickLookupHandler
@@ -228,8 +230,8 @@ verifySettlementsWithTxHash :: LndrHandler ()
 verifySettlementsWithTxHash = do
     (ServerState pool configTVar _) <- ask
     config <- liftIO $ readTVarIO configTVar
-    creditHashes <- liftIO $ withResource pool Db.settlementCreditsToVerify
-    mapM_ verifyIndividualRecord creditHashes
+    creditHashPairs <- liftIO $ withResource pool Db.settlementCreditsToVerify
+    mapM_ verifyIndividualRecord creditHashPairs
 
 
 verifyIndividualRecord :: TransactionHash -> LndrHandler ()
@@ -239,8 +241,23 @@ verifyIndividualRecord creditHash = do
     let recordNotFound = throwError $
             err404 { errBody = "Credit hash does not refer to pending bilateral settlement record" }
     bilateralCreditRecord <- maybe recordNotFound pure recordM
-    verifySettlementPayment bilateralCreditRecord
+    let txHashNotFound = throwError $
+            err404 { errBody = "Bilateral settlement record does not have a transaction hash" }
+    transHash <- maybe txHashNotFound pure $ txHash bilateralCreditRecord
+    multiSettlementRecords <- liftIO $ withResource pool $ Db.lookupCreditsByTxHash transHash
+    let settlementAmount = foldr getSettlementAmount 0 multiSettlementRecords
+    liftIO $ pushLogStrLn loggerSet . toLogStr $ ("SETTLEMENT AMOUNT TO VERIFY " :: String) ++ (show settlementAmount)
+    verifySettlementPayment bilateralCreditRecord settlementAmount
     liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
     web3Result <- finalizeTransaction configTVar bilateralCreditRecord
                         `catchError` (pure . T.pack . show)
     liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result
+
+
+getSettlementAmount :: BilateralCreditRecord -> Integer -> Integer
+getSettlementAmount (BilateralCreditRecord creditRecord _ _ _) cumulativeSettlementAmt = 
+    cumulativeSettlementAmt + ( getAmount $ settlementAmount creditRecord )
+
+getAmount :: Maybe Integer -> Integer
+getAmount (Just amt) = amt
+getAmount Nothing = 0

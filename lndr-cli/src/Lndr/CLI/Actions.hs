@@ -40,6 +40,7 @@ module Lndr.CLI.Actions (
     , scanBlockchain
     , consistencyCheck
     , verifySettlement
+    , submitMultiSettlement
 
     -- * notifications-related requests
     , registerChannel
@@ -316,6 +317,32 @@ submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ 
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp
+
+
+submitMultiSettlement :: String -> Text -> [CreditRecord] -> IO Int
+submitMultiSettlement url secretKey transactions = do
+    startNonce <- getNonce url (getDebtor $ head transactions) (getCreditor $ head transactions)
+    initReq <- HTTP.parseRequest $ url ++ "/multi_settlement"
+    let signedTransactions = signMultiSettlement secretKey startNonce transactions []
+    let req = HTTP.setRequestBodyJSON signedTransactions $
+                HTTP.setRequestMethod "POST" initReq
+    resp <- HTTP.httpNoBody req
+    return $ HTTP.getResponseStatusCode resp
+
+
+signMultiSettlement :: Text -> Integer -> [CreditRecord] -> [CreditRecord] -> [CreditRecord]
+signMultiSettlement _ _ [] signed = reverse signed
+signMultiSettlement secretKey startNonce (x:xs) signed =
+    let justSigned = signCredit secretKey (x { nonce = startNonce })
+    in signMultiSettlement secretKey (startNonce + 1) xs (justSigned:signed)
+
+getDebtor :: CreditRecord -> Address
+getDebtor unsignedCredit@(CreditRecord creditor debtor _ _ _ _ _ _ _ _ _ _) =
+    debtor
+
+getCreditor :: CreditRecord -> Address
+getCreditor unsignedCredit@(CreditRecord creditor debtor _ _ _ _ _ _ _ _ _ _) =
+    creditor
 
 
 rejectCredit :: String -> Text -> Text -> IO Int

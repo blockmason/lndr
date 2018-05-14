@@ -45,10 +45,12 @@ testAddress3 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey3
 testAddress4 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey4
 testAddress5 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey5
 testAddress6 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey6
+testAddress7 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey7
+testAddress8 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey8
 testSearch = "test"
 testNick1 = "test1"
 testNick2 = "test2"
-testEmailText = "tim@blockmason.io"
+testEmailText = "will@blockmason.io"
 testEmail = fromMaybe (error "bad test email") $ Email.emailAddressFromText testEmailText
 
 
@@ -98,6 +100,9 @@ tests = [ testGroup "Nicks"
             ]
         , testGroup "Utils"
             [ testCase "parseIssueCreditInput" parseCreditInputTest
+            ]
+        , testGroup "Multi Settlement"
+            [ testCase "multiSettlementLendTest" multiSettlementLendTest
             ]
         ]
 
@@ -200,8 +205,8 @@ basicLendTest = do
     (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY) <- loadUcacs
 
     let testAmount = 100
-        testCredit' = CreditRecord testAddress1 testAddress2 testAmount "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
-        badTestCredit' = CreditRecord testAddress1 testAddress1 testAmount "dinner" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
+        testCredit' = CreditRecord testAddress1 testAddress2 testAmount "USD test 1" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
+        badTestCredit' = CreditRecord testAddress1 testAddress1 testAmount "dinner bad" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
 
         creditHash = generateHash testCredit'
         testCredit = testCredit' { hash = creditHash }
@@ -233,11 +238,11 @@ basicLendTest = do
 
     -- user1 attempts same credit again
     httpCode <- submitCredit testUrl testPrivkey1 testCredit
-    assertEqual "lend success" 204 httpCode
+    assertEqual "first lend success" 204 httpCode
 
     -- user2 accepts user1's pending credit
     httpCode <- submitCredit testUrl testPrivkey2 (testCredit { submitter = testAddress2 })
-    assertEqual "borrow success" 204 httpCode
+    assertEqual "first borrow success" 204 httpCode
 
     -- user1's checks that he has pending credits and one verified credit
     creditRecords1 <- checkPending testUrl testAddress1
@@ -272,17 +277,17 @@ basicLendTest = do
 
     -- user1 and user2 create credit on JPY ucac
     let jpyValue = 200000
-        testCreditJPY' = CreditRecord testAddress2 testAddress1 jpyValue "sushi" testAddress2 0 "" "" ucacAddrJPY Nothing Nothing Nothing
+        testCreditJPY' = CreditRecord testAddress2 testAddress1 jpyValue "JPY test 1" testAddress2 1 "" "" ucacAddrJPY Nothing Nothing Nothing
         creditHashJPY = generateHash testCreditJPY'
         testCreditJPY = testCreditJPY' { hash = creditHashJPY }
 
     -- user2 submits pending credit to user1
     httpCode <- submitCredit testUrl testPrivkey2 testCreditJPY
-    assertEqual "lend success" 204 httpCode
+    assertEqual "second lend success" 204 httpCode
 
     -- user1 accepts user2's pending credit
     httpCode <- submitCredit testUrl testPrivkey1 (testCreditJPY { submitter = testAddress1 })
-    assertEqual "borrow success" 204 httpCode
+    assertEqual "second borrow success" 204 httpCode
 
     -- user2 has a correct total JPY balance
     balance <- getBalance testUrl testAddress2 "JPY"
@@ -354,10 +359,6 @@ basicSettlementTest = do
     gottenTxHash <- getTxHash testUrl creditHash
     assertEqual "successful txHash retrieval" txHash (addHexPrefix gottenTxHash)
 
-    (numDbCredits, numBlockchainCredits, _, _) <- consistencyCheck
-    assertEqual "correct number of transactions on blockchain" 3 numBlockchainCredits
-    assertEqual "correct number of transactions in db" 3 numDbCredits
-
 
 basicNotificationsTest :: Assertion
 basicNotificationsTest = do
@@ -378,3 +379,105 @@ nickSignTest = assertEqual "expected nick request signature" nickSignature (Righ
     where
         unsignedNickRequest = NickRequest testAddress1 "testNick" ""
         nickSignature = generateSignature unsignedNickRequest testPrivkey1
+
+
+multiSettlementLendTest :: Assertion
+multiSettlementLendTest = do
+    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY) <- loadUcacs
+
+    let testAmount = 100
+        testCredits' = [ ( CreditRecord testAddress7 testAddress8 testAmount "multiSettlement good 1" testAddress7 0 "" "" ucacAddr Nothing Nothing Nothing )
+            , ( CreditRecord testAddress7 testAddress8 testAmount "multiSettlement good 2" testAddress7 1 "" "" ucacAddrJPY Nothing Nothing Nothing ) ]
+        badTestCredits' = [ ( CreditRecord testAddress7 testAddress7 testAmount "multiSettlement bad 1" testAddress7 0 "" "" ucacAddr Nothing Nothing Nothing )
+            , ( CreditRecord testAddress7 testAddress7 testAmount "multiSettlement bad 2" testAddress7 1 "" "" ucacAddrJPY Nothing Nothing Nothing ) ]
+            
+        -- creditHash =  testCredit'
+        testHashes = map (\credit -> generateHash credit ) testCredits'
+        testCredits = map (\credit -> credit { hash = generateHash credit } ) testCredits'
+        testCredits2 = map (\credit -> credit { submitter = testAddress8 } ) testCredits
+        badTestCredits = map (\credit -> credit { hash = generateHash credit } ) badTestCredits'
+
+    -- user1 fails to submit pending credit to himself
+    httpCode <- submitMultiSettlement testUrl testPrivkey7 badTestCredits
+    assertEqual "user1 cannot lend to himself" 400 httpCode
+
+    -- user1 submits pending credit to user2
+    httpCode <- submitMultiSettlement testUrl testPrivkey7 testCredits
+    assertEqual "lend success" 204 httpCode
+
+    -- user1 checks pending transactions
+    creditRecords1 <- checkPending testUrl testAddress7
+    assertEqual "two pending records found for user1" 2 (length creditRecords1)
+
+    -- user2 checks pending transactions
+    creditRecords2 <- checkPending testUrl testAddress8
+    assertEqual "two pending records found for user2" 2 (length creditRecords2)
+
+    -- user2 rejects pending transactions
+    httpCode <- rejectCredit testUrl testPrivkey7 ( head testHashes )
+    assertEqual ("reject success (first)" ++ show ( head testHashes ) ++ " : " ++ show ( hash (head testCredits) ) ) 204 httpCode
+    httpCode <- rejectCredit testUrl testPrivkey7 ( last testHashes )
+    assertEqual "reject success (second)" 204 httpCode
+
+    -- user2 has 0 pending records post-rejection
+    creditRecords2 <- checkPending testUrl testAddress8
+    assertEqual "zero pending records found for user2" 0 (length creditRecords2)
+
+    -- user1 attempts same credit again
+    httpCode <- submitMultiSettlement testUrl testPrivkey7 testCredits
+    assertEqual "multi-settlement lend success" 204 httpCode
+
+    -- user2 accepts user1's pending credit
+    httpCode <- submitMultiSettlement testUrl testPrivkey8 testCredits2
+    assertEqual "multi-settlement borrow success" 204 httpCode
+
+    -- user1's checks that he has pending credits and one verified credit
+    creditRecords1 <- checkPending testUrl testAddress7
+    assertEqual "zero pending records found for user1" 0 (length creditRecords1)
+
+    verifiedRecords1 <- getTransactions testUrl testAddress7
+    assertEqual "two verified record found for user1" 2 (length verifiedRecords1)
+
+    balance <- getBalance testUrl testAddress7 "USD"
+    assertEqual "user1's total USD balance is correct" testAmount balance
+
+    balance <- getBalance testUrl testAddress7 "JPY"
+    assertEqual "user1's total JPY balance is correct" testAmount balance
+
+    twoPartyBalance <- getTwoPartyBalance testUrl testAddress7 testAddress8 "USD"
+    assertEqual "user1's two-party balance is correct" testAmount twoPartyBalance
+
+    twoPartyBalance <- getTwoPartyBalance testUrl testAddress7 testAddress8 "JPY"
+    assertEqual "user1's two-party balance is correct" testAmount twoPartyBalance
+
+    balance <- getBalance testUrl testAddress8 "USD"
+    assertEqual "user2's total balance is correct" (-testAmount) balance
+
+    balance <- getBalance testUrl testAddress8 "JPY"
+    assertEqual "user2's total balance is correct" (-testAmount) balance
+
+    twoPartyBalance <- getTwoPartyBalance testUrl testAddress8 testAddress7 "USD"
+    assertEqual "user2's two-party balance is correct" (-testAmount) twoPartyBalance
+
+    twoPartyBalance <- getTwoPartyBalance testUrl testAddress8 testAddress7 "JPY"
+    assertEqual "user2's two-party balance is correct" (-testAmount) twoPartyBalance
+
+    -- user1's counterparties list is [user2]
+    counterparties <- getCounterparties testUrl testAddress7
+    assertEqual "user1's counterparties properly calculated" [testAddress8] counterparties
+
+    -- user1 is friends with user2
+    friends <- fmap addr <$> getFriends testUrl testAddress7
+    assertEqual "user1's friends properly calculated" [testAddress8] friends
+
+    -- user2 is friends with user1
+    friends <- fmap addr <$> getFriends testUrl testAddress8
+    assertEqual "user2's friends properly calculated" [testAddress7] friends
+
+    -- ensure that tx registers in blockchain w/ a 10 second pause and
+    -- heartbeat has time to verify its validity
+    threadDelay (10 * 10 ^ 6)
+
+    (numDbCredits, numBlockchainCredits, _, _) <- consistencyCheck
+    assertEqual "correct number of transactions (5) on blockchain" 5 numBlockchainCredits
+    assertEqual "correct number of transactions (5) in db" 5 numDbCredits

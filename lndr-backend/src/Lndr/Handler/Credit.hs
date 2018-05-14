@@ -6,6 +6,7 @@ module Lndr.Handler.Credit (
     , borrowHandler
     , rejectHandler
     , verifyHandler
+    , multiSettlementHandler
 
     -- * app state-querying handlers
     , pendingHandler
@@ -45,18 +46,19 @@ import           Text.Printf
 
 
 lendHandler :: CreditRecord -> LndrHandler NoContent
-lendHandler creditRecord = submitHandler $ creditRecord { submitter = creditor creditRecord }
+lendHandler creditRecord = submitHandler 0 $ creditRecord { submitter = creditor creditRecord }
 
 
 borrowHandler :: CreditRecord -> LndrHandler NoContent
-borrowHandler creditRecord = submitHandler $ creditRecord { submitter = debtor creditRecord }
+borrowHandler creditRecord = submitHandler 0 $ creditRecord { submitter = debtor creditRecord }
 
 
-submitHandler :: CreditRecord -> LndrHandler NoContent
-submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress _ hash sig _ _ _ _) = do
+submitHandler :: Integer -> CreditRecord -> LndrHandler NoContent
+submitHandler nonceIncrement signedRecord@(CreditRecord creditor debtor _ memo submitterAddress _ hash sig _ _ _ _) = do
     (ServerState pool configTVar loggerSet) <- ask
     config <- liftIO $ readTVarIO configTVar
-    nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
+    nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor nonceIncrement
+    liftIO $ pushLogStrLn loggerSet . toLogStr . ( ("NONCE FOR TX: " ++ show memo) ++) . show $ nonce
 
     -- check that credit submission is valid
     unless (hash == generateHash signedRecord) $
@@ -102,14 +104,14 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
             finalizeCredit $ BilateralCreditRecord storedRecord creditorSig debtorSig Nothing
 
             -- send push notification to counterparty
-            attemptToNotify CreditConfirmation
+            if nonceIncrement == 0 then attemptToNotify CreditConfirmation else attemptToNotify Blank
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
             let processedRecord = calculateSettlementCreditRecord config signedRecord
-            createPendingRecord pool processedRecord
+            createPendingRecord nonceIncrement pool processedRecord
             -- send push notification to counterparty
-            attemptToNotify NewPendingCredit
+            if nonceIncrement == 0 then attemptToNotify NewPendingCredit else attemptToNotify Blank
 
     pure NoContent
 
@@ -135,12 +137,12 @@ finalizeCredit bilateralCredit = do
                 commit conn
 
 
-createPendingRecord :: Pool Connection -> CreditRecord -> LndrHandler ()
-createPendingRecord pool signedRecord = do
+createPendingRecord :: Integer -> Pool Connection -> CreditRecord -> LndrHandler ()
+createPendingRecord nonceIncrement pool signedRecord = do
     -- TODO can I consolidate these two checks into one?
     -- check if a pending transaction already exists between the two users
     existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses (creditor signedRecord) (debtor signedRecord)
-    unless (null existingPending) $
+    unless ( (nonceIncrement > 0) || (null existingPending) ) $
         throwError (err400 {errBody = "A pending credit record already exists for the two users."})
 
     -- check if an unverified bilateral credit record exists in the
@@ -155,7 +157,8 @@ createPendingRecord pool signedRecord = do
 
     void . liftIO . withResource pool $ Db.insertPending signedRecord
 
-
+-- TODO: change the settlementAmountRaw to use the settlementAmount on the
+-- incoming record if it already exists
 calculateSettlementCreditRecord :: ServerConfig -> CreditRecord -> CreditRecord
 calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _) = cr
 calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ ucac _ (Just currency) _) =
@@ -273,7 +276,7 @@ txHashHandler creditHash = do
 nonceHandler :: Address -> Address -> LndrHandler Nonce
 nonceHandler p1 p2 = do
     pool <- asks dbConnectionPool
-    liftIO . withResource pool $ Db.twoPartyNonce p1 p2
+    liftIO . withResource pool $ Db.twoPartyNonce p1 p2 0
 
 
 counterpartiesHandler :: Address -> LndrHandler [Address]
@@ -294,3 +297,14 @@ twoPartyBalanceHandler p1 p2 currency = do
     (ServerState pool configTVar _) <- ask
     ucacAddresses <- fmap lndrUcacAddrs . liftIO $ readTVarIO configTVar
     liftIO . withResource pool $ Db.twoPartyBalance p1 p2 (getUcac ucacAddresses currency)
+
+
+multiSettlementHandler :: [CreditRecord] -> LndrHandler NoContent
+multiSettlementHandler transactions = submitMultiSettlement transactions 0
+
+submitMultiSettlement :: [CreditRecord] -> Integer -> LndrHandler NoContent
+submitMultiSettlement [] _ = pure NoContent
+submitMultiSettlement [x] nonceIncrement = submitHandler nonceIncrement x
+submitMultiSettlement (x:xs) nonceIncrement = do
+    submitHandler nonceIncrement x
+    submitMultiSettlement xs $ nonceIncrement + 1

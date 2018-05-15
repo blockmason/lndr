@@ -313,7 +313,7 @@ submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ 
                    then HTTP.parseRequest $ url ++ "/lend"
                    else HTTP.parseRequest $ url ++ "/borrow"
     let signedCredit = signCredit secretKey (unsignedCredit { nonce = nonce })
-    let req = HTTP.setRequestBodyJSON signedCredit $
+        req = HTTP.setRequestBodyJSON signedCredit $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp
@@ -321,10 +321,10 @@ submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ 
 
 submitMultiSettlement :: String -> Text -> [CreditRecord] -> IO Int
 submitMultiSettlement url secretKey transactions = do
-    startNonce <- getNonce url (getDebtor $ head transactions) (getCreditor $ head transactions)
+    startNonce <- getNonce url (debtor $ head transactions) (creditor $ head transactions)
     initReq <- HTTP.parseRequest $ url ++ "/multi_settlement"
     let signedTransactions = signMultiSettlement secretKey startNonce transactions []
-    let req = HTTP.setRequestBodyJSON signedTransactions $
+        req = HTTP.setRequestBodyJSON signedTransactions $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp
@@ -335,14 +335,6 @@ signMultiSettlement _ _ [] signed = reverse signed
 signMultiSettlement secretKey startNonce (x:xs) signed =
     let justSigned = signCredit secretKey (x { nonce = startNonce })
     in signMultiSettlement secretKey (startNonce + 1) xs (justSigned:signed)
-
-getDebtor :: CreditRecord -> Address
-getDebtor unsignedCredit@(CreditRecord creditor debtor _ _ _ _ _ _ _ _ _ _) =
-    debtor
-
-getCreditor :: CreditRecord -> Address
-getCreditor unsignedCredit@(CreditRecord creditor debtor _ _ _ _ _ _ _ _ _ _) =
-    creditor
 
 
 rejectCredit :: String -> Text -> Text -> IO Int

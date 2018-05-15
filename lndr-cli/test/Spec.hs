@@ -392,10 +392,10 @@ multiSettlementLendTest = do
             , ( CreditRecord testAddress7 testAddress7 testAmount "multiSettlement bad 2" testAddress7 1 "" "" ucacAddrJPY Nothing Nothing Nothing ) ]
             
         -- creditHash =  testCredit'
-        testHashes = map (\credit -> generateHash credit ) testCredits'
-        testCredits = map (\credit -> credit { hash = generateHash credit } ) testCredits'
-        testCredits2 = map (\credit -> credit { submitter = testAddress8 } ) testCredits
-        badTestCredits = map (\credit -> credit { hash = generateHash credit } ) badTestCredits'
+        testHashes = fmap generateHash testCredits'
+        testCredits = fmap (\credit -> credit { hash = generateHash credit } ) testCredits'
+        testCredits2 = fmap (\credit -> credit { submitter = testAddress8 } ) testCredits
+        badTestCredits = fmap (\credit -> credit { hash = generateHash credit } ) badTestCredits'
 
     -- user1 fails to submit pending credit to himself
     httpCode <- submitMultiSettlement testUrl testPrivkey7 badTestCredits

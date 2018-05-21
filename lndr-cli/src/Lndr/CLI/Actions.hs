@@ -323,18 +323,11 @@ submitMultiSettlement :: String -> Text -> [CreditRecord] -> IO Int
 submitMultiSettlement url secretKey transactions = do
     startNonce <- getNonce url (debtor $ head transactions) (creditor $ head transactions)
     initReq <- HTTP.parseRequest $ url ++ "/multi_settlement"
-    let signedTransactions = signMultiSettlement secretKey startNonce transactions []
+    let signedTransactions = fmap (\tx -> signCredit secretKey tx ) transactions
         req = HTTP.setRequestBodyJSON signedTransactions $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp
-
-
-signMultiSettlement :: Text -> Integer -> [CreditRecord] -> [CreditRecord] -> [CreditRecord]
-signMultiSettlement _ _ [] signed = reverse signed
-signMultiSettlement secretKey startNonce (x:xs) signed =
-    let justSigned = signCredit secretKey (x { nonce = startNonce })
-    in signMultiSettlement secretKey (startNonce + 1) xs (justSigned:signed)
 
 
 rejectCredit :: String -> Text -> Text -> IO Int

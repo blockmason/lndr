@@ -230,34 +230,32 @@ verifySettlementsWithTxHash :: LndrHandler ()
 verifySettlementsWithTxHash = do
     (ServerState pool configTVar _) <- ask
     config <- liftIO $ readTVarIO configTVar
-    creditHashPairs <- liftIO $ withResource pool Db.settlementCreditsToVerify
-    mapM_ verifyIndividualRecord creditHashPairs
+    txHashes <- liftIO $ withResource pool Db.txHashesToVerify
+    creditsToVerify <- mapM (\txHash -> liftIO $ withResource pool $ Db.lookupCreditsByTxHash txHash) txHashes
+    mapM_ (\txGroupList -> verifyRecords txGroupList) creditsToVerify
 
 
-verifyIndividualRecord :: TransactionHash -> LndrHandler ()
-verifyIndividualRecord creditHash = do
+verifyRecords :: [BilateralCreditRecord] -> LndrHandler ()
+verifyRecords records = do
     (ServerState pool configTVar loggerSet) <- ask
-    recordM <- liftIO $ withResource pool $ Db.lookupCreditByHash creditHash
-    let recordNotFound = throwError $
-            err404 { errBody = "Credit hash does not refer to pending bilateral settlement record" }
-    bilateralCreditRecord <- maybe recordNotFound pure recordM
-    let txHashNotFound = throwError $
-            err404 { errBody = "Bilateral settlement record does not have a transaction hash" }
-    transHash <- maybe txHashNotFound pure $ txHash bilateralCreditRecord
-    multiSettlementRecords <- liftIO $ withResource pool $ Db.lookupCreditsByTxHash transHash
-    let settlementAmount = foldr getSettlementAmount 0 multiSettlementRecords
-    liftIO $ pushLogStrLn loggerSet . toLogStr $ ("SETTLEMENT AMOUNT TO VERIFY " :: String) ++ (show settlementAmount)
-    verifySettlementPayment bilateralCreditRecord settlementAmount
-    liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
-    web3Result <- finalizeTransaction configTVar bilateralCreditRecord
-                        `catchError` (pure . T.pack . show)
+    
+    -- this should only take the creditor, debtor, credit hash, and settlement amount
+    let initialTxHash = txHash $ head records
+        initialRecord = creditRecord $ head records
+        initialSettlement = SettlementVerification (creditor initialRecord) (debtor initialRecord) initialTxHash (fromMaybe 0 $ settlementAmount initialRecord)
+        settlementRecord = foldr generateCompositeSettlement initialSettlement (tail records)
+    verifySettlementPayment settlementRecord
+    mapM_ (\(BilateralCreditRecord creditRecord _ _ _) -> liftIO $ withResource pool $ Db.verifyCreditByHash $ hash creditRecord) records
+    web3Result <- mapM (\bilateralCreditRecord -> finalizeTransaction configTVar bilateralCreditRecord) records
+                -- `catchError` (pure . T.pack . show)
     liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result
 
 
-getSettlementAmount :: BilateralCreditRecord -> Integer -> Integer
-getSettlementAmount (BilateralCreditRecord creditRecord _ _ _) cumulativeSettlementAmt = 
-    cumulativeSettlementAmt + ( getAmount $ settlementAmount creditRecord )
-
-getAmount :: Maybe Integer -> Integer
-getAmount (Just amt) = amt
-getAmount Nothing = 0
+generateCompositeSettlement :: BilateralCreditRecord -> SettlementVerification -> SettlementVerification
+generateCompositeSettlement (BilateralCreditRecord creditRecord _ _ txHash) (SettlementVerification creditorAddr debtorAddr txnHash settlementValue) =
+    let direction = if creditorAddr == creditor creditRecord then 1 else -1
+        newValue = direction * fromMaybe 0 (settlementAmount creditRecord) + settlementValue
+        newCreditor = if newValue > 0 then creditorAddr else debtorAddr
+        newDebtor = if newValue > 0 then debtorAddr else creditorAddr
+        newHash = if txnHash == txHash then txHash else Nothing
+    in (SettlementVerification newCreditor newDebtor newHash $ abs newValue)

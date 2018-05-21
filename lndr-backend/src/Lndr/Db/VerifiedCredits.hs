@@ -42,8 +42,8 @@ deleteExpiredSettlementsAndAssociatedCredits conn = do
     commit conn
 
 
-settlementCreditsToVerify :: Connection -> IO [Text]
-settlementCreditsToVerify conn = fmap fromOnly <$> query_ conn "SELECT hash FROM settlements WHERE tx_hash IS NOT NULL AND verified = FALSE"
+txHashesToVerify :: Connection -> IO [Text]
+txHashesToVerify conn = fmap fromOnly <$> query_ conn "SELECT tx_hash FROM settlements WHERE tx_hash IS NOT NULL AND verified = FALSE"
 
 
 txHashByCreditHash :: Text -> Connection -> IO (Maybe Text)
@@ -121,7 +121,7 @@ twoPartyBalance addr counterparty ucac conn = do
     return . floor $ balance
 
 
-twoPartyNonce :: Address -> Address -> Integer -> Connection -> IO Nonce
-twoPartyNonce addr counterparty increment conn = do
+twoPartyNonce :: Address -> Address -> Connection -> IO Nonce
+twoPartyNonce addr counterparty conn = do
     [Only nonce] <- query conn "SELECT COALESCE(MAX(nonce) + 1, 0) FROM verified_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (addr, counterparty, counterparty, addr) :: IO [Only Scientific]
-    return ( Nonce ( ( floor $ nonce ) + increment ) )
+    return . Nonce . floor $ nonce

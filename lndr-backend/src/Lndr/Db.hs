@@ -34,12 +34,12 @@ module Lndr.Db (
     , twoPartyBalance
     , twoPartyNonce
     , txHashByCreditHash
+    , txHashesToVerify
 
     -- * 'settlement'-specific functions
     , lookupSettlementCreditByAddress
     , lookupPendingSettlementByAddresses
     , deleteExpiredSettlementsAndAssociatedCredits
-    , settlementCreditsToVerify
     , updateSettlementTxHash
 
 

@@ -344,7 +344,7 @@ basicSettlementTest = do
 
     -- ensure that tx registers in blockchain w/ a 10 second pause and
     -- heartbeat has time to verify its validity
-    threadDelay (10 * 10 ^ 6)
+    threadDelay (20 * 10 ^ 6)
 
     (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getPendingSettlements testUrl testAddress5
     assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)
@@ -385,11 +385,12 @@ multiSettlementLendTest :: Assertion
 multiSettlementLendTest = do
     (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY) <- loadUcacs
 
-    let testAmount = 100
-        testCredits' = [ ( CreditRecord testAddress7 testAddress8 testAmount "multiSettlement good 1" testAddress7 0 "" "" ucacAddr Nothing Nothing Nothing )
-            , ( CreditRecord testAddress7 testAddress8 testAmount "multiSettlement good 2" testAddress7 1 "" "" ucacAddrJPY Nothing Nothing Nothing ) ]
-        badTestCredits' = [ ( CreditRecord testAddress7 testAddress7 testAmount "multiSettlement bad 1" testAddress7 0 "" "" ucacAddr Nothing Nothing Nothing )
-            , ( CreditRecord testAddress7 testAddress7 testAmount "multiSettlement bad 2" testAddress7 1 "" "" ucacAddrJPY Nothing Nothing Nothing ) ]
+    let testAmount1 = 100
+        testAmount2 = 50
+        testCredits' = [ ( CreditRecord testAddress7 testAddress8 testAmount1 "multiSettlement good 1" testAddress7 0 "" "" ucacAddr Nothing Nothing Nothing )
+            , ( CreditRecord testAddress8 testAddress7 testAmount2 "multiSettlement good 2" testAddress7 1 "" "" ucacAddrJPY Nothing Nothing Nothing ) ]
+        badTestCredits' = [ ( CreditRecord testAddress7 testAddress7 testAmount1 "multiSettlement bad 1" testAddress7 0 "" "" ucacAddr Nothing Nothing Nothing )
+            , ( CreditRecord testAddress7 testAddress7 testAmount2 "multiSettlement bad 2" testAddress7 1 "" "" ucacAddrJPY Nothing Nothing Nothing ) ]
             
         -- creditHash =  testCredit'
         testHashes = fmap generateHash testCredits'
@@ -439,28 +440,28 @@ multiSettlementLendTest = do
     assertEqual "two verified record found for user1" 2 (length verifiedRecords1)
 
     balance <- getBalance testUrl testAddress7 "USD"
-    assertEqual "user1's total USD balance is correct" testAmount balance
+    assertEqual "user1's total USD balance is correct" testAmount1 balance
 
     balance <- getBalance testUrl testAddress7 "JPY"
-    assertEqual "user1's total JPY balance is correct" testAmount balance
+    assertEqual "user1's total JPY balance is correct" (-testAmount2) balance
 
     twoPartyBalance <- getTwoPartyBalance testUrl testAddress7 testAddress8 "USD"
-    assertEqual "user1's two-party balance is correct" testAmount twoPartyBalance
+    assertEqual "user1's two-party balance is correct" testAmount1 twoPartyBalance
 
     twoPartyBalance <- getTwoPartyBalance testUrl testAddress7 testAddress8 "JPY"
-    assertEqual "user1's two-party balance is correct" testAmount twoPartyBalance
+    assertEqual "user1's two-party balance is correct" (-testAmount2) twoPartyBalance
 
     balance <- getBalance testUrl testAddress8 "USD"
-    assertEqual "user2's total balance is correct" (-testAmount) balance
+    assertEqual "user2's total balance is correct" (-testAmount1) balance
 
     balance <- getBalance testUrl testAddress8 "JPY"
-    assertEqual "user2's total balance is correct" (-testAmount) balance
+    assertEqual "user2's total balance is correct" testAmount2 balance
 
     twoPartyBalance <- getTwoPartyBalance testUrl testAddress8 testAddress7 "USD"
-    assertEqual "user2's two-party balance is correct" (-testAmount) twoPartyBalance
+    assertEqual "user2's two-party balance is correct" (-testAmount1) twoPartyBalance
 
     twoPartyBalance <- getTwoPartyBalance testUrl testAddress8 testAddress7 "JPY"
-    assertEqual "user2's two-party balance is correct" (-testAmount) twoPartyBalance
+    assertEqual "user2's two-party balance is correct" testAmount2 twoPartyBalance
 
     -- user1's counterparties list is [user2]
     counterparties <- getCounterparties testUrl testAddress7

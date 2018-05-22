@@ -42,6 +42,15 @@ jobs:
               cp "${file}" "artifacts/${file}"
             fi
           done
-
     - store_artifacts:
         path: artifacts
+    - run:
+        name: Publishing (only on master if version has changed)
+        command: |
+          if [ master = "${CIRCLE_BRANCH}" ]; then
+            if [ -n "${AWS_ACCESS_KEY_ID}" ]; then
+              if [ -n "${AWS_SECRET_ACCESS_KEY}" ]; then
+                aws s3 cp --acl public-read artifacts/lndr-server "s3://blockmason-artifacts/@blockmason/lndr/${CIRCLE_SHA1}/lndr-server"
+              fi
+            fi
+          fi

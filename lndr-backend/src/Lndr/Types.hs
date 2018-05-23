@@ -18,7 +18,6 @@ module Lndr.Types
     , ProfilePhotoRequest(..)
     , CreditRecord(..)
     , BilateralCreditRecord(..)
-    , SettlementVerification(..)
     , IssueCreditLog(..)
     , SettlementsResponse(..)
     , VerifySettlementRequest(..)
@@ -128,12 +127,6 @@ data BilateralCreditRecord = BilateralCreditRecord { creditRecord :: CreditRecor
                                                    } deriving (Show, Generic)
 $(deriveJSON (defaultOptions { omitNothingFields = True }) ''BilateralCreditRecord)
 
-data SettlementVerification = SettlementVerification { creditorAddr     :: Address
-                                                    , debtorAddr        :: Address
-                                                    , txnHash           :: Maybe TransactionHash
-                                                    , settlementValue   :: Integer
-                                                    } deriving (Show, Generic)
-
 data RejectRequest = RejectRequest { rejectRequestHash      :: Text
                                    , rejectRequestSignature :: Text
                                    }
@@ -176,7 +169,6 @@ $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 12
 data NotificationAction = NewPendingCredit
                         | CreditConfirmation
                         | PendingCreditRejection
-                        | Blank
                         deriving Show
 $(deriveJSON defaultOptions ''NotificationAction)
 

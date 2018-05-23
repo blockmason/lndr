@@ -43,7 +43,7 @@ deleteExpiredSettlementsAndAssociatedCredits conn = do
 
 
 txHashesToVerify :: Connection -> IO [Text]
-txHashesToVerify conn = fmap fromOnly <$> query_ conn "SELECT tx_hash FROM settlements WHERE tx_hash IS NOT NULL AND verified = FALSE"
+txHashesToVerify conn = fmap fromOnly <$> query_ conn "SELECT tx_hash FROM settlements WHERE tx_hash IS NOT NULL AND verified = FALSE GROUP BY tx_hash"
 
 
 txHashByCreditHash :: Text -> Connection -> IO (Maybe Text)

@@ -163,8 +163,8 @@ interpretUcacLog change = do
 -- | Verify that a settlement payment was made using a 'txHash' corresponding to
 -- an Ethereum transaction on the blockchain and the associated addresses and
 -- eth settlement amount.
-verifySettlementPayment :: SettlementVerification -> LndrHandler ()
-verifySettlementPayment (SettlementVerification creditorAddr debtorAddr (Just txnHash) settlementValue) = do
+verifySettlementPayment :: Maybe TransactionHash -> Address -> Address -> Integer -> LndrHandler ()
+verifySettlementPayment (Just txnHash) creditorAddr debtorAddr settlementValue = do
     transactionM <- lndrWeb3 . Eth.getTransactionByHash $ addHexPrefix txnHash
     case transactionM of
         (Just transaction) ->
@@ -180,7 +180,7 @@ verifySettlementPayment (SettlementVerification creditorAddr debtorAddr (Just tx
                                                  ++ ", settlementValue: " ++ show settlementValue
                 (True, True, True) -> pure ()
         Nothing -> lndrError $ "transaction not found, tx_hash: " ++ T.unpack txnHash
-verifySettlementPayment _ = lndrError "Incompelete settlement record"
+verifySettlementPayment _ _ _ _ = lndrError "Incompelete settlement record"
 
 
 -- | Queries the blockchain for current blocknumber.

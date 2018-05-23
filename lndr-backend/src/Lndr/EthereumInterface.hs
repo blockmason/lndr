@@ -163,9 +163,9 @@ interpretUcacLog change = do
 -- | Verify that a settlement payment was made using a 'txHash' corresponding to
 -- an Ethereum transaction on the blockchain and the associated addresses and
 -- eth settlement amount.
-verifySettlementPayment :: Maybe TransactionHash -> Address -> Address -> Integer -> LndrHandler ()
-verifySettlementPayment (Just txnHash) creditorAddr debtorAddr settlementValue = do
-    transactionM <- lndrWeb3 . Eth.getTransactionByHash $ addHexPrefix txnHash
+verifySettlementPayment :: TransactionHash -> Address -> Address -> Integer -> LndrHandler ()
+verifySettlementPayment txHash creditorAddr debtorAddr settlementValue = do
+    transactionM <- lndrWeb3 . Eth.getTransactionByHash $ addHexPrefix txHash
     case transactionM of
         (Just transaction) ->
             let fromMatch = txFrom transaction == creditorAddr
@@ -173,14 +173,13 @@ verifySettlementPayment (Just txnHash) creditorAddr debtorAddr settlementValue =
                 transactionValue = hexToInteger $ txValue transaction
                 valueMatch = transactionValue == settlementValue
             in case (fromMatch, toMatch, valueMatch) of
-                (False, _, _)      -> lndrError $ "Bad from match, hash: " ++ T.unpack txnHash
-                (_, False, _)      -> lndrError $ "Bad to match, hash: " ++ T.unpack txnHash
-                (_, _, False)      -> lndrError $ "Bad value match, hash: " ++ T.unpack txnHash
+                (False, _, _)      -> lndrError $ "Bad from match, hash: " ++ T.unpack txHash
+                (_, False, _)      -> lndrError $ "Bad to match, hash: " ++ T.unpack txHash
+                (_, _, False)      -> lndrError $ "Bad value match, hash: " ++ T.unpack txHash
                                                  ++ "tx value: " ++ show transactionValue
                                                  ++ ", settlementValue: " ++ show settlementValue
                 (True, True, True) -> pure ()
-        Nothing -> lndrError $ "transaction not found, tx_hash: " ++ T.unpack txnHash
-verifySettlementPayment _ _ _ _ = lndrError "Incompelete settlement record"
+        Nothing -> lndrError $ "transaction not found, tx_hash: " ++ T.unpack txHash
 
 
 -- | Queries the blockchain for current blocknumber.

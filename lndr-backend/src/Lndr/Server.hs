@@ -239,12 +239,14 @@ verifyRecords :: [BilateralCreditRecord] -> LndrHandler ()
 verifyRecords records = do
     (ServerState pool configTVar loggerSet) <- ask
     
+    initialTxHash <- maybe (throwError (err500 {errBody = "Bilateral Settlement Record does not have txHash."})) 
+                     pure . txHash $ head records
     -- this should only take the creditor, debtor, credit hash, and settlement amount
-    let initialTxHash = txHash $ head records
-        firstCreditor = creditor $ creditRecord $ head records
+    let firstCreditor = creditor $ creditRecord $ head records
         firstDebtor = debtor $ creditRecord $ head records
-        creditorAmount = sum . fmap (fromMaybe 0) $ fmap settlementAmount . filter ((== firstCreditor) . creditor ) $ fmap creditRecord records
-        debtorAmount = sum . fmap (fromMaybe 0) $ fmap settlementAmount . filter ((/= firstCreditor) . creditor ) $ fmap creditRecord records
+        creditorAmount = sum . fmap (fromMaybe 0 . settlementAmount . creditRecord) $ filter ((== firstCreditor) . creditor . creditRecord) records
+        debtorAmount = sum . fmap (fromMaybe 0 . settlementAmount . creditRecord) $ filter ((/= firstCreditor) . creditor . creditRecord) records
+    
     when (creditorAmount > debtorAmount) $
         verifySettlementPayment initialTxHash firstCreditor firstDebtor (creditorAmount - debtorAmount)
     when (creditorAmount < debtorAmount) $

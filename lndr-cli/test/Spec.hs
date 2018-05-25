@@ -106,9 +106,6 @@ tests = [ testGroup "Nicks"
         , testGroup "Multi Transaction"
             [ testCase "multiSettlementLendTest" multiSettlementLendTest
             ]
-        , testGroup "Multi Settlement"
-            [ testCase "advancedSettlementTest" advancedSettlementTest
-            ]
         ]
 
 
@@ -479,79 +476,3 @@ multiSettlementLendTest = do
     -- user2 is friends with user1
     friends <- fmap addr <$> getFriends testUrl testAddress8
     assertEqual "user2's friends properly calculated" [testAddress7] friends
-
-
-advancedSettlementTest :: Assertion
-advancedSettlementTest = do
-    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY) <- loadUcacs
-
-    let testAmount1 = 2939
-        testAmount2 = 1039
-        testCredits' = [ ( CreditRecord testAddress9 testAddress0 testAmount1 "advanced settlement 1" testAddress9 0 "" "" ucacAddr Nothing (Just "ETH") Nothing )
-            , ( CreditRecord testAddress0 testAddress9 testAmount2 "advanced settlement 2" testAddress9 1 "" "" ucacAddrJPY Nothing (Just "ETH") Nothing ) ]
-            
-        -- creditHash =  testCredit'
-        testHashes = fmap generateHash testCredits'
-        testCredits = fmap (\credit -> credit { hash = generateHash credit } ) testCredits'
-        testCredits2 = fmap (\credit -> credit { submitter = testAddress0 } ) testCredits
-
-    let creditHashes = fmap generateHash testCredits'
-
-    -- user5 submits pending credit to user6
-    httpCode <- submitMultiSettlement testUrl testPrivkey9 testCredits
-    assertEqual "lend (settle) success" 204 httpCode
-
-    -- check that pending settlement is registered in test
-    (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getPendingSettlements testUrl testAddress9
-    assertEqual "pre-confirmation: get pending settlements success" 2 (length pendingSettlements)
-    assertEqual "pre-confirmation: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
-
-     -- user6 accepts user5's pending settlement credit
-    httpCode <- submitMultiSettlement testUrl testPrivkey0 testCredits2
-    assertEqual "borrow (settle) success" 204 httpCode
-   
-    (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getPendingSettlements testUrl testAddress9
-    assertEqual "post-confirmation: get pending settlements success" 0 (length pendingSettlements)
-    assertEqual "post-confirmation: get bilateral pending settlements success" 2 (length bilateralPendingSettlements)
-
-    let settleAmount1 = fmap Quantity . settlementAmount . creditRecord $ head bilateralPendingSettlements
-        settleAmount2 = fmap Quantity . settlementAmount . creditRecord $ last bilateralPendingSettlements
-        totalSettleAmount = abs $ (fromMaybe 0 settleAmount1) - (fromMaybe 0 settleAmount2)
-
-    -- user5 transfers eth to user6
-    txHashE <- runWeb3 $ Eth.sendTransaction $ Call (Just testAddress9)
-                                                        testAddress0
-                                                        (Just 21000)
-                                                        Nothing
-                                                        (Just totalSettleAmount)
-                                                        Nothing
-
-    let txHash = fromRight (error "error sending eth") txHashE
-
-    -- user5 verifies that he has made the settlement credit
-    httpCode1 <- verifySettlement testUrl (head creditHashes) txHash testPrivkey5
-    assertEqual "verification success" 204 httpCode
-
-    httpCode2 <- verifySettlement testUrl (last creditHashes) txHash testPrivkey5
-    assertEqual "verification success" 204 httpCode
-
-    -- ensure that tx registers in blockchain w/ a 10 second pause and
-    -- heartbeat has time to verify its validity
-    threadDelay (30 * 10 ^ 6)
-
-    (SettlementsResponse pendingSettlements bilateralPendingSettlements) <- getPendingSettlements testUrl testAddress9
-    assertEqual "post-verification: get pending settlements success" 0 (length pendingSettlements)
-    assertEqual "post-verification: get bilateral pending settlements success" 0 (length bilateralPendingSettlements)
-
-    balance <- getBalance testUrl testAddress9 "USD"
-    assertEqual "user5's total USD balance is correct" testAmount1 balance
-
-    balance <- getBalance testUrl testAddress0 "USD"
-    assertEqual "user6's total USD balance is correct" (-testAmount1) balance
-
-    gottenTxHash <- getTxHash testUrl (head creditHashes)
-    assertEqual "successful txHash retrieval" txHash (addHexPrefix gottenTxHash)
-
-    (numDbCredits, numBlockchainCredits, _, _) <- consistencyCheck
-    assertEqual "correct number of transactions (7) on blockchain" 7 numBlockchainCredits
-    assertEqual "correct number of transactions (7) in db" 7 numDbCredits

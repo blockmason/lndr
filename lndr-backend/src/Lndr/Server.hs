@@ -231,7 +231,7 @@ verifySettlementsWithTxHash = do
     (ServerState pool configTVar _) <- ask
     config <- liftIO $ readTVarIO configTVar
     txHashes <- liftIO $ withResource pool Db.txHashesToVerify
-    creditsToVerify <- mapM (\txHash -> liftIO $ withResource pool $ Db.lookupCreditsByTxHash txHash) txHashes
+    creditsToVerify <- mapM (liftIO . withResource pool . Db.lookupCreditsByTxHash) txHashes
     mapM_ verifyRecords creditsToVerify
 
 
@@ -239,18 +239,21 @@ verifyRecords :: [BilateralCreditRecord] -> LndrHandler ()
 verifyRecords records = do
     (ServerState pool configTVar loggerSet) <- ask
     
+    let firstRecord = head records
+    
     initialTxHash <- maybe (throwError (err500 {errBody = "Bilateral Settlement Record does not have txHash."})) 
                      pure . txHash $ head records
     -- this should only take the creditor, debtor, credit hash, and settlement amount
     let firstCreditor = creditor $ creditRecord $ head records
         firstDebtor = debtor $ creditRecord $ head records
-        creditorAmount = sum . fmap (fromMaybe 0 . settlementAmount . creditRecord) $ filter ((== firstCreditor) . creditor . creditRecord) records
-        debtorAmount = sum . fmap (fromMaybe 0 . settlementAmount . creditRecord) $ filter ((/= firstCreditor) . creditor . creditRecord) records
+        deriveSettlementAmount = fromMaybe 0 . settlementAmount . creditRecord
+        isFirstCreditor = (== firstCreditor) . creditor . creditRecord
+        creditorAmount = sum . fmap deriveSettlementAmount $ filter isFirstCreditor $ records
+        debtorAmount = sum . fmap deriveSettlementAmount $ filter (not . isFirstCreditor) $ records
+        settlementCreditor = if creditorAmount > debtorAmount then firstCreditor else firstDebtor
+        settlementDebtor = if creditorAmount > debtorAmount then firstDebtor else firstCreditor
     
-    when (creditorAmount > debtorAmount) $
-        verifySettlementPayment initialTxHash firstCreditor firstDebtor (creditorAmount - debtorAmount)
-    when (creditorAmount < debtorAmount) $
-        verifySettlementPayment initialTxHash firstDebtor firstCreditor (debtorAmount - creditorAmount)
+    verifySettlementPayment initialTxHash settlementCreditor settlementDebtor (abs $ creditorAmount - debtorAmount)
     mapM_ (liftIO . withResource pool . Db.verifyCreditByHash . hash . creditRecord) records
     web3Result <- mapM (finalizeTransaction configTVar) records
                 -- `catchError` (pure . T.pack . show)

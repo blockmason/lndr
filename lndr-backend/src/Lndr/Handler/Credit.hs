@@ -46,15 +46,15 @@ import           Text.Printf
 
 
 lendHandler :: CreditRecord -> LndrHandler NoContent
-lendHandler creditRecord = submitHandler $ creditRecord { submitter = creditor creditRecord }
+lendHandler creditRecord = submitHandler 0 $ creditRecord { submitter = creditor creditRecord }
 
 
 borrowHandler :: CreditRecord -> LndrHandler NoContent
-borrowHandler creditRecord = submitHandler $ creditRecord { submitter = debtor creditRecord }
+borrowHandler creditRecord = submitHandler 0 $ creditRecord { submitter = debtor creditRecord }
 
 
-submitHandler :: CreditRecord -> LndrHandler NoContent
-submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress _ hash sig _ _ _ _) = do
+submitHandler :: Int -> CreditRecord -> LndrHandler NoContent
+submitHandler recordNum signedRecord@(CreditRecord creditor debtor _ memo submitterAddress _ hash sig _ _ _ _) = do
     (ServerState pool configTVar loggerSet) <- ask
     config <- liftIO $ readTVarIO configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
@@ -104,14 +104,16 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
             finalizeCredit $ BilateralCreditRecord storedRecord creditorSig debtorSig Nothing
 
             -- send push notification to counterparty
-            attemptToNotify CreditConfirmation
+            when (recordNum == 0) $
+                attemptToNotify CreditConfirmation
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
             let processedRecord = calculateSettlementCreditRecord config signedRecord
-            createPendingRecord pool processedRecord
+            createPendingRecord recordNum pool processedRecord
             -- send push notification to counterparty
-            attemptToNotify NewPendingCredit
+            when (recordNum == 0) $
+                attemptToNotify NewPendingCredit
 
     pure NoContent
 
@@ -137,12 +139,12 @@ finalizeCredit bilateralCredit = do
                 commit conn
 
 
-createPendingRecord :: Pool Connection -> CreditRecord -> LndrHandler ()
-createPendingRecord pool signedRecord = do
+createPendingRecord :: Int -> Pool Connection -> CreditRecord -> LndrHandler ()
+createPendingRecord recordNum pool signedRecord = do
     -- TODO can I consolidate these two checks into one?
     -- check if a pending transaction already exists between the two users
     existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses (creditor signedRecord) (debtor signedRecord)
-    unless (null existingPending) $
+    unless ((recordNum > 0) || (null existingPending)) $
         throwError (err400 {errBody = "A pending credit record already exists for the two users."})
 
     -- check if an unverified bilateral credit record exists in the
@@ -301,91 +303,5 @@ twoPartyBalanceHandler p1 p2 currency = do
 
 multiSettlementHandler :: [CreditRecord] -> LndrHandler NoContent
 multiSettlementHandler transactions = do
-    result <- mapM (uncurry submitMultiSettlement) $ zip [0..(length transactions)] transactions
+    result <- mapM (uncurry submitHandler) $ zip [0..(length transactions)] transactions
     return $ head result
-
-
-submitMultiSettlement :: Int -> CreditRecord -> LndrHandler NoContent
-submitMultiSettlement recordNum signedRecord@(CreditRecord creditor debtor _ memo submitterAddress _ hash sig _ _ _ _) = do
-    (ServerState pool configTVar loggerSet) <- ask
-    config <- liftIO $ readTVarIO configTVar
-    nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
-    liftIO $ pushLogStrLn loggerSet . toLogStr . ( ("NONCE FOR TX: " ++ show memo) ++) . show $ nonce
-
-    -- check that credit submission is valid
-    unless (hash == generateHash signedRecord) $
-        throwError (err400 {errBody = "Bad hash included with credit record."})
-    unless (T.length memo <= 32) $
-        throwError (err400 {errBody = "Memo too long. Memos must be no longer than 32 characters."})
-    unless (submitterAddress == creditor || submitterAddress == debtor) $
-        throwError (err400 {errBody = "Submitter is not creditor nor debtor."})
-    unless (creditor /= debtor) $
-        throwError (err400 {errBody = "Creditor and debtor cannot be equal."})
-    unless (B.memberR (ucac signedRecord) (lndrUcacAddrs config)) $
-        throwError (err400 {errBody = "Unrecognized UCAC address."})
-
-    -- check that submitter signed the tx
-    signer <- ioEitherToLndr . pure . EU.ecrecover (stripHexPrefix sig) $
-                EU.hashPersonalMessage hash
-    unless (textToAddress signer == submitterAddress) $
-        throwError (err401 {errBody = "Bad submitter sig"})
-
-    currency <- liftIO $ B.lookupR (ucac signedRecord) (lndrUcacAddrs config)
-
-    -- creating function to send notification to notifications api
-    let attemptToNotify notifyAction = do
-            let counterparty = if creditor /= submitterAddress then creditor else debtor
-            pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
-            nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
-
-            forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
-                responseCode <- sendNotification config (Notification channelID platform nicknameM notifyAction)
-                let logMsg = "Notification response (" ++ T.unpack currency ++ "): " ++ show responseCode
-                pushLogStrLn loggerSet . toLogStr $ logMsg
-
-    -- check if hash is already registered in pending txs
-    pendingCredit <- liftIO . withResource pool $ Db.lookupPending hash
-    case pendingCredit of
-        -- if the submitted credit record has a matching pending record,
-        -- finalize the transaction on the blockchain
-        Just storedRecord -> when (signature storedRecord /= signature signedRecord) $ do
-            let (creditorSig, debtorSig) = if creditor /= submitterAddress
-                                            then (signature storedRecord, signature signedRecord)
-                                            else (signature signedRecord, signature storedRecord)
-
-            finalizeCredit $ BilateralCreditRecord storedRecord creditorSig debtorSig Nothing
-
-            -- send push notification to counterparty
-            when (recordNum == 0) $
-                attemptToNotify CreditConfirmation
-
-        -- if no matching transaction is found, create pending transaction
-        Nothing -> do
-            let processedRecord = calculateSettlementCreditRecord config signedRecord
-            createMultiPendingRecord recordNum pool processedRecord
-            -- send push notification to counterparty
-            when (recordNum == 0) $
-                attemptToNotify NewPendingCredit
-
-    pure NoContent    
-
-
-createMultiPendingRecord :: Int -> Pool Connection -> CreditRecord -> LndrHandler ()
-createMultiPendingRecord recordNum pool signedRecord = do
-    -- TODO can I consolidate these two checks into one?
-    -- check if a pending transaction already exists between the two users
-    existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses (creditor signedRecord) (debtor signedRecord)
-    unless ((recordNum > 0) || (null existingPending)) $
-        throwError (err400 {errBody = "A pending credit record already exists for the two users."})
-
-    -- check if an unverified bilateral credit record exists in the
-    -- `verified_credits` table
-    existingPendingSettlement <- liftIO . withResource pool $
-        Db.lookupPendingSettlementByAddresses (creditor signedRecord) (debtor signedRecord)
-    unless (null existingPendingSettlement) $
-        throwError (err400 {errBody = "An unverified settlement credit record already exists for the two users."})
-
-    -- ensuring that creditor is on debtor's friends list and vice-versa
-    liftIO $ createBilateralFriendship pool (creditor signedRecord) (debtor signedRecord)
-
-    void . liftIO . withResource pool $ Db.insertPending signedRecord

@@ -244,8 +244,8 @@ verifyRecords records = do
     initialTxHash <- maybe (throwError (err500 {errBody = "Bilateral Settlement Record does not have txHash."})) 
                      pure . txHash $ head records
     -- this should only take the creditor, debtor, credit hash, and settlement amount
-    let firstCreditor = creditor $ creditRecord $ head records
-        firstDebtor = debtor $ creditRecord $ head records
+    let firstCreditor = creditor $ creditRecord $ firstRecord
+        firstDebtor = debtor $ creditRecord $ firstRecord
         deriveSettlementAmount = fromMaybe 0 . settlementAmount . creditRecord
         isFirstCreditor = (== firstCreditor) . creditor . creditRecord
         creditorAmount = sum . fmap deriveSettlementAmount $ filter isFirstCreditor $ records

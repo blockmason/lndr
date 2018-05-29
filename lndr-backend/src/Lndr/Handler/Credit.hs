@@ -144,7 +144,7 @@ createPendingRecord recordNum pool signedRecord = do
     -- TODO can I consolidate these two checks into one?
     -- check if a pending transaction already exists between the two users
     existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses (creditor signedRecord) (debtor signedRecord)
-    unless ((recordNum > 0) || (null existingPending)) $
+    when (recordNum == 0 && not (null existingPending)) $
         throwError (err400 {errBody = "A pending credit record already exists for the two users."})
 
     -- check if an unverified bilateral credit record exists in the

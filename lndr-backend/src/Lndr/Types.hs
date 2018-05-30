@@ -127,7 +127,6 @@ data BilateralCreditRecord = BilateralCreditRecord { creditRecord :: CreditRecor
                                                    } deriving (Show, Generic)
 $(deriveJSON (defaultOptions { omitNothingFields = True }) ''BilateralCreditRecord)
 
-
 data RejectRequest = RejectRequest { rejectRequestHash      :: Text
                                    , rejectRequestSignature :: Text
                                    }

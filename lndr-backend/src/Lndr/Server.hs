@@ -56,6 +56,7 @@ type LndrAPI =
    :<|> "lend" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "borrow" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "reject" :> ReqBody '[JSON] RejectRequest :> PostNoContent '[JSON] NoContent
+   :<|> "multi_settlement" :> ReqBody '[JSON] [CreditRecord] :> PostNoContent '[JSON] NoContent
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
    :<|> "nick" :> Capture "user" Address :> Get '[JSON] Text
@@ -95,6 +96,7 @@ server = transactionsHandler
     :<|> lendHandler
     :<|> borrowHandler
     :<|> rejectHandler
+    :<|> multiSettlementHandler
     :<|> nonceHandler
     :<|> nickHandler
     :<|> nickLookupHandler
@@ -228,19 +230,31 @@ verifySettlementsWithTxHash :: LndrHandler ()
 verifySettlementsWithTxHash = do
     (ServerState pool configTVar _) <- ask
     config <- liftIO $ readTVarIO configTVar
-    creditHashes <- liftIO $ withResource pool Db.settlementCreditsToVerify
-    mapM_ verifyIndividualRecord creditHashes
+    txHashes <- liftIO $ withResource pool Db.txHashesToVerify
+    creditsToVerify <- mapM (liftIO . withResource pool . Db.lookupCreditsByTxHash) txHashes
+    mapM_ verifyRecords creditsToVerify
 
 
-verifyIndividualRecord :: TransactionHash -> LndrHandler ()
-verifyIndividualRecord creditHash = do
+verifyRecords :: [BilateralCreditRecord] -> LndrHandler ()
+verifyRecords records = do
     (ServerState pool configTVar loggerSet) <- ask
-    recordM <- liftIO $ withResource pool $ Db.lookupCreditByHash creditHash
-    let recordNotFound = throwError $
-            err404 { errBody = "Credit hash does not refer to pending bilateral settlement record" }
-    bilateralCreditRecord <- maybe recordNotFound pure recordM
-    verifySettlementPayment bilateralCreditRecord
-    liftIO $ withResource pool $ Db.verifyCreditByHash creditHash
-    web3Result <- finalizeTransaction configTVar bilateralCreditRecord
-                        `catchError` (pure . T.pack . show)
+    
+    let firstRecord = head records
+    
+    initialTxHash <- maybe (throwError (err500 {errBody = "Bilateral Settlement Record does not have txHash."})) 
+                     pure . txHash $ head records
+    -- this should only take the creditor, debtor, credit hash, and settlement amount
+    let firstCreditor = creditor $ creditRecord $ firstRecord
+        firstDebtor = debtor $ creditRecord $ firstRecord
+        deriveSettlementAmount = fromMaybe 0 . settlementAmount . creditRecord
+        isFirstCreditor = (== firstCreditor) . creditor . creditRecord
+        creditorAmount = sum . fmap deriveSettlementAmount $ filter isFirstCreditor $ records
+        debtorAmount = sum . fmap deriveSettlementAmount $ filter (not . isFirstCreditor) $ records
+        settlementCreditor = if creditorAmount > debtorAmount then firstCreditor else firstDebtor
+        settlementDebtor = if creditorAmount > debtorAmount then firstDebtor else firstCreditor
+    
+    verifySettlementPayment initialTxHash settlementCreditor settlementDebtor (abs $ creditorAmount - debtorAmount)
+    mapM_ (liftIO . withResource pool . Db.verifyCreditByHash . hash . creditRecord) records
+    web3Result <- mapM (finalizeTransaction configTVar) records
+                -- `catchError` (pure . T.pack . show)
     liftIO $ pushLogStrLn loggerSet . toLogStr . ("WEB3: " ++) . show $ web3Result

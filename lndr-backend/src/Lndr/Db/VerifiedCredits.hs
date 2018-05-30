@@ -42,8 +42,8 @@ deleteExpiredSettlementsAndAssociatedCredits conn = do
     commit conn
 
 
-settlementCreditsToVerify :: Connection -> IO [Text]
-settlementCreditsToVerify conn = fmap fromOnly <$> query_ conn "SELECT hash FROM settlements WHERE tx_hash IS NOT NULL AND verified = FALSE"
+txHashesToVerify :: Connection -> IO [Text]
+txHashesToVerify conn = fmap fromOnly <$> query_ conn "SELECT tx_hash FROM settlements WHERE tx_hash IS NOT NULL AND verified = FALSE GROUP BY tx_hash"
 
 
 txHashByCreditHash :: Text -> Connection -> IO (Maybe Text)
@@ -66,6 +66,10 @@ counterpartiesByAddress addr conn = fmap fromOnly <$>
 lookupCreditByHash :: Text -> Connection -> IO (Maybe BilateralCreditRecord)
 lookupCreditByHash hash conn = listToMaybe <$> query conn sql (Only hash)
     where sql = "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, ucac, creditor_signature, debtor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM verified_credits JOIN settlements USING(hash) WHERE verified_credits.hash = ?"
+
+
+lookupCreditsByTxHash :: TransactionHash -> Connection -> IO [BilateralCreditRecord]
+lookupCreditsByTxHash txHash conn = query conn "SELECT creditor, debtor, verified_credits.amount, memo, submitter, nonce, verified_credits.hash, ucac, creditor_signature, debtor_signature, settlements.amount, settlements.currency, settlements.blocknumber, settlements.tx_hash FROM settlements JOIN verified_credits USING(hash) WHERE settlements.tx_hash = ?" (Only txHash)
 
 
 -- Flips verified bit on once a settlement payment has been confirmed

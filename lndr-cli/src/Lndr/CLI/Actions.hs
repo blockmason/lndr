@@ -40,6 +40,7 @@ module Lndr.CLI.Actions (
     , scanBlockchain
     , consistencyCheck
     , verifySettlement
+    , submitMultiSettlement
 
     -- * notifications-related requests
     , registerChannel
@@ -312,7 +313,18 @@ submitCredit url secretKey unsignedCredit@(CreditRecord creditor debtor _ _ _ _ 
                    then HTTP.parseRequest $ url ++ "/lend"
                    else HTTP.parseRequest $ url ++ "/borrow"
     let signedCredit = signCredit secretKey (unsignedCredit { nonce = nonce })
-    let req = HTTP.setRequestBodyJSON signedCredit $
+        req = HTTP.setRequestBodyJSON signedCredit $
+                HTTP.setRequestMethod "POST" initReq
+    resp <- HTTP.httpNoBody req
+    return $ HTTP.getResponseStatusCode resp
+
+
+submitMultiSettlement :: String -> Text -> [CreditRecord] -> IO Int
+submitMultiSettlement url secretKey transactions = do
+    startNonce <- getNonce url (debtor $ head transactions) (creditor $ head transactions)
+    initReq <- HTTP.parseRequest $ url ++ "/multi_settlement"
+    let signedTransactions = fmap (\tx -> signCredit secretKey tx ) transactions
+        req = HTTP.setRequestBodyJSON signedTransactions $
                 HTTP.setRequestMethod "POST" initReq
     resp <- HTTP.httpNoBody req
     return $ HTTP.getResponseStatusCode resp

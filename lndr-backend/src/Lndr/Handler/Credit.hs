@@ -6,6 +6,7 @@ module Lndr.Handler.Credit (
     , borrowHandler
     , rejectHandler
     , verifyHandler
+    , multiSettlementHandler
 
     -- * app state-querying handlers
     , pendingHandler
@@ -45,18 +46,19 @@ import           Text.Printf
 
 
 lendHandler :: CreditRecord -> LndrHandler NoContent
-lendHandler creditRecord = submitHandler $ creditRecord { submitter = creditor creditRecord }
+lendHandler creditRecord = submitHandler 0 $ creditRecord { submitter = creditor creditRecord }
 
 
 borrowHandler :: CreditRecord -> LndrHandler NoContent
-borrowHandler creditRecord = submitHandler $ creditRecord { submitter = debtor creditRecord }
+borrowHandler creditRecord = submitHandler 0 $ creditRecord { submitter = debtor creditRecord }
 
 
-submitHandler :: CreditRecord -> LndrHandler NoContent
-submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress _ hash sig _ _ _ _) = do
+submitHandler :: Int -> CreditRecord -> LndrHandler NoContent
+submitHandler recordNum signedRecord@(CreditRecord creditor debtor _ memo submitterAddress _ hash sig _ _ _ _) = do
     (ServerState pool configTVar loggerSet) <- ask
     config <- liftIO $ readTVarIO configTVar
     nonce <- liftIO . withResource pool $ Db.twoPartyNonce creditor debtor
+    liftIO $ pushLogStrLn loggerSet . toLogStr . ( ("NONCE FOR TX: " ++ show memo) ++) . show $ nonce
 
     -- check that credit submission is valid
     unless (hash == generateHash signedRecord) $
@@ -102,14 +104,16 @@ submitHandler signedRecord@(CreditRecord creditor debtor _ memo submitterAddress
             finalizeCredit $ BilateralCreditRecord storedRecord creditorSig debtorSig Nothing
 
             -- send push notification to counterparty
-            attemptToNotify CreditConfirmation
+            when (recordNum == 0) $
+                attemptToNotify CreditConfirmation
 
         -- if no matching transaction is found, create pending transaction
         Nothing -> do
             let processedRecord = calculateSettlementCreditRecord config signedRecord
-            createPendingRecord pool processedRecord
+            createPendingRecord recordNum pool processedRecord
             -- send push notification to counterparty
-            attemptToNotify NewPendingCredit
+            when (recordNum == 0) $
+                attemptToNotify NewPendingCredit
 
     pure NoContent
 
@@ -135,12 +139,12 @@ finalizeCredit bilateralCredit = do
                 commit conn
 
 
-createPendingRecord :: Pool Connection -> CreditRecord -> LndrHandler ()
-createPendingRecord pool signedRecord = do
+createPendingRecord :: Int -> Pool Connection -> CreditRecord -> LndrHandler ()
+createPendingRecord recordNum pool signedRecord = do
     -- TODO can I consolidate these two checks into one?
     -- check if a pending transaction already exists between the two users
     existingPending <- liftIO . withResource pool $ Db.lookupPendingByAddresses (creditor signedRecord) (debtor signedRecord)
-    unless (null existingPending) $
+    when (recordNum == 0 && not (null existingPending)) $
         throwError (err400 {errBody = "A pending credit record already exists for the two users."})
 
     -- check if an unverified bilateral credit record exists in the
@@ -155,7 +159,8 @@ createPendingRecord pool signedRecord = do
 
     void . liftIO . withResource pool $ Db.insertPending signedRecord
 
-
+-- TODO: change the settlementAmountRaw to use the settlementAmount on the
+-- incoming record if it already exists
 calculateSettlementCreditRecord :: ServerConfig -> CreditRecord -> CreditRecord
 calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _) = cr
 calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ ucac _ (Just currency) _) =
@@ -294,3 +299,9 @@ twoPartyBalanceHandler p1 p2 currency = do
     (ServerState pool configTVar _) <- ask
     ucacAddresses <- fmap lndrUcacAddrs . liftIO $ readTVarIO configTVar
     liftIO . withResource pool $ Db.twoPartyBalance p1 p2 (getUcac ucacAddresses currency)
+
+
+multiSettlementHandler :: [CreditRecord] -> LndrHandler NoContent
+multiSettlementHandler transactions = do
+    result <- mapM (uncurry submitHandler) $ zip [0..(length transactions)] transactions
+    return $ head result

@@ -28,17 +28,18 @@ module Lndr.Db (
     , lookupCreditByAddress
     , counterpartiesByAddress
     , lookupCreditByHash
+    , lookupCreditsByTxHash
     , verifyCreditByHash
     , userBalance
     , twoPartyBalance
     , twoPartyNonce
     , txHashByCreditHash
+    , txHashesToVerify
 
     -- * 'settlement'-specific functions
     , lookupSettlementCreditByAddress
     , lookupPendingSettlementByAddresses
     , deleteExpiredSettlementsAndAssociatedCredits
-    , settlementCreditsToVerify
     , updateSettlementTxHash
 
 

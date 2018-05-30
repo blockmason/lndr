@@ -15,6 +15,7 @@ module Lndr.Handler (
     , counterpartiesHandler
     , balanceHandler
     , twoPartyBalanceHandler
+    , multiSettlementHandler
 
     -- * Friend Handlers
     , nickHandler

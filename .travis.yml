@@ -1,6 +1,6 @@
 dist: trusty
 sudo: required
-lanuage: generic
+language: generic
 
 # caching for fast builds
 cache:
@@ -22,10 +22,9 @@ before_install:
     - mkdir -p ~/.local/bin; export PATH=$HOME/.local/bin:$PATH; travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack';
     - stack setup
     - sudo /etc/init.d/postgresql restart
-    - npm install ganache-cli@beta --global
-    - ganache-cli --port 8545 --blocktime 1 -m gravity top burden flip student usage spell purchase hundred improve check genre > /dev/null &
     - cd ucac
     - npm install
+    - npm run ganache
     - npm run migrate
     - cd ..
     - sudo -u postgres createuser -s travis

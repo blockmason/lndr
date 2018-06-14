@@ -1031,9 +1031,9 @@ core-util-is@~1.0.0:
   version "1.0.2"
   resolved "https://registry.npmjs.org/core-util-is/-/core-util-is-1.0.2.tgz#b5fd54220aa2bc5ab57aab7140c940754503c1a7"
 
-"credit-protocol@https://github.com/canterberry/credit-protocol.git#90c367d8e98cd652000ede2756e8465fc16b9a07":
+"credit-protocol@https://github.com/blockmason/credit-protocol.git#604f885de0b2f8f585e3925bce940b1104749a21":
   version "1.0.0"
-  resolved "https://github.com/canterberry/credit-protocol.git#90c367d8e98cd652000ede2756e8465fc16b9a07"
+  resolved "https://github.com/blockmason/credit-protocol.git#604f885de0b2f8f585e3925bce940b1104749a21"
 
 cross-spawn@^5.0.1:
   version "5.1.0"
@@ -3261,9 +3261,9 @@ tapable@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/tapable/-/tapable-1.0.0.tgz#cbb639d9002eed9c6b5975eb20598d7936f1f9f2"
 
-"tce-contracts@https://github.com/canterberry/credit-protocol-token.git#cc6e7f17807316a77da73cfa8528785bd8900d78":
+"tce-contracts@https://github.com/blockmason/tce-contracts.git#bfbf5e87577cecd7a06ed75cecfc52e7b1d90d77":
   version "1.0.0"
-  resolved "https://github.com/canterberry/credit-protocol-token.git#cc6e7f17807316a77da73cfa8528785bd8900d78"
+  resolved "https://github.com/blockmason/tce-contracts.git#bfbf5e87577cecd7a06ed75cecfc52e7b1d90d77"
 
 temp@^0.8.1:
   version "0.8.3"

@@ -1,4 +1,4 @@
-pragma solidity 0.4.15;
+pragma solidity ^0.4.24;
 
 // TODO this import is only here to make sure there is a compiled
 // CreditProtocol.sol available to truffle when I run tests. There is likely
@@ -6,7 +6,7 @@ pragma solidity 0.4.15;
 import "credit-protocol/contracts/CreditProtocol.sol";
 
 contract Lndr {
-    function allowTransaction(address creditor, address debtor, uint256 amount) public returns (bool) {
+    function allowTransaction(address, address, uint256) public pure returns (bool) {
         return true;
     }
 }

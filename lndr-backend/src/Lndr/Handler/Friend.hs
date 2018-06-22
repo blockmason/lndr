@@ -16,6 +16,7 @@ import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as T
 import qualified Lndr.Db                 as Db
 import           Lndr.Handler.Types
+import           Lndr.Notifications
 import           Lndr.Signature
 import           Lndr.Types
 import           Lndr.Util
@@ -26,6 +27,7 @@ import           Network.Ethereum.Web3
 import           Network.HTTP.Client
 import           Servant
 import           Text.EmailAddress
+import           System.Log.FastLogger
 
 
 nickHandler :: NickRequest -> LndrHandler NoContent
@@ -79,8 +81,22 @@ userHandler Nothing Nothing = throwError (err400 {errBody = "No identifying info
 addFriendsHandler :: Address -> [Address] -> LndrHandler NoContent
 addFriendsHandler address friendAddresses = do
     -- TODO verify signature
-    pool <- asks dbConnectionPool
+    (ServerState pool configTVar loggerSet) <- ask
+    config <- liftIO $ readTVarIO configTVar
     liftIO . withResource pool $ Db.addFriends ((address,) <$> friendAddresses)
+    
+    let attemptToNotify pendingRequestAddress = do
+            pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress pendingRequestAddress
+            nicknameM <- liftIO . withResource pool $ Db.lookupNick address
+
+            forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
+                responseCode <- sendNotification config (Notification channelID platform nicknameM NewFriendRequest)
+                let logMsg = "Notification response (" ++ (show pendingRequestAddress) ++ "): " ++ show responseCode
+                liftIO $ pushLogStrLn loggerSet . toLogStr $ logMsg
+    
+    pendingRequestAddresses <- liftIO . withResource pool $ Db.sentFriendRequestTo address friendAddresses
+    forM_ pendingRequestAddresses attemptToNotify
+
     pure NoContent
 
 

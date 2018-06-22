@@ -25,3 +25,9 @@ lookupFriends addr conn =
 lookupFriendRequests :: Address -> Connection -> IO [UserInfo]
 lookupFriendRequests addr conn =
     query conn "SELECT inbound.origin, nicknames.nickname FROM friendships inbound LEFT JOIN friendships outbound ON inbound.friend = outbound.origin AND inbound.origin = outbound.friend LEFT JOIN nicknames ON nicknames.address = inbound.origin WHERE inbound.friend = ? AND outbound.friend IS NULL" (Only addr) :: IO [UserInfo]
+
+
+sentFriendRequestTo :: Address -> [Address] -> Connection -> IO [Address]
+sentFriendRequestTo addr friendAddresses conn = do
+    addresses <- query conn "SELECT inbound.friend FROM friendships inbound LEFT JOIN friendships outbound ON inbound.friend = outbound.origin AND inbound.origin = outbound.friend WHERE inbound.origin = ? AND inbound.friend in ? AND outbound.friend IS NULL" (addr, In friendAddresses) :: IO [(Only Address)]
+    return $ fmap (\(Only address) -> address) addresses

@@ -66,7 +66,7 @@ aws {
 
 notifications {
     api-key = "bobloblawlobslawbomb"
-    api-url = "https://vpz2hgy54f.execute-api.us-east-2.amazonaws.com/prod/testNotificationUA"
+    api-url = "https://vpz2hgy54f.execute-api.us-east-2.amazonaws.com/test/testNotificationUA"
 }
 
 # ethereum node config

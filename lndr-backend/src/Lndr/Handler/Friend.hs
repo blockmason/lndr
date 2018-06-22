@@ -85,18 +85,17 @@ addFriendsHandler address friendAddresses = do
     config <- liftIO $ readTVarIO configTVar
     liftIO . withResource pool $ Db.addFriends ((address,) <$> friendAddresses)
     
-    let attemptToNotify friendAddress = do
-            pendingRequests <- liftIO . withResource pool $ Db.lookupPendingRequest address friendAddress
-            when (pendingRequests > 0) $ do
-                pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress friendAddress
-                nicknameM <- liftIO . withResource pool $ Db.lookupNick address
+    let attemptToNotify pendingRequestAddress = do
+            pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress pendingRequestAddress
+            nicknameM <- liftIO . withResource pool $ Db.lookupNick address
 
-                forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
-                    responseCode <- sendNotification config (Notification channelID platform nicknameM NewFriendRequest)
-                    let logMsg = "Notification response (" ++ (show friendAddress) ++ "): " ++ show responseCode
-                    liftIO $ pushLogStrLn loggerSet . toLogStr $ logMsg
+            forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
+                responseCode <- sendNotification config (Notification channelID platform nicknameM NewFriendRequest)
+                let logMsg = "Notification response (" ++ (show pendingRequestAddress) ++ "): " ++ show responseCode
+                liftIO $ pushLogStrLn loggerSet . toLogStr $ logMsg
     
-    forM_ friendAddresses attemptToNotify
+    pendingRequestAddresses <- liftIO . withResource pool $ Db.sentFriendRequestTo address friendAddresses
+    forM_ pendingRequestAddresses attemptToNotify
 
     pure NoContent
 

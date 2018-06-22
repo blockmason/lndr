@@ -13,7 +13,7 @@ module Lndr.Db (
     , removeFriends
     , lookupFriends
     , lookupFriendRequests
-    , lookupPendingRequest
+    , sentFriendRequestTo
 
     -- * 'pending_credit' table functions
     , lookupPending

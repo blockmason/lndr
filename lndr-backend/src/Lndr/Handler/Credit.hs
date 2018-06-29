@@ -163,7 +163,7 @@ createPendingRecord recordNum pool signedRecord = do
 -- incoming record if it already exists
 calculateSettlementCreditRecord :: ServerConfig -> CreditRecord -> CreditRecord
 calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _) = cr
-calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ ucac _ (Just currency) _) =
+calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ ucac _ (Just "ETH") _) =
     let blockNumber = latestBlockNumber config
         prices = ethereumPrices config
         priceAdjustmentForCents = 100
@@ -195,6 +195,7 @@ calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ uca
     in cr { settlementAmount = Just $ roundToMegaWei settlementAmountRaw
           , settlementBlocknumber = Just blockNumber
           }
+calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ (Just _) _) = cr
 
 
 createBilateralFriendship :: Pool Connection -> Address -> Address -> IO ()

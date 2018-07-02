@@ -1,14 +1,15 @@
 CREATE TABLE pending_credits (
-    hash        CHAR(64) PRIMARY KEY,
-    submitter   CHAR(40),
-    nonce       NUMERIC(78),
-    creditor    CHAR(40),
-    debtor      CHAR(40),
-    amount      NUMERIC(78),
-    memo        CHAR(32),
-    signature   CHAR(130),
-    ucac        CHAR(40),
-    created_at  TIMESTAMP DEFAULT now()
+    hash                CHAR(64) PRIMARY KEY,
+    submitter           CHAR(40),
+    nonce               NUMERIC(78),
+    creditor            CHAR(40),
+    debtor              CHAR(40),
+    amount              NUMERIC(78),
+    memo                CHAR(32),
+    signature           CHAR(130),
+    ucac                CHAR(40),
+    settlement_currency CHAR(3),
+    created_at          TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE verified_credits (

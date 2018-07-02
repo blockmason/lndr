@@ -34,12 +34,11 @@ instance FromRow CreditRecord where
                                   <*> ((floor :: Rational -> Integer) <$> field)
                                   <*> field <*> field
                                   <*> ((floor :: Rational -> Integer) <$> field)
-                                  <*> field <*> field <*> field
+                                  <*> field <*> field <*> field <*> field
        remaining <- numFieldsRemaining
        if remaining == 0
-            then return $ baseCredit Nothing Nothing Nothing
+            then return $ baseCredit Nothing Nothing
             else baseCredit <$> (fmap (floor :: Rational -> Integer) <$> field)
-                            <*> field
                             <*> (fmap (floor :: Rational -> Integer) <$> field)
 
 instance FromRow BilateralCreditRecord where
@@ -60,7 +59,7 @@ instance FromRow BilateralCreditRecord where
                             then creditorSignature
                             else debtorSignature
         remaining <- numFieldsRemaining
-        (settlementAmountM, settlementCurrencyM, settlementBlockNumberM, txHashM) <-
+        (settlementCurrencyM, settlementAmountM, settlementBlockNumberM, txHashM) <-
             if remaining == 0
                 then pure (Nothing, Nothing, Nothing, Nothing)
                 else (,,,) <$> (fmap (floor :: Rational -> Integer) <$> field)

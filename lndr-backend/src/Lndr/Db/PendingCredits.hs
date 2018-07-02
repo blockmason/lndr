@@ -13,13 +13,13 @@ import           Lndr.Util
 import           Network.Ethereum.Web3
 
 lookupPending :: Text -> Connection -> IO (Maybe CreditRecord)
-lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature, ucac, settlements.amount, settlements.currency, settlements.blocknumber FROM pending_credits LEFT JOIN settlements USING(hash) WHERE pending_credits.hash = ?" (Only hash)
+lookupPending hash conn = listToMaybe <$> query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature, ucac, settlements.currency, settlements.amount, settlements.blocknumber FROM pending_credits LEFT JOIN settlements USING(hash) WHERE pending_credits.hash = ?" (Only hash)
 
 -- Boolean parameter determines if search is through settlement records or
 -- non-settlement records
 lookupPendingByAddress :: Address -> Bool -> Connection -> IO [CreditRecord]
-lookupPendingByAddress addr True conn = query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature, ucac, settlements.amount, settlements.currency, settlements.blocknumber FROM pending_credits JOIN settlements USING(hash) WHERE (creditor = ? OR debtor = ?)" (addr, addr)
-lookupPendingByAddress addr False conn = query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature, ucac FROM pending_credits LEFT JOIN settlements USING(hash) WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
+lookupPendingByAddress addr True conn = query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature, ucac, settlements.currency, settlements.amount, settlements.blocknumber FROM pending_credits JOIN settlements USING(hash) WHERE (creditor = ? OR debtor = ?)" (addr, addr)
+lookupPendingByAddress addr False conn = query conn "SELECT creditor, debtor, pending_credits.amount, memo, submitter, nonce, pending_credits.hash, signature, ucac, settlement_currency FROM pending_credits LEFT JOIN settlements USING(hash) WHERE (creditor = ? OR debtor = ?) AND settlements.hash IS NULL" (addr, addr)
 
 
 lookupPendingSettlementByAddresses :: Address -> Address -> Connection -> IO [Only Text]
@@ -27,7 +27,7 @@ lookupPendingSettlementByAddresses p1 p2 conn = query conn "SELECT verified_cred
 
 
 lookupPendingByAddresses :: Address -> Address -> Connection -> IO [CreditRecord]
-lookupPendingByAddresses p1 p2 conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac FROM pending_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (p1, p2, p2, p1)
+lookupPendingByAddresses p1 p2 conn = query conn "SELECT creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac, settlement_currency FROM pending_credits WHERE (creditor = ? AND debtor = ?) OR (creditor = ? AND debtor = ?)" (p1, p2, p2, p1)
 
 
 deletePending :: Text -> Bool -> Connection -> IO Int
@@ -37,8 +37,10 @@ deletePending hash rejection conn = do
 
 
 insertSettlementData :: CreditRecord -> Connection -> IO Int
-insertSettlementData (CreditRecord _ _ _ _ _ _ hash _ _ (Just amount) (Just currency) (Just blocknumber)) conn =
+insertSettlementData (CreditRecord _ _ _ _ _ _ hash _ _ (Just currency) (Just amount) (Just blocknumber)) conn =
     fromIntegral <$> execute conn "INSERT INTO settlements (hash, amount, currency, blocknumber, verified) VALUES (?,?,?,?,FALSE)" (hash, amount, currency, blocknumber)
+-- insertSettlementData (CreditRecord _ _ _ _ _ _ hash _ _ Nothing (Just currency) Nothing) conn =
+--     fromIntegral <$> execute conn "INSERT INTO settlements (hash, currency, amount, blocknumber, verified) VALUES (?,?,0,0,FALSE)" (hash, currency)
 insertSettlementData _ _ = return 0
 
 
@@ -46,12 +48,12 @@ insertPending :: CreditRecord -> Connection -> IO Int
 insertPending creditRecord conn = do
     insertSettlementData creditRecord conn
     fromIntegral <$> execute conn sql (creditRecordToPendingTuple creditRecord)
-    where sql = "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac) VALUES (?,?,?,?,?,?,?,?,?)"
+    where sql = "INSERT INTO pending_credits (creditor, debtor, amount, memo, submitter, nonce, hash, signature, ucac, settlement_currency) VALUES (?,?,?,?,?,?,?,?,?,?)"
 
 -- utility functions
 
 creditRecordToPendingTuple :: CreditRecord
-                           -> (Address, Address, Integer, Text, Address, Integer, Text, Text, Address)
+                           -> (Address, Address, Integer, Text, Address, Integer, Text, Text, Address, Maybe Text)
 creditRecordToPendingTuple creditRecord = ( creditor creditRecord
                                           , debtor creditRecord
                                           , amount creditRecord
@@ -61,4 +63,5 @@ creditRecordToPendingTuple creditRecord = ( creditor creditRecord
                                           , hash creditRecord
                                           , signature creditRecord
                                           , ucac creditRecord
+                                          , settlementCurrency creditRecord
                                           )

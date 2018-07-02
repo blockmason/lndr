@@ -114,8 +114,8 @@ data CreditRecord = CreditRecord { creditor              :: Address
                                  , hash                  :: CreditHash
                                  , signature             :: Signature
                                  , ucac                  :: Address
-                                 , settlementAmount      :: Maybe Integer
                                  , settlementCurrency    :: Maybe Text
+                                 , settlementAmount      :: Maybe Integer
                                  , settlementBlocknumber :: Maybe Integer
                                  } deriving (Show, Generic)
 $(deriveJSON (defaultOptions { omitNothingFields = True }) ''CreditRecord)

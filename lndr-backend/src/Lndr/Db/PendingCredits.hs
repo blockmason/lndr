@@ -39,8 +39,6 @@ deletePending hash rejection conn = do
 insertSettlementData :: CreditRecord -> Connection -> IO Int
 insertSettlementData (CreditRecord _ _ _ _ _ _ hash _ _ (Just currency) (Just amount) (Just blocknumber)) conn =
     fromIntegral <$> execute conn "INSERT INTO settlements (hash, amount, currency, blocknumber, verified) VALUES (?,?,?,?,FALSE)" (hash, amount, currency, blocknumber)
--- insertSettlementData (CreditRecord _ _ _ _ _ _ hash _ _ Nothing (Just currency) Nothing) conn =
---     fromIntegral <$> execute conn "INSERT INTO settlements (hash, currency, amount, blocknumber, verified) VALUES (?,?,0,0,FALSE)" (hash, currency)
 insertSettlementData _ _ = return 0
 
 

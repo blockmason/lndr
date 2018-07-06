@@ -48,7 +48,6 @@ instance ToSample ConfigResponse where
 instance ToSample SettlementsResponse where
     toSamples _ = singleSample $ SettlementsResponse [crSigned] [crSettleSigned]
 
-
 instance ToSample CreditRecord where
     toSamples _ = singleSample crSigned
 
@@ -72,6 +71,10 @@ instance ToSample EmailRequest where
 instance ToSample UserInfo where
     toSamples _ = singleSample $
         UserInfo "0x11edd217a875063583dd1b638d16810c5d34d54b" (Just "aupiff")
+
+instance ToSample PayPalRequest where
+    toSamples _ = singleSample $
+        PayPalRequest "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb" "0x11edd217a875063583dd1b638d16810c5d34d54b" ""
 
 instance ToSample IssueCreditLog where
     toSamples _ = singleSample $

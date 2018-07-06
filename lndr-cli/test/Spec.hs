@@ -101,6 +101,7 @@ tests = [ testGroup "Nicks"
             ]
         , testGroup "Notifications"
             [ testCase "registerChannel" basicNotificationsTest
+            , testCase "paypalRequest" requestPayPalTest
             ]
         , testGroup "Authentication"
             [ testCase "nick signing" nickSignTest
@@ -619,3 +620,9 @@ advancedSettlementTest = do
     -- (numDbCredits, numBlockchainCredits, _, _) <- consistencyCheck
     -- assertEqual "correct number of transactions (8) on blockchain" 8 numBlockchainCredits
     -- assertEqual "correct number of transactions (8) in db" 8 numDbCredits
+
+
+requestPayPalTest :: Assertion
+requestPayPalTest = do
+    httpCode1 <- requestPayPal testUrl testPrivkey1 ( PayPalRequest testAddress0 testAddress1 "" )
+    assertEqual "paypal notification request returns 204" 204 httpCode1

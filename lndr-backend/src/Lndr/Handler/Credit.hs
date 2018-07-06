@@ -17,6 +17,7 @@ module Lndr.Handler.Credit (
     , counterpartiesHandler
     , balanceHandler
     , twoPartyBalanceHandler
+    , requestPayPalHandler
     ) where
 
 import           Control.Concurrent.STM
@@ -87,7 +88,7 @@ submitHandler recordNum signedRecord@(CreditRecord creditor debtor _ memo submit
             nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
 
             forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
-                responseCode <- sendNotification config (Notification channelID platform nicknameM notifyAction)
+                responseCode <- sendNotification config (Notification channelID platform nicknameM notifyAction )
                 let logMsg = "Notification response (" ++ T.unpack currency ++ "): " ++ show responseCode
                 pushLogStrLn loggerSet . toLogStr $ logMsg
 
@@ -229,7 +230,7 @@ sendRejectionNotification pendingRecord signerAddress = do
     pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
     nicknameM <- liftIO . withResource pool $ Db.lookupNick signerAddress
     forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
-            responseCode <- sendNotification config (Notification channelID platform nicknameM PendingCreditRejection)
+            responseCode <- sendNotification config (Notification channelID platform nicknameM PendingCreditRejection )
             let logMsg =  "Notification response (" ++ T.unpack currency ++ "): " ++ show responseCode
             pushLogStrLn loggerSet . toLogStr $ logMsg
 
@@ -306,3 +307,22 @@ multiSettlementHandler :: [CreditRecord] -> LndrHandler NoContent
 multiSettlementHandler transactions = do
     result <- mapM (uncurry submitHandler) $ zip [0..(length transactions)] transactions
     return $ head result
+
+
+requestPayPalHandler :: PayPalRequest -> LndrHandler NoContent
+requestPayPalHandler (PayPalRequest friend requestor _) = do
+    (ServerState pool configTVar loggerSet) <- ask
+    config <- liftIO $ readTVarIO configTVar
+
+    let attemptToNotify = do
+            pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress friend
+            nicknameM <- liftIO . withResource pool $ Db.lookupNick requestor
+
+            forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
+                responseCode <- sendNotification config (Notification channelID platform nicknameM RequestPayPal )
+                let logMsg = "Notification response (PayPal Request): " ++ show responseCode
+                pushLogStrLn loggerSet . toLogStr $ logMsg
+
+    attemptToNotify
+    
+    pure NoContent

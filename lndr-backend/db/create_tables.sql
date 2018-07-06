@@ -8,7 +8,7 @@ CREATE TABLE pending_credits (
     memo                CHAR(32),
     signature           CHAR(130),
     ucac                CHAR(40),
-    settlement_currency CHAR(3),
+    settlement_currency CHAR(10),
     created_at          TIMESTAMP DEFAULT now()
 );
 

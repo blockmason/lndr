@@ -73,3 +73,10 @@ instance VerifiableSignature PushRequest where
         stripHexPrefix <$> [ bytesEncode platform
                            , bytesEncode channelID
                            , T.pack (show addr) ]
+
+instance VerifiableSignature PayPalRequest where
+    extractSignature (PayPalRequest _ _ sig) = sig
+
+    generateHash (PayPalRequest friend requestor _) = EU.hashText . T.concat $
+        stripHexPrefix <$> [ T.pack (show friend)
+                           , T.pack (show requestor) ]

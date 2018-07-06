@@ -23,6 +23,7 @@ module Lndr.Types
     , VerifySettlementRequest(..)
     , RejectRequest(..)
     , Nonce(..)
+    , PayPalRequest(..)
 
     -- * push notifications-relatd types
     , PushRequest(..)
@@ -170,6 +171,7 @@ data NotificationAction = NewPendingCredit
                         | CreditConfirmation
                         | PendingCreditRejection
                         | NewFriendRequest
+                        | RequestPayPal
                         deriving Show
 $(deriveJSON defaultOptions ''NotificationAction)
 
@@ -349,3 +351,9 @@ data VerifySettlementRequest = VerifySettlementRequest { verifySettlementRequest
                                                        , verifySettlementRequestSignature :: Signature
                                                        }
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 23 }) ''VerifySettlementRequest)
+
+data PayPalRequest = PayPalRequest { friend :: Address
+                                   , requestor :: Address
+                                   , paypalRequestSignature :: Text
+                                   } deriving Show
+$(deriveJSON defaultOptions ''PayPalRequest)

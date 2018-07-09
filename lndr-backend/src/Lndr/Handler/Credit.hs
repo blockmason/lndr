@@ -196,7 +196,7 @@ calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ uca
     in cr { settlementAmount = Just $ roundToMegaWei settlementAmountRaw
           , settlementBlocknumber = Just blockNumber
           }
-calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ (Just _) _ _) = cr
+calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ (_) _ _) = cr
 
 
 createBilateralFriendship :: Pool Connection -> Address -> Address -> IO ()
@@ -230,7 +230,7 @@ sendRejectionNotification pendingRecord signerAddress = do
     pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress counterparty
     nicknameM <- liftIO . withResource pool $ Db.lookupNick signerAddress
     forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
-            responseCode <- sendNotification config (Notification channelID platform nicknameM PendingCreditRejection )
+            responseCode <- sendNotification config (Notification channelID platform nicknameM PendingCreditRejection)
             let logMsg =  "Notification response (" ++ T.unpack currency ++ "): " ++ show responseCode
             pushLogStrLn loggerSet . toLogStr $ logMsg
 

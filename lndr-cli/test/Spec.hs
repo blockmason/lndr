@@ -29,26 +29,30 @@ import qualified Text.EmailAddress              as Email
 import           System.Directory
 
 testUrl = "http://localhost:7402"
-testPrivkey0 = "7920ca01d3d1ac463dfd55b5ddfdcbb64ae31830f31be045ce2d51a305516a37"
-testPrivkey1 = "bb63b692f9d8f21f0b978b596dc2b8611899f053d68aec6c1c20d1df4f5b6ee2"
-testPrivkey2 = "2f615ea53711e0d91390e97cdd5ce97357e345e441aa95d255094164f44c8652"
-testPrivkey3 = "7d52c3f6477e1507d54a826833169ad169a56e02ffc49a1801218a7d87ca50bd"
-testPrivkey4 = "6aecd44fcb79d4b68f1ee2b2c706f8e9a0cd06b0de4729fe98cfed8886315256"
-testPrivkey5 = "686e245584fdf696abd739c0e66ac6e01fc4c68babee20c7124566e118b2a634"
-testPrivkey6 = "9fd4ab25e1699bb252f4d5c4510a135db34b3adca8baa03194ad5cd6faa13a1d"
-testPrivkey7 = "e8445efa4e3349c3c74fd6689553f93b55aca723115fb777e1e6f4db2a0a82ca"
-testPrivkey8 = "56901d80abc6953d1dc01de2f077b75260f49a3304f665b57ed13514a7e2a2bc"
-testPrivkey9 = "edc63d0e14b29aaa26c7585e962f93abb59bd7d8b01b585e073dc03d052a000b"
-testAddress0 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey0
-testAddress1 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey1
-testAddress2 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey2
-testAddress3 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey3
-testAddress4 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey4
-testAddress5 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey5
-testAddress6 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey6
-testAddress7 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey7
-testAddress8 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey8
-testAddress9 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey9
+testPrivkey0  =  "7920ca01d3d1ac463dfd55b5ddfdcbb64ae31830f31be045ce2d51a305516a37"
+testPrivkey1  =  "bb63b692f9d8f21f0b978b596dc2b8611899f053d68aec6c1c20d1df4f5b6ee2"
+testPrivkey2  =  "2f615ea53711e0d91390e97cdd5ce97357e345e441aa95d255094164f44c8652"
+testPrivkey3  =  "7d52c3f6477e1507d54a826833169ad169a56e02ffc49a1801218a7d87ca50bd"
+testPrivkey4  =  "6aecd44fcb79d4b68f1ee2b2c706f8e9a0cd06b0de4729fe98cfed8886315256"
+testPrivkey5  =  "686e245584fdf696abd739c0e66ac6e01fc4c68babee20c7124566e118b2a634"
+testPrivkey6  =  "9fd4ab25e1699bb252f4d5c4510a135db34b3adca8baa03194ad5cd6faa13a1d"
+testPrivkey7  =  "e8445efa4e3349c3c74fd6689553f93b55aca723115fb777e1e6f4db2a0a82ca"
+testPrivkey8  =  "56901d80abc6953d1dc01de2f077b75260f49a3304f665b57ed13514a7e2a2bc"
+testPrivkey9  =  "edc63d0e14b29aaa26c7585e962f93abb59bd7d8b01b585e073dc03d052a000b"
+testPrivkey10 = "07690ee125a0f79ed899b0f13933885048afd890d5fcb03d988a49fcfd04afc4"
+testPrivkey11 = "7784267bcfad13a4a38fddce9a5ad440ecfa4334a5c068aaac2b2edf6178c80a"
+testAddress0  = textToAddress . userFromSK . LT.fromStrict $ testPrivkey0
+testAddress1  = textToAddress . userFromSK . LT.fromStrict $ testPrivkey1
+testAddress2  = textToAddress . userFromSK . LT.fromStrict $ testPrivkey2
+testAddress3  = textToAddress . userFromSK . LT.fromStrict $ testPrivkey3
+testAddress4  = textToAddress . userFromSK . LT.fromStrict $ testPrivkey4
+testAddress5  = textToAddress . userFromSK . LT.fromStrict $ testPrivkey5
+testAddress6  = textToAddress . userFromSK . LT.fromStrict $ testPrivkey6
+testAddress7  = textToAddress . userFromSK . LT.fromStrict $ testPrivkey7
+testAddress8  = textToAddress . userFromSK . LT.fromStrict $ testPrivkey8
+testAddress9  = textToAddress . userFromSK . LT.fromStrict $ testPrivkey9
+testAddress10 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey10
+testAddress11 = textToAddress . userFromSK . LT.fromStrict $ testPrivkey11
 testSearch = "test"
 testNick1 = "test1"
 testNick2 = "test2"
@@ -93,9 +97,11 @@ tests = [ testGroup "Nicks"
         , testGroup "Credits"
             [ testCase "lend money to friend" basicLendTest
             , testCase "settlement" basicSettlementTest
+            , testCase "PayPal settlement" basicPayPalTest
             ]
         , testGroup "Notifications"
             [ testCase "registerChannel" basicNotificationsTest
+            , testCase "paypalRequest" requestPayPalTest
             ]
         , testGroup "Authentication"
             [ testCase "nick signing" nickSignTest
@@ -307,7 +313,7 @@ basicSettlementTest = do
     (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY) <- loadUcacs
 
     let testAmount = 2939
-        testCredit' = CreditRecord testAddress5 testAddress6 testAmount "settlement" testAddress5 0 "" "" ucacAddr Nothing (Just "ETH") Nothing
+        testCredit' = CreditRecord testAddress5 testAddress6 testAmount "settlement" testAddress5 0 "" "" ucacAddr (Just "ETH") Nothing Nothing
         creditHash = generateHash testCredit'
         testCredit = testCredit' { hash = creditHash }
 
@@ -363,6 +369,64 @@ basicSettlementTest = do
 
     gottenTxHash <- getTxHash testUrl creditHash
     assertEqual "successful txHash retrieval" txHash (addHexPrefix gottenTxHash)
+
+
+basicPayPalTest :: Assertion
+basicPayPalTest = do
+    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY) <- loadUcacs
+
+    let testAmount = 100
+        testCredit' = CreditRecord testAddress10 testAddress11 testAmount "PAYPAL TEST 1" testAddress10 0 "" "" ucacAddrGBP (Just "PAYPAL") Nothing Nothing
+
+        creditHash = generateHash testCredit'
+        testCredit = testCredit' { hash = creditHash }
+
+    -- user1 submits paypal tx to user2
+    httpCode <- submitCredit testUrl testPrivkey10 testCredit
+    assertEqual "initial lend success" 204 httpCode
+
+    -- user1 checks pending transactions
+    creditRecords1 <- checkPending testUrl testAddress10
+    assertEqual "one pending record found for user1" 1 (length creditRecords1)
+
+    -- user2 checks pending transactions
+    creditRecords2 <- checkPending testUrl testAddress11
+    assertEqual "one pending record found for user2" 1 (length creditRecords2)
+
+    -- user2 rejects pending transaction
+    httpCode <- rejectCredit testUrl testPrivkey10 creditHash
+    assertEqual "reject success" 204 httpCode
+
+    -- user2 has 0 pending records post-rejection
+    creditRecords2 <- checkPending testUrl testAddress11
+    assertEqual "zero pending records found for user2" 0 (length creditRecords2)
+
+    -- user1 attempts same credit again
+    httpCode <- submitCredit testUrl testPrivkey10 testCredit
+    assertEqual "PayPal lend success" 204 httpCode
+
+    -- user2 accepts user1's pending credit
+    httpCode <- submitCredit testUrl testPrivkey11 (testCredit { submitter = testAddress11 })
+    assertEqual "PayPal borrow success" 204 httpCode
+
+    -- user1's checks that he has pending credits and two verified credits
+    creditRecords1 <- checkPending testUrl testAddress10
+    assertEqual "zero pending records found for user1" 0 (length creditRecords1)
+
+    verifiedRecords1 <- getTransactions testUrl testAddress10
+    assertEqual "one verified record found for user1" 1 (length verifiedRecords1)
+
+    balance <- getBalance testUrl testAddress10 "GBP"
+    assertEqual "user1's total balance is correct" testAmount balance
+
+    twoPartyBalance <- getTwoPartyBalance testUrl testAddress10 testAddress11 "GBP"
+    assertEqual "user1's two-party balance is correct" testAmount twoPartyBalance
+
+    balance <- getBalance testUrl testAddress11 "GBP"
+    assertEqual "user2's total balance is correct" (-testAmount) balance
+
+    twoPartyBalance <- getTwoPartyBalance testUrl testAddress11 testAddress10 "GBP"
+    assertEqual "user2's two-party balance is correct" (-testAmount) twoPartyBalance
 
 
 basicNotificationsTest :: Assertion
@@ -487,8 +551,8 @@ advancedSettlementTest = do
 
     let testAmount1 = 2939
         testAmount2 = 1039
-        testCredits' = [ ( CreditRecord testAddress9 testAddress0 testAmount1 "advanced settlement 1" testAddress9 0 "" "" ucacAddr Nothing (Just "ETH") Nothing )
-            , ( CreditRecord testAddress0 testAddress9 testAmount2 "advanced settlement 2" testAddress9 1 "" "" ucacAddrJPY Nothing (Just "ETH") Nothing ) ]
+        testCredits' = [ ( CreditRecord testAddress9 testAddress0 testAmount1 "advanced settlement 1" testAddress9 0 "" "" ucacAddr (Just "ETH") Nothing Nothing )
+            , ( CreditRecord testAddress0 testAddress9 testAmount2 "advanced settlement 2" testAddress9 1 "" "" ucacAddrJPY (Just "ETH") Nothing Nothing ) ]
             
         -- creditHash =  testCredit'
         testHashes = fmap generateHash testCredits'
@@ -554,5 +618,11 @@ advancedSettlementTest = do
 
     -- This test passes locally but not in TravisCI
     -- (numDbCredits, numBlockchainCredits, _, _) <- consistencyCheck
-    -- assertEqual "correct number of transactions (7) on blockchain" 7 numBlockchainCredits
-    -- assertEqual "correct number of transactions (7) in db" 7 numDbCredits
+    -- assertEqual "correct number of transactions (8) on blockchain" 8 numBlockchainCredits
+    -- assertEqual "correct number of transactions (8) in db" 8 numDbCredits
+
+
+requestPayPalTest :: Assertion
+requestPayPalTest = do
+    httpCode1 <- requestPayPal testUrl testPrivkey1 ( PayPalRequest testAddress0 testAddress1 "" )
+    assertEqual "paypal notification request returns 204" 204 httpCode1

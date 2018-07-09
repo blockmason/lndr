@@ -57,6 +57,7 @@ type LndrAPI =
    :<|> "borrow" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
    :<|> "reject" :> ReqBody '[JSON] RejectRequest :> PostNoContent '[JSON] NoContent
    :<|> "multi_settlement" :> ReqBody '[JSON] [CreditRecord] :> PostNoContent '[JSON] NoContent
+   :<|> "request_paypal" :> ReqBody '[JSON] PayPalRequest :> PostNoContent  '[JSON] NoContent
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent
    :<|> "nick" :> Capture "user" Address :> Get '[JSON] Text
@@ -97,6 +98,7 @@ server = transactionsHandler
     :<|> borrowHandler
     :<|> rejectHandler
     :<|> multiSettlementHandler
+    :<|> requestPayPalHandler
     :<|> nonceHandler
     :<|> nickHandler
     :<|> nickLookupHandler

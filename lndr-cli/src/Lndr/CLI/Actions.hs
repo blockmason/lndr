@@ -41,6 +41,7 @@ module Lndr.CLI.Actions (
     , consistencyCheck
     , verifySettlement
     , submitMultiSettlement
+    , requestPayPal
 
     -- * notifications-related requests
     , registerChannel
@@ -434,3 +435,12 @@ consistencyCheck = do
         , hashPair <$> dbCredits \\ blockchainCredits
         , hashPair <$> blockchainCredits \\ dbCredits)
     where hashPair creditLog = (hashCreditLog creditLog, creditLog)
+
+
+requestPayPal :: String -> Text -> PayPalRequest -> IO Int
+requestPayPal url sk paypalRequest = do
+    initReq <- HTTP.parseRequest $ url ++ "/request_paypal"
+    let Right signature = generateSignature paypalRequest sk
+        req = HTTP.setRequestBodyJSON (paypalRequest { paypalRequestSignature = signature }) $
+                HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req

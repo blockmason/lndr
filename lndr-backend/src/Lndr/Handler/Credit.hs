@@ -17,6 +17,7 @@ module Lndr.Handler.Credit (
     , counterpartiesHandler
     , balanceHandler
     , twoPartyBalanceHandler
+    , requestPayPalHandler
     ) where
 
 import           Control.Concurrent.STM
@@ -87,7 +88,7 @@ submitHandler recordNum signedRecord@(CreditRecord creditor debtor _ memo submit
             nicknameM <- liftIO . withResource pool $ Db.lookupNick submitterAddress
 
             forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
-                responseCode <- sendNotification config (Notification channelID platform nicknameM notifyAction)
+                responseCode <- sendNotification config (Notification channelID platform nicknameM notifyAction )
                 let logMsg = "Notification response (" ++ T.unpack currency ++ "): " ++ show responseCode
                 pushLogStrLn loggerSet . toLogStr $ logMsg
 
@@ -162,8 +163,8 @@ createPendingRecord recordNum pool signedRecord = do
 -- TODO: change the settlementAmountRaw to use the settlementAmount on the
 -- incoming record if it already exists
 calculateSettlementCreditRecord :: ServerConfig -> CreditRecord -> CreditRecord
-calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ _ Nothing _) = cr
-calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ ucac _ (Just currency) _) =
+calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ Nothing _ _) = cr
+calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ ucac (Just "ETH") _ _) =
     let blockNumber = latestBlockNumber config
         prices = ethereumPrices config
         priceAdjustmentForCents = 100
@@ -195,6 +196,7 @@ calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ uca
     in cr { settlementAmount = Just $ roundToMegaWei settlementAmountRaw
           , settlementBlocknumber = Just blockNumber
           }
+calculateSettlementCreditRecord _ cr@(CreditRecord _ _ _ _ _ _ _ _ _ (_) _ _) = cr
 
 
 createBilateralFriendship :: Pool Connection -> Address -> Address -> IO ()
@@ -305,3 +307,22 @@ multiSettlementHandler :: [CreditRecord] -> LndrHandler NoContent
 multiSettlementHandler transactions = do
     result <- mapM (uncurry submitHandler) $ zip [0..(length transactions)] transactions
     return $ head result
+
+
+requestPayPalHandler :: PayPalRequest -> LndrHandler NoContent
+requestPayPalHandler (PayPalRequest friend requestor _) = do
+    (ServerState pool configTVar loggerSet) <- ask
+    config <- liftIO $ readTVarIO configTVar
+
+    let attemptToNotify = do
+            pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress friend
+            nicknameM <- liftIO . withResource pool $ Db.lookupNick requestor
+
+            forM_ pushDataM $ \(channelID, platform) -> liftIO $ do
+                responseCode <- sendNotification config (Notification channelID platform nicknameM RequestPayPal )
+                let logMsg = "Notification response (PayPal Request): " ++ show responseCode
+                pushLogStrLn loggerSet . toLogStr $ logMsg
+
+    attemptToNotify
+    
+    pure NoContent

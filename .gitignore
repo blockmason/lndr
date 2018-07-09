@@ -3,3 +3,6 @@ lndr-server.config
 
 # Referenced in docker-compose.yml for persistence between sessions
 /.docker/
+/lndr-backend/data/lndr-server.dev.config
+/lndr-server
+.stack-work/

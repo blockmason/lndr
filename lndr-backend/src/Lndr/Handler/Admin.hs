@@ -19,9 +19,17 @@ import           Servant
 
 registerPushHandler :: PushRequest -> LndrHandler NoContent
 registerPushHandler r@(PushRequest channelID platform addr _) = do
-    unless (Right addr == recoverSigner r) $ throwError (err400 {errBody = "Bad signature."})
+    unless (Right addr == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
     pool <- asks dbConnectionPool
     liftIO . withResource pool $ Db.insertPushDatum addr channelID platform
+    pure NoContent
+
+
+deletePushHandler :: DeletePushRequest -> LndrHandler NoContent
+deletePushHandler r@(DeletePushRequest addr _) = do
+    unless (Right addr == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
+    pool <- asks dbConnectionPool
+    liftIO . withResource pool $ Db.deletePushDatum addr
     pure NoContent
 
 

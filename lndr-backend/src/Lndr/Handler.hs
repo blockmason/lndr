@@ -31,6 +31,7 @@ module Lndr.Handler (
 
     -- * Admin Handlers
     , registerPushHandler
+    , deletePushHandler
     , configHandler
 
     -- * Email Handlers

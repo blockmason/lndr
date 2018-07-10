@@ -84,6 +84,7 @@ type LndrAPI =
                   :> QueryParam "currency" Text :> Get '[JSON] Integer
    :<|> "register_push" :> ReqBody '[JSON] PushRequest
                         :> PostNoContent '[JSON] NoContent
+   :<|> "register_push" :> ReqBody '[JSON] DeletePushRequest :> DeleteNoContent '[JSON] NoContent
    :<|> "config" :> Get '[JSON] ConfigResponse
    :<|> "docs" :> Raw
 
@@ -115,6 +116,7 @@ server = transactionsHandler
     :<|> balanceHandler
     :<|> twoPartyBalanceHandler
     :<|> registerPushHandler
+    :<|> deletePushHandler
     :<|> configHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =

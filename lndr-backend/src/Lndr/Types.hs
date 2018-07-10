@@ -27,6 +27,7 @@ module Lndr.Types
 
     -- * push notifications-relatd types
     , PushRequest(..)
+    , DeletePushRequest(..)
     , Notification(..)
     , NotificationAction(..)
     , DevicePlatform(..)
@@ -158,6 +159,11 @@ data PushRequest = PushRequest { pushRequestChannelID :: Text
                                , pushRequestSignature :: Text
                                }
 $(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 11 }) ''PushRequest)
+
+data DeletePushRequest = DeletePushRequest { deletePushAddress   :: Address
+                                           , deletePushSignature :: Text
+                                           }
+$(deriveJSON (defaultOptions { fieldLabelModifier = over _head toLower . drop 11 }) ''DeletePushRequest)
 
 data ProfilePhotoRequest = ProfilePhotoRequest { photoRequestImage :: Text
                                                , photoRequestSignature :: Text

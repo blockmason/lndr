@@ -84,8 +84,8 @@ type LndrAPI =
                   :> QueryParam "currency" Text :> Get '[JSON] Integer
    :<|> "register_push" :> ReqBody '[JSON] PushRequest
                         :> PostNoContent '[JSON] NoContent
-   :<|> "register_push" :> ReqBody '[JSON] DeletePush
-                        :> DeleteNoContent '[JSON] NoContent
+   :<|> "unregister_push" :> ReqBody '[JSON] DeletePush
+                        :> PostNoContent '[JSON] NoContent
    :<|> "config" :> Get '[JSON] ConfigResponse
    :<|> "docs" :> Raw
 

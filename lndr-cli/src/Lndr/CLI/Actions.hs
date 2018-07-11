@@ -373,10 +373,10 @@ registerChannel url privateKey pushReq = do
 
 deleteChannel :: String -> Text -> DeletePush -> IO Int
 deleteChannel url privateKey delPushReq = do
-    initReq <- HTTP.parseRequest $ url ++ "/register_push"
+    initReq <- HTTP.parseRequest $ url ++ "/unregister_push"
     let Right signature = generateSignature delPushReq privateKey
         req = HTTP.setRequestBodyJSON (delPushReq { deletePushSignature = signature }) $
-                    HTTP.setRequestMethod "DELETE" initReq
+                    HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 
 

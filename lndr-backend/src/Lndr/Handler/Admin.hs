@@ -25,11 +25,11 @@ registerPushHandler r@(PushRequest channelID platform addr _) = do
     pure NoContent
 
 
-deletePushHandler :: DeletePush -> LndrHandler NoContent
-deletePushHandler r@(DeletePush addr _) = do
+deletePushHandler :: PushRequest -> LndrHandler NoContent
+deletePushHandler r@(PushRequest channelID platform addr _) = do
     unless (Right addr == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
     pool <- asks dbConnectionPool
-    liftIO . withResource pool $ Db.deletePushDatum addr
+    liftIO . withResource pool $ Db.deletePushDatum addr channelID platform
     pure NoContent
 
 

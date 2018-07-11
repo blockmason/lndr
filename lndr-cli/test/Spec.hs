@@ -438,7 +438,7 @@ basicNotificationsTest = do
 
 deleteNotificationsTest :: Assertion
 deleteNotificationsTest = do
-    httpCode <- deleteChannel testUrl testPrivkey1 (DeletePush testAddress1 "")
+    httpCode <- deleteChannel testUrl testPrivkey1 (PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios" testAddress1 "")
     assertEqual "delete channel success" 204 httpCode
 
 

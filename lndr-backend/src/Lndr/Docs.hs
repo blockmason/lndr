@@ -99,9 +99,6 @@ instance ToSample PushRequest where
     toSamples _ = singleSample $ PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios"
                                              "0x11edd217a875063583dd1b638d16810c5d34d54b" ""
 
-instance ToSample DeletePush where
-    toSamples _ = singleSample $ DeletePush "0x11edd217a875063583dd1b638d16810c5d34d54b" ""
-
 instance ToSample ProfilePhotoRequest where
     toSamples _ = singleSample $ ProfilePhotoRequest "2394" "239048"
 

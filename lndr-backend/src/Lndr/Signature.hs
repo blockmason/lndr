@@ -74,12 +74,6 @@ instance VerifiableSignature PushRequest where
                            , bytesEncode channelID
                            , T.pack (show addr) ]
 
-instance VerifiableSignature DeletePush where
-    extractSignature (DeletePush _ sig) = sig
-
-    generateHash (DeletePush addr _) = EU.hashText . T.concat $
-        stripHexPrefix <$> [ T.pack (show addr) ]
-
 instance VerifiableSignature PayPalRequest where
     extractSignature (PayPalRequest _ _ sig) = sig
 

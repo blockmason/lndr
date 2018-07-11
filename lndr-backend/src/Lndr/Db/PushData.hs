@@ -18,6 +18,6 @@ lookupPushDatumByAddress :: Address -> Connection -> IO (Maybe (Text, DevicePlat
 lookupPushDatumByAddress addr conn = listToMaybe <$> query conn "SELECT channel_id, platform FROM push_data WHERE address = ?" (Only addr)
 
 
-deletePushDatum :: Address -> Connection -> IO Int
-deletePushDatum addr conn = fromIntegral <$>
-    execute conn "DELETE FROM push_data WHERE address = ?" (Only addr)
+deletePushDatum :: Address -> Text -> Text -> Connection -> IO Int
+deletePushDatum addr channelID platform conn = fromIntegral <$>
+    execute conn "DELETE FROM push_data WHERE address = ? AND channel_id = ? AND platform = ?" (addr, channelID, platform)

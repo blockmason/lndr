@@ -311,10 +311,6 @@ multiSettlementHandler transactions = do
 
 requestPayPalHandler :: PayPalRequest -> LndrHandler NoContent
 requestPayPalHandler r@(PayPalRequest friend requestor sign) = do
-    -- signer <- ioEitherToLndr . pure . EU.ecrecover (stripHexPrefix sig) $
-    --     EU.hashPersonalMessage hash
-    -- unless (textToAddress signer == requestor) $
-    --     throwError (err401 {errBody = "Bad submitter sig"})
     unless (Right requestor == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
     (ServerState pool configTVar loggerSet) <- ask
     config <- liftIO $ readTVarIO configTVar

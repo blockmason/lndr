@@ -45,6 +45,7 @@ module Lndr.CLI.Actions (
 
     -- * notifications-related requests
     , registerChannel
+    , deleteChannel
     ) where
 
 import           Control.Monad
@@ -366,6 +367,15 @@ registerChannel url privateKey pushReq = do
     initReq <- HTTP.parseRequest $ url ++ "/register_push"
     let Right signature = generateSignature pushReq privateKey
         req = HTTP.setRequestBodyJSON (pushReq { pushRequestSignature = signature }) $
+                    HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+
+
+deleteChannel :: String -> Text -> PushRequest -> IO Int
+deleteChannel url privateKey delPushReq = do
+    initReq <- HTTP.parseRequest $ url ++ "/unregister_push"
+    let Right signature = generateSignature delPushReq privateKey
+        req = HTTP.setRequestBodyJSON (delPushReq { pushRequestSignature = signature }) $
                     HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 

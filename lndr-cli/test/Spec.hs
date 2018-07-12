@@ -97,11 +97,12 @@ tests = [ testGroup "Nicks"
         , testGroup "Credits"
             [ testCase "lend money to friend" basicLendTest
             , testCase "settlement" basicSettlementTest
+            , testCase "PayPal request notification" requestPayPalTest
             , testCase "PayPal settlement" basicPayPalTest
             ]
         , testGroup "Notifications"
             [ testCase "registerChannel" basicNotificationsTest
-            , testCase "paypalRequest" requestPayPalTest
+            , testCase "deleteChannel" deleteNotificationsTest
             ]
         , testGroup "Authentication"
             [ testCase "nick signing" nickSignTest
@@ -433,6 +434,12 @@ basicNotificationsTest :: Assertion
 basicNotificationsTest = do
     httpCode <- registerChannel testUrl testPrivkey1 (PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios" testAddress1 "")
     assertEqual "register channel success" 204 httpCode
+
+
+deleteNotificationsTest :: Assertion
+deleteNotificationsTest = do
+    httpCode <- deleteChannel testUrl testPrivkey1 (PushRequest "31279004-103e-4ba8-b4bf-65eb3eb81859" "ios" testAddress1 "")
+    assertEqual "delete channel success" 204 httpCode
 
 
 parseCreditInputTest :: Assertion

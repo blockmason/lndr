@@ -310,7 +310,8 @@ multiSettlementHandler transactions = do
 
 
 requestPayPalHandler :: PayPalRequest -> LndrHandler NoContent
-requestPayPalHandler (PayPalRequest friend requestor _) = do
+requestPayPalHandler r@(PayPalRequest friend requestor sign) = do
+    unless (Right requestor == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
     (ServerState pool configTVar loggerSet) <- ask
     config <- liftIO $ readTVarIO configTVar
 

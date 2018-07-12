@@ -85,6 +85,8 @@ instance ToRow BilateralCreditRecord where
         , toField $ submitter creditRecord
         ]
 
+instance ToRow Address where
+    toRow address = [ toField address ]
 
 instance FromRow IssueCreditLog where
   fromRow =

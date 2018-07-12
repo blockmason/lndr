@@ -46,6 +46,7 @@ module Lndr.Db (
 
     -- * 'push_data' table functions
     , insertPushDatum
+    , deletePushDatum
     , lookupPushDatumByAddress
     ) where
 

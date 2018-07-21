@@ -63,3 +63,20 @@ creditRecordToPendingTuple creditRecord = ( creditor creditRecord
                                           , ucac creditRecord
                                           , settlementCurrency creditRecord
                                           )
+
+
+insertPayPalRequest :: PayPalRequest -> Connection -> IO Int
+insertPayPalRequest r@(PayPalRequest friend requestor sign) conn = do
+    fromIntegral <$> execute conn "INSERT INTO paypal_requests (friend, requestor) VALUES (?,?)" (friend, requestor)
+
+
+deletePayPalRequest :: PayPalRequest -> Connection -> IO Int
+deletePayPalRequest r@(PayPalRequest friend requestor sign) conn = do
+    fromIntegral <$> execute conn "DELETE FROM paypal_requests WHERE (friend = ? AND requestor = ?)" (friend, requestor)
+
+
+lookupPayPalRequestsByAddress :: Address -> Connection -> IO [(UserInfo, UserInfo)]
+lookupPayPalRequestsByAddress userAddr conn = do
+    [(targetNick, targetAddr, requestorAddr, requestorNick)] <- query conn "SELECT targets.nickname, friend, requestor, requestors.nickname FROM paypal_requests LEFT JOIN nicknames requestors ON requestors.address = requestor RIGHT JOIN nicknames targets ON targets.address = friend WHERE (friend = ? OR requestor = ?)" (userAddr, userAddr) :: IO [(Maybe Text, Address, Address, Maybe Text)]
+
+    return $ [(UserInfo targetAddr targetNick), (UserInfo requestorAddr requestorNick)]

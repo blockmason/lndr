@@ -344,7 +344,7 @@ deletePayPalRequestHandler r@(PayPalRequest friend requestor sign) = do
     pure NoContent
 
 
-paypalRequestsLookupHandler :: Address -> LndrHandler [(UserInfo, UserInfo)]
+paypalRequestsLookupHandler :: Address -> LndrHandler [PayPalRequestPair]
 paypalRequestsLookupHandler addr = do
     (ServerState pool configTVar loggerSet) <- ask
     config <- liftIO $ readTVarIO configTVar

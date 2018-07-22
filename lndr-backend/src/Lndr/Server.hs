@@ -58,7 +58,7 @@ type LndrAPI =
    :<|> "reject" :> ReqBody '[JSON] RejectRequest :> PostNoContent '[JSON] NoContent
    :<|> "multi_settlement" :> ReqBody '[JSON] [CreditRecord] :> PostNoContent '[JSON] NoContent
    :<|> "request_paypal" :> ReqBody '[JSON] PayPalRequest :> PostNoContent '[JSON] NoContent
-   :<|> "request_paypal" :> Capture "user" Address :> Get '[JSON] [(UserInfo, UserInfo)]
+   :<|> "request_paypal" :> Capture "user" Address :> Get '[JSON] [PayPalRequestPair]
    :<|> "remove_paypal_request" :> ReqBody '[JSON] PayPalRequest :> PostNoContent '[JSON] NoContent
    :<|> "nonce" :> Capture "p1" Address :> Capture "p2" Address :> Get '[JSON] Nonce
    :<|> "nick" :> ReqBody '[JSON] NickRequest :> PostNoContent '[JSON] NoContent

@@ -467,7 +467,7 @@ deletePayPalRequest url sk paypalRequest = do
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
 
 
-retrievePayPalRequests :: String -> Address -> IO [(UserInfo, UserInfo)]
+retrievePayPalRequests :: String -> Address -> IO [PayPalRequestPair]
 retrievePayPalRequests url addr = do
-    req <- HTTP.parseRequest $ url ++ "/request_paypal/" ++ show addr
+    req <- HTTP.parseRequest $ url ++ "/request_paypal/" ++ T.unpack (Addr.toText addr)
     HTTP.getResponseBody <$> HTTP.httpJSON req

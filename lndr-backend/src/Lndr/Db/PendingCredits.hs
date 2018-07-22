@@ -75,8 +75,6 @@ deletePayPalRequest r@(PayPalRequest friend requestor sign) conn = do
     fromIntegral <$> execute conn "DELETE FROM paypal_requests WHERE (friend = ? AND requestor = ?)" (friend, requestor)
 
 
-lookupPayPalRequestsByAddress :: Address -> Connection -> IO [(UserInfo, UserInfo)]
+lookupPayPalRequestsByAddress :: Address -> Connection -> IO [PayPalRequestPair]
 lookupPayPalRequestsByAddress userAddr conn = do
-    [(targetNick, targetAddr, requestorAddr, requestorNick)] <- query conn "SELECT targets.nickname, friend, requestor, requestors.nickname FROM paypal_requests LEFT JOIN nicknames requestors ON requestors.address = requestor RIGHT JOIN nicknames targets ON targets.address = friend WHERE (friend = ? OR requestor = ?)" (userAddr, userAddr) :: IO [(Maybe Text, Address, Address, Maybe Text)]
-
-    return $ [(UserInfo targetAddr targetNick), (UserInfo requestorAddr requestorNick)]
+    query conn "SELECT friend, requestor, targets.nickname, requestors.nickname FROM paypal_requests LEFT JOIN nicknames requestors ON requestors.address = requestor LEFT JOIN nicknames targets ON targets.address = friend WHERE (friend = ? OR requestor = ?)" (userAddr, userAddr) :: IO [PayPalRequestPair]

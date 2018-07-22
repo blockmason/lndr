@@ -24,6 +24,7 @@ module Lndr.Types
     , RejectRequest(..)
     , Nonce(..)
     , PayPalRequest(..)
+    , PayPalRequestPair(..)
 
     -- * push notifications-relatd types
     , PushRequest(..)
@@ -357,3 +358,8 @@ data PayPalRequest = PayPalRequest { friend :: Address
                                    , paypalRequestSignature :: Text
                                    } deriving Show
 $(deriveJSON defaultOptions ''PayPalRequest)
+
+data PayPalRequestPair = PayPalRequestPair { target :: UserInfo
+                                           , requestor :: UserInfo
+                                           } deriving Show
+$(deriveJSON defaultOptions ''PayPalRequestPair)

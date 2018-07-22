@@ -634,8 +634,17 @@ payPalRequestTests = do
     httpCode1 <- requestPayPal testUrl testPrivkey1 ( PayPalRequest testAddress0 testAddress1 "" )
     assertEqual "paypal notification request returns 204" 204 httpCode1
 
-    requests <- retrievePayPalRequests testUrl testAddress0
-    assertEqual "retrieve PayPal requests has length of 1" 1 (length requests)
+    payPalRequests1 <- retrievePayPalRequests testUrl testAddress0
+    assertEqual "user0 PayPal requests has length of 1" 1 (length payPalRequests1)
+
+    payPalRequests2 <- retrievePayPalRequests testUrl testAddress1
+    assertEqual "user1 PayPal requests has length of 1" 1 (length payPalRequests2)
 
     httpCode2 <- deletePayPalRequest testUrl testPrivkey1 ( PayPalRequest testAddress0 testAddress1 "" )
     assertEqual "paypal notification request returns 204" 204 httpCode1
+
+    payPalRequests3 <- retrievePayPalRequests testUrl testAddress0
+    assertEqual "user0 PayPal requests has length of 1" 0 (length payPalRequests3)
+
+    payPalRequests4 <- retrievePayPalRequests testUrl testAddress1
+    assertEqual "user0 PayPal requests has length of 1" 0 (length payPalRequests4)

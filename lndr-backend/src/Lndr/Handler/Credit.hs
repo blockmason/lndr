@@ -18,6 +18,8 @@ module Lndr.Handler.Credit (
     , balanceHandler
     , twoPartyBalanceHandler
     , requestPayPalHandler
+    , deletePayPalRequestHandler
+    , paypalRequestsLookupHandler
     ) where
 
 import           Control.Concurrent.STM
@@ -315,6 +317,8 @@ requestPayPalHandler r@(PayPalRequest friend requestor sign) = do
     (ServerState pool configTVar loggerSet) <- ask
     config <- liftIO $ readTVarIO configTVar
 
+    liftIO . withResource pool $ Db.insertPayPalRequest r
+
     let attemptToNotify = do
             pushDataM <- liftIO . withResource pool $ Db.lookupPushDatumByAddress friend
             nicknameM <- liftIO . withResource pool $ Db.lookupNick requestor
@@ -327,3 +331,22 @@ requestPayPalHandler r@(PayPalRequest friend requestor sign) = do
     attemptToNotify
     
     pure NoContent
+
+
+deletePayPalRequestHandler :: PayPalRequest -> LndrHandler NoContent
+deletePayPalRequestHandler r@(PayPalRequest friend requestor sign) = do
+    unless (Right requestor == recoverSigner r || Right friend == recoverSigner r) $ throwError (err401 {errBody = "Bad signature."})
+    (ServerState pool configTVar loggerSet) <- ask
+    config <- liftIO $ readTVarIO configTVar
+
+    liftIO . withResource pool $ Db.deletePayPalRequest r
+
+    pure NoContent
+
+
+paypalRequestsLookupHandler :: Address -> LndrHandler [PayPalRequestPair]
+paypalRequestsLookupHandler addr = do
+    (ServerState pool configTVar loggerSet) <- ask
+    config <- liftIO $ readTVarIO configTVar
+
+    liftIO . withResource pool $ Db.lookupPayPalRequestsByAddress addr

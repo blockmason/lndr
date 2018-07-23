@@ -48,6 +48,12 @@ module Lndr.Db (
     , insertPushDatum
     , deletePushDatum
     , lookupPushDatumByAddress
+    
+
+    -- * 'paypal_requests' table functions
+    , insertPayPalRequest
+    , deletePayPalRequest
+    , lookupPayPalRequestsByAddress
     ) where
 
 

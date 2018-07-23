@@ -42,6 +42,8 @@ module Lndr.CLI.Actions (
     , verifySettlement
     , submitMultiSettlement
     , requestPayPal
+    , retrievePayPalRequests
+    , deletePayPalRequest
 
     -- * notifications-related requests
     , registerChannel
@@ -454,3 +456,18 @@ requestPayPal url sk paypalRequest = do
         req = HTTP.setRequestBodyJSON (paypalRequest { paypalRequestSignature = signature }) $
                 HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+
+
+deletePayPalRequest :: String -> Text -> PayPalRequest -> IO Int
+deletePayPalRequest url sk paypalRequest = do
+    initReq <- HTTP.parseRequest $ url ++ "/remove_paypal_request"
+    let Right signature = generateSignature paypalRequest sk
+        req = HTTP.setRequestBodyJSON (paypalRequest { paypalRequestSignature = signature }) $
+                HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+
+
+retrievePayPalRequests :: String -> Address -> IO [PayPalRequestPair]
+retrievePayPalRequests url addr = do
+    req <- HTTP.parseRequest $ url ++ "/request_paypal/" ++ T.unpack (Addr.toText addr)
+    HTTP.getResponseBody <$> HTTP.httpJSON req

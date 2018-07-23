@@ -22,6 +22,17 @@ instance FromField Address where
 
 instance FromRow UserInfo
 
+instance FromRow PayPalRequestPair where
+    fromRow = do
+        friendAddr <- field
+        requestorAddr <- field
+        friendNick <- field
+        requestorNick <- field
+        let friend = UserInfo friendAddr friendNick
+            requestor = UserInfo requestorAddr requestorNick
+
+        return $ PayPalRequestPair friend requestor
+        
 instance FromField DevicePlatform where
     fromField f dat = toDevicePlatform <$> fromField f dat
         where toDevicePlatform :: Text -> DevicePlatform

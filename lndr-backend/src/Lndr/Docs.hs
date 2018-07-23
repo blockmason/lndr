@@ -76,6 +76,10 @@ instance ToSample PayPalRequest where
     toSamples _ = singleSample $
         PayPalRequest "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb" "0x11edd217a875063583dd1b638d16810c5d34d54b" ""
 
+instance ToSample PayPalRequestPair where
+    toSamples _ = singleSample $
+        PayPalRequestPair (UserInfo "0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb" (Just "Bob")) (UserInfo "0x11edd217a875063583dd1b638d16810c5d34d54b" (Just "Chuck"))
+
 instance ToSample IssueCreditLog where
     toSamples _ = singleSample $
         IssueCreditLog "d5ec73eac35fc9dd6c3f440bce314779fed09f60"

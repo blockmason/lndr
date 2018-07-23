@@ -97,7 +97,7 @@ tests = [ testGroup "Nicks"
         , testGroup "Credits"
             [ testCase "lend money to friend" basicLendTest
             , testCase "settlement" basicSettlementTest
-            , testCase "PayPal request notification" requestPayPalTest
+            , testCase "PayPal request notification" payPalRequestTests
             , testCase "PayPal settlement" basicPayPalTest
             ]
         , testGroup "Notifications"
@@ -629,7 +629,22 @@ advancedSettlementTest = do
     -- assertEqual "correct number of transactions (8) in db" 8 numDbCredits
 
 
-requestPayPalTest :: Assertion
-requestPayPalTest = do
+payPalRequestTests :: Assertion
+payPalRequestTests = do
     httpCode1 <- requestPayPal testUrl testPrivkey1 ( PayPalRequest testAddress0 testAddress1 "" )
     assertEqual "paypal notification request returns 204" 204 httpCode1
+
+    payPalRequests1 <- retrievePayPalRequests testUrl testAddress0
+    assertEqual "user0 PayPal requests has length of 1" 1 (length payPalRequests1)
+
+    payPalRequests2 <- retrievePayPalRequests testUrl testAddress1
+    assertEqual "user1 PayPal requests has length of 1" 1 (length payPalRequests2)
+
+    httpCode2 <- deletePayPalRequest testUrl testPrivkey1 ( PayPalRequest testAddress0 testAddress1 "" )
+    assertEqual "paypal notification request returns 204" 204 httpCode1
+
+    payPalRequests3 <- retrievePayPalRequests testUrl testAddress0
+    assertEqual "user0 PayPal requests has length of 1" 0 (length payPalRequests3)
+
+    payPalRequests4 <- retrievePayPalRequests testUrl testAddress1
+    assertEqual "user0 PayPal requests has length of 1" 0 (length payPalRequests4)

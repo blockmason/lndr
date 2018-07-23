@@ -17,6 +17,8 @@ module Lndr.Handler (
     , twoPartyBalanceHandler
     , multiSettlementHandler
     , requestPayPalHandler
+    , deletePayPalRequestHandler
+    , paypalRequestsLookupHandler
 
     -- * Friend Handlers
     , nickHandler

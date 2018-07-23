@@ -77,4 +77,4 @@ deletePayPalRequest r@(PayPalRequest friend requestor sign) conn = do
 
 lookupPayPalRequestsByAddress :: Address -> Connection -> IO [PayPalRequestPair]
 lookupPayPalRequestsByAddress userAddr conn = do
-    query conn "SELECT friend, requestor, targets.nickname, requestors.nickname FROM paypal_requests LEFT JOIN nicknames requestors ON requestors.address = requestor LEFT JOIN nicknames targets ON targets.address = friend WHERE (friend = ? OR requestor = ?)" (userAddr, userAddr) :: IO [PayPalRequestPair]
+    query conn "SELECT paypal_requests.friend, paypal_requests.requestor, friends.nickname, requestors.nickname FROM paypal_requests LEFT JOIN nicknames requestors ON requestors.address = requestor LEFT JOIN nicknames friends ON friends.address = friend WHERE (friend = ? OR requestor = ?)" (userAddr, userAddr) :: IO [PayPalRequestPair]

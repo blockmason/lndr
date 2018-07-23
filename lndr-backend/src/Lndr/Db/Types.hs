@@ -24,14 +24,14 @@ instance FromRow UserInfo
 
 instance FromRow PayPalRequestPair where
     fromRow = do
-        targetAddr <- field
+        friendAddr <- field
         requestorAddr <- field
-        targetNick <- field
+        friendNick <- field
         requestorNick <- field
-        let target = UserInfo targetAddr targetNick
+        let friend = UserInfo friendAddr friendNick
             requestor = UserInfo requestorAddr requestorNick
 
-        return $ PayPalRequestPair target requestor
+        return $ PayPalRequestPair friend requestor
         
 instance FromField DevicePlatform where
     fromField f dat = toDevicePlatform <$> fromField f dat

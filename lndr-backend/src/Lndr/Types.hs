@@ -359,7 +359,7 @@ data PayPalRequest = PayPalRequest { friend :: Address
                                    } deriving Show
 $(deriveJSON defaultOptions ''PayPalRequest)
 
-data PayPalRequestPair = PayPalRequestPair { target :: UserInfo
+data PayPalRequestPair = PayPalRequestPair { friend :: UserInfo
                                            , requestor :: UserInfo
                                            } deriving Show
 $(deriveJSON defaultOptions ''PayPalRequestPair)

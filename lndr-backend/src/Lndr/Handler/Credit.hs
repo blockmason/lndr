@@ -171,28 +171,29 @@ calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ uca
         prices = ethereumPrices config
         priceAdjustmentForCents = 100
         currencyPerEth = case B.lookupR ucac (lndrUcacAddrs config) of
-            Just "USD" -> usd prices * priceAdjustmentForCents
-            Just "JPY" -> jpy prices
-            Just "KRW" -> krw prices
-            Just "DKK" -> dkk prices * priceAdjustmentForCents
+            Just "AUD" -> aud prices * priceAdjustmentForCents
+            Just "CAD" -> cad prices * priceAdjustmentForCents
             Just "CHF" -> chf prices * priceAdjustmentForCents
             Just "CNY" -> cny prices * priceAdjustmentForCents
+            Just "DKK" -> dkk prices * priceAdjustmentForCents
             Just "EUR" -> eur prices * priceAdjustmentForCents
-            Just "AUD" -> aud prices * priceAdjustmentForCents
             Just "GBP" -> gbp prices * priceAdjustmentForCents
             Just "HKD" -> hkd prices * priceAdjustmentForCents
-            Just "CAD" -> cad prices * priceAdjustmentForCents
-            Just "NOK" -> nok prices * priceAdjustmentForCents
-            Just "SEK" -> sek prices * priceAdjustmentForCents
-            Just "NZD" -> nzd prices * priceAdjustmentForCents
             Just "IDR" -> idr prices
+            Just "ILS" -> ils prices * priceAdjustmentForCents
+            Just "INR" -> inr prices * priceAdjustmentForCents
+            Just "JPY" -> jpy prices
+            Just "KRW" -> krw prices
             Just "MYR" -> myr prices * priceAdjustmentForCents
+            Just "NOK" -> nok prices * priceAdjustmentForCents
+            Just "NZD" -> nzd prices * priceAdjustmentForCents
+            Just "RUB" -> rub prices * priceAdjustmentForCents
+            Just "SEK" -> sek prices * priceAdjustmentForCents
             Just "SGD" -> sgd prices * priceAdjustmentForCents
             Just "THB" -> thb prices * priceAdjustmentForCents
-            Just "VND" -> vnd prices
-            Just "ILS" -> ils prices * priceAdjustmentForCents
-            Just "RUB" -> rub prices * priceAdjustmentForCents
             Just "TRY" -> try prices * priceAdjustmentForCents
+            Just "USD" -> usd prices * priceAdjustmentForCents
+            Just "VND" -> vnd prices
             Nothing    -> error "ucac not found"
         settlementAmountRaw = floor $ fromIntegral amount / currencyPerEth * 10 ^ 18
     in cr { settlementAmount = Just $ roundToMegaWei settlementAmountRaw

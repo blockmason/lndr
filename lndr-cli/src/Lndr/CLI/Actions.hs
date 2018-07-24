@@ -399,28 +399,29 @@ scanBlockchain = do
     home <- getHomeDirectory
     config <- loadConfig $  home </> "lndr-server.config"
     runWeb3' (HttpProvider (web3Url config)) $
-        join <$> sequence [ lndrLogs config "USD" Nothing Nothing
-                          , lndrLogs config "JPY" Nothing Nothing
-                          , lndrLogs config "KRW" Nothing Nothing
-                          , lndrLogs config "DKK" Nothing Nothing
+        join <$> sequence [ lndrLogs config "AUD" Nothing Nothing
+                          , lndrLogs config "CAD" Nothing Nothing
                           , lndrLogs config "CHF" Nothing Nothing
                           , lndrLogs config "CNY" Nothing Nothing
+                          , lndrLogs config "DKK" Nothing Nothing
                           , lndrLogs config "EUR" Nothing Nothing
-                          , lndrLogs config "AUD" Nothing Nothing
                           , lndrLogs config "GBP" Nothing Nothing
                           , lndrLogs config "HKD" Nothing Nothing
-                          , lndrLogs config "CAD" Nothing Nothing
-                          , lndrLogs config "NOK" Nothing Nothing
-                          , lndrLogs config "SEK" Nothing Nothing
-                          , lndrLogs config "NZD" Nothing Nothing
                           , lndrLogs config "IDR" Nothing Nothing
+                          , lndrLogs config "ILS" Nothing Nothing
+                          , lndrLogs config "INR" Nothing Nothing
+                          , lndrLogs config "JPY" Nothing Nothing
+                          , lndrLogs config "KRW" Nothing Nothing
                           , lndrLogs config "MYR" Nothing Nothing
+                          , lndrLogs config "NOK" Nothing Nothing
+                          , lndrLogs config "NZD" Nothing Nothing
+                          , lndrLogs config "RUB" Nothing Nothing
+                          , lndrLogs config "SEK" Nothing Nothing
                           , lndrLogs config "SGD" Nothing Nothing
                           , lndrLogs config "THB" Nothing Nothing
-                          , lndrLogs config "VND" Nothing Nothing
-                          , lndrLogs config "ILS" Nothing Nothing
-                          , lndrLogs config "RUB" Nothing Nothing
-                          , lndrLogs config "TRY" Nothing Nothing ]
+                          , lndrLogs config "TRY" Nothing Nothing
+                          , lndrLogs config "USD" Nothing Nothing
+                          , lndrLogs config "VND" Nothing Nothing ]
 
 
 scanDB :: IO [IssueCreditLog]

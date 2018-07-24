@@ -62,29 +62,30 @@ testEmail = fromMaybe (error "bad test email") $ Email.emailAddressFromText test
 
 loadUcacs = do
     (ConfigResponse ucacAddresses _ _ _ _) <- getConfig testUrl
-    let Just ucacAddr = M.lookup "USD" ucacAddresses
-        Just ucacAddrKRW = M.lookup "KRW" ucacAddresses
-        Just ucacAddrJPY = M.lookup "JPY" ucacAddresses
-        Just ucacAddrDKK = M.lookup "DKK" ucacAddresses
+    let Just ucacAddrAUD = M.lookup "AUD" ucacAddresses
+        Just ucacAddrCAD = M.lookup "CAD" ucacAddresses
         Just ucacAddrCHF = M.lookup "CHF" ucacAddresses
         Just ucacAddrCNY = M.lookup "CNY" ucacAddresses
+        Just ucacAddrDKK = M.lookup "DKK" ucacAddresses
         Just ucacAddrEUR = M.lookup "EUR" ucacAddresses
-        Just ucacAddrAUD = M.lookup "AUD" ucacAddresses
         Just ucacAddrGBP = M.lookup "GBP" ucacAddresses
         Just ucacAddrHKD = M.lookup "HKD" ucacAddresses
-        Just ucacAddrCAD = M.lookup "CAD" ucacAddresses
-        Just ucacAddrNOK = M.lookup "NOK" ucacAddresses
-        Just ucacAddrSEK = M.lookup "SEK" ucacAddresses
-        Just ucacAddrNZD = M.lookup "NZD" ucacAddresses
         Just ucacAddrIDR = M.lookup "IDR" ucacAddresses
+        Just ucacAddrILS = M.lookup "ILS" ucacAddresses
+        Just ucacAddrINR = M.lookup "INR" ucacAddresses
+        Just ucacAddrJPY = M.lookup "JPY" ucacAddresses
+        Just ucacAddrKRW = M.lookup "KRW" ucacAddresses
         Just ucacAddrMYR = M.lookup "MYR" ucacAddresses
+        Just ucacAddrNOK = M.lookup "NOK" ucacAddresses
+        Just ucacAddrNZD = M.lookup "NZD" ucacAddresses
+        Just ucacAddrRUB = M.lookup "RUB" ucacAddresses
+        Just ucacAddrSEK = M.lookup "SEK" ucacAddresses
         Just ucacAddrSGD = M.lookup "SGD" ucacAddresses
         Just ucacAddrTHB = M.lookup "THB" ucacAddresses
-        Just ucacAddrVND = M.lookup "VND" ucacAddresses
-        Just ucacAddrILS = M.lookup "ILS" ucacAddresses
-        Just ucacAddrRUB = M.lookup "RUB" ucacAddresses
         Just ucacAddrTRY = M.lookup "TRY" ucacAddresses
-    return (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY)
+        Just ucacAddr = M.lookup "USD" ucacAddresses
+        Just ucacAddrVND = M.lookup "VND" ucacAddresses
+    return (ucacAddrAUD, ucacAddrCAD, ucacAddrCHF, ucacAddrCNY, ucacAddrDKK, ucacAddrEUR, ucacAddrGBP, ucacAddrHKD, ucacAddrIDR, ucacAddrILS, ucacAddrINR, ucacAddrJPY, ucacAddrKRW, ucacAddrMYR, ucacAddrNOK, ucacAddrNZD, ucacAddrRUB, ucacAddrSEK, ucacAddrSGD, ucacAddrTHB, ucacAddrTRY, ucacAddr, ucacAddrVND)
 
 
 main :: IO ()
@@ -214,7 +215,7 @@ nickTest = do
 
 basicLendTest :: Assertion
 basicLendTest = do
-    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY) <- loadUcacs
+    (ucacAddrAUD, ucacAddrCAD, ucacAddrCHF, ucacAddrCNY, ucacAddrDKK, ucacAddrEUR, ucacAddrGBP, ucacAddrHKD, ucacAddrIDR, ucacAddrILS, ucacAddrINR, ucacAddrJPY, ucacAddrKRW, ucacAddrMYR, ucacAddrNOK, ucacAddrNZD, ucacAddrRUB, ucacAddrSEK, ucacAddrSGD, ucacAddrTHB, ucacAddrTRY, ucacAddr, ucacAddrVND) <- loadUcacs
 
     let testAmount = 100
         testCredit' = CreditRecord testAddress1 testAddress2 testAmount "USD test 1" testAddress1 0 "" "" ucacAddr Nothing Nothing Nothing
@@ -311,7 +312,7 @@ basicLendTest = do
 
 basicSettlementTest :: Assertion
 basicSettlementTest = do
-    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY) <- loadUcacs
+    (ucacAddrAUD, ucacAddrCAD, ucacAddrCHF, ucacAddrCNY, ucacAddrDKK, ucacAddrEUR, ucacAddrGBP, ucacAddrHKD, ucacAddrIDR, ucacAddrILS, ucacAddrINR, ucacAddrJPY, ucacAddrKRW, ucacAddrMYR, ucacAddrNOK, ucacAddrNZD, ucacAddrRUB, ucacAddrSEK, ucacAddrSGD, ucacAddrTHB, ucacAddrTRY, ucacAddr, ucacAddrVND) <- loadUcacs
 
     let testAmount = 2939
         testCredit' = CreditRecord testAddress5 testAddress6 testAmount "settlement" testAddress5 0 "" "" ucacAddr (Just "ETH") Nothing Nothing
@@ -374,7 +375,7 @@ basicSettlementTest = do
 
 basicPayPalTest :: Assertion
 basicPayPalTest = do
-    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY) <- loadUcacs
+    (ucacAddrAUD, ucacAddrCAD, ucacAddrCHF, ucacAddrCNY, ucacAddrDKK, ucacAddrEUR, ucacAddrGBP, ucacAddrHKD, ucacAddrIDR, ucacAddrILS, ucacAddrINR, ucacAddrJPY, ucacAddrKRW, ucacAddrMYR, ucacAddrNOK, ucacAddrNZD, ucacAddrRUB, ucacAddrSEK, ucacAddrSGD, ucacAddrTHB, ucacAddrTRY, ucacAddr, ucacAddrVND) <- loadUcacs
 
     let testAmount = 100
         testCredit' = CreditRecord testAddress10 testAddress11 testAmount "PAYPAL TEST 1" testAddress10 0 "" "" ucacAddrGBP (Just "PAYPAL") Nothing Nothing
@@ -459,7 +460,7 @@ nickSignTest = assertEqual "expected nick request signature" nickSignature (Righ
 
 multiSettlementLendTest :: Assertion
 multiSettlementLendTest = do
-    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY) <- loadUcacs
+    (ucacAddrAUD, ucacAddrCAD, ucacAddrCHF, ucacAddrCNY, ucacAddrDKK, ucacAddrEUR, ucacAddrGBP, ucacAddrHKD, ucacAddrIDR, ucacAddrILS, ucacAddrINR, ucacAddrJPY, ucacAddrKRW, ucacAddrMYR, ucacAddrNOK, ucacAddrNZD, ucacAddrRUB, ucacAddrSEK, ucacAddrSGD, ucacAddrTHB, ucacAddrTRY, ucacAddr, ucacAddrVND) <- loadUcacs
 
     let testAmount1 = 100
         testAmount2 = 50
@@ -554,7 +555,7 @@ multiSettlementLendTest = do
 
 advancedSettlementTest :: Assertion
 advancedSettlementTest = do
-    (ucacAddr, ucacAddrKRW, ucacAddrJPY, ucacAddrDKK, ucacAddrCHF, ucacAddrCNY, ucacAddrEUR, ucacAddrAUD, ucacAddrGBP, ucacAddrHKD, ucacAddrCAD, ucacAddrNOK, ucacAddrSEK, ucacAddrNZD, ucacAddrIDR, ucacAddrMYR, ucacAddrSGD, ucacAddrTHB, ucacAddrVND, ucacAddrILS, ucacAddrRUB, ucacAddrTRY) <- loadUcacs
+    (ucacAddrAUD, ucacAddrCAD, ucacAddrCHF, ucacAddrCNY, ucacAddrDKK, ucacAddrEUR, ucacAddrGBP, ucacAddrHKD, ucacAddrIDR, ucacAddrILS, ucacAddrINR, ucacAddrJPY, ucacAddrKRW, ucacAddrMYR, ucacAddrNOK, ucacAddrNZD, ucacAddrRUB, ucacAddrSEK, ucacAddrSGD, ucacAddrTHB, ucacAddrTRY, ucacAddr, ucacAddrVND) <- loadUcacs
 
     let testAmount1 = 2939
         testAmount2 = 1039

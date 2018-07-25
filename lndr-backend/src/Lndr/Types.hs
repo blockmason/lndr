@@ -205,61 +205,63 @@ instance ToJSON Notification where
 -- A newtype wrapper is used for this 'Double' value which holds an Ethereum
 -- price expressed in USD. This is necessary in order to have easy decoding
 -- from the JSON response of the coinbase API.
-data EthereumPrices = EthereumPrices { usd :: Double
-                                     , jpy :: Double
-                                     , krw :: Double
-                                     , dkk :: Double
+data EthereumPrices = EthereumPrices { aud :: Double --
+                                     , cad :: Double
                                      , chf :: Double
                                      , cny :: Double
+                                     , dkk :: Double
                                      , eur :: Double
-                                     , aud :: Double
                                      , gbp :: Double
                                      , hkd :: Double
-                                     , cad :: Double
-                                     , nok :: Double
-                                     , sek :: Double
-                                     , nzd :: Double
                                      , idr :: Double
+                                     , ils :: Double
+                                     , inr :: Double
+                                     , jpy :: Double
+                                     , krw :: Double
                                      , myr :: Double
+                                     , nok :: Double
+                                     , nzd :: Double
+                                     , rub :: Double
+                                     , sek :: Double
                                      , sgd :: Double
                                      , thb :: Double
-                                     , vnd :: Double
-                                     , ils :: Double
-                                     , rub :: Double
                                      , try :: Double
+                                     , usd :: Double
+                                     , vnd :: Double
                                      } deriving (Show, Generic)
 $(deriveToJSON defaultOptions ''EthereumPrices)
 
 instance Default EthereumPrices where
-    def = EthereumPrices 640 70018 690713 3939 633 4056 529 847 459 5022 824 5117 5545 906 8891939 2508 850 20240 14580140 2294 40134 2603
+    def = EthereumPrices 675 650 500 3400 3200 428 380 3900 7265 1830 34475 55620 564600 2030 4100 735 31665 4410 680 17000 2440 500 11625
 
 instance FromJSON EthereumPrices where
         parseJSON (Object v) = do
             dataObject <- v .: "data"
             ratesObject <- dataObject .: "rates"
-            usd <- read <$> ratesObject .: "USD"
-            jpy <- read <$> ratesObject .: "JPY"
-            krw <- read <$> ratesObject .: "KRW"
-            dkk <- read <$> ratesObject .: "DKK"
+            aud <- read <$> ratesObject .: "AUD"
+            cad <- read <$> ratesObject .: "CAD"
             chf <- read <$> ratesObject .: "CHF"
             cny <- read <$> ratesObject .: "CNY"
+            dkk <- read <$> ratesObject .: "DKK"
             eur <- read <$> ratesObject .: "EUR"
-            aud <- read <$> ratesObject .: "AUD"
             gbp <- read <$> ratesObject .: "GBP"
             hkd <- read <$> ratesObject .: "HKD"
-            cad <- read <$> ratesObject .: "CAD"
-            nok <- read <$> ratesObject .: "NOK"
-            sek <- read <$> ratesObject .: "SEK"
-            nzd <- read <$> ratesObject .: "NZD"
             idr <- read <$> ratesObject .: "IDR"
+            ils <- read <$> ratesObject .: "ILS"
+            inr <- read <$> ratesObject .: "INR"
+            jpy <- read <$> ratesObject .: "JPY"
+            krw <- read <$> ratesObject .: "KRW"
             myr <- read <$> ratesObject .: "MYR"
+            nok <- read <$> ratesObject .: "NOK"
+            nzd <- read <$> ratesObject .: "NZD"
+            rub <- read <$> ratesObject .: "RUB"
+            sek <- read <$> ratesObject .: "SEK"
             sgd <- read <$> ratesObject .: "SGD"
             thb <- read <$> ratesObject .: "THB"
-            vnd <- read <$> ratesObject .: "VND"
-            ils <- read <$> ratesObject .: "ILS"
-            rub <- read <$> ratesObject .: "RUB"
             try <- read <$> ratesObject .: "TRY"
-            return $ EthereumPrices usd jpy krw dkk chf cny eur aud gbp hkd cad nok sek nzd idr myr sgd thb vnd ils rub try
+            usd <- read <$> ratesObject .: "USD"
+            vnd <- read <$> ratesObject .: "VND"
+            return $ EthereumPrices aud cad chf cny dkk eur gbp hkd idr ils inr jpy krw myr nok nzd rub sek sgd thb try usd vnd
 
 data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Address
                                  , bindAddress              :: !Text
@@ -306,28 +308,29 @@ instance FromJSON ConfigResponse where
         gasPrice <- v .: "gasPrice"
         ethereumPricesObject <- v .: "ethereumPrices"
         weekAgoBlock <- v .: "weekAgoBlock"
-        ethereumPrices <- EthereumPrices <$> ethereumPricesObject .: "usd"
-                                         <*> ethereumPricesObject .: "jpy"
-                                         <*> ethereumPricesObject .: "krw"
-                                         <*> ethereumPricesObject .: "dkk"
+        ethereumPrices <- EthereumPrices <$> ethereumPricesObject .: "aud"
+                                         <*> ethereumPricesObject .: "cad"
                                          <*> ethereumPricesObject .: "chf"
                                          <*> ethereumPricesObject .: "cny"
+                                         <*> ethereumPricesObject .: "dkk"
                                          <*> ethereumPricesObject .: "eur"
-                                         <*> ethereumPricesObject .: "aud"
                                          <*> ethereumPricesObject .: "gbp"
                                          <*> ethereumPricesObject .: "hkd"
-                                         <*> ethereumPricesObject .: "cad"
-                                         <*> ethereumPricesObject .: "nok"
-                                         <*> ethereumPricesObject .: "sek"
-                                         <*> ethereumPricesObject .: "nzd"
                                          <*> ethereumPricesObject .: "idr"
+                                         <*> ethereumPricesObject .: "ils"
+                                         <*> ethereumPricesObject .: "inr"
+                                         <*> ethereumPricesObject .: "jpy"
+                                         <*> ethereumPricesObject .: "krw"
                                          <*> ethereumPricesObject .: "myr"
+                                         <*> ethereumPricesObject .: "nok"
+                                         <*> ethereumPricesObject .: "nzd"
+                                         <*> ethereumPricesObject .: "rub"
+                                         <*> ethereumPricesObject .: "sek"
                                          <*> ethereumPricesObject .: "sgd"
                                          <*> ethereumPricesObject .: "thb"
-                                         <*> ethereumPricesObject .: "vnd"
-                                         <*> ethereumPricesObject .: "ils"
-                                         <*> ethereumPricesObject .: "rub"
                                          <*> ethereumPricesObject .: "try"
+                                         <*> ethereumPricesObject .: "usd"
+                                         <*> ethereumPricesObject .: "vnd"
         return $ ConfigResponse addressesObject creditProtocolAddress gasPrice
                                 ethereumPrices weekAgoBlock
 

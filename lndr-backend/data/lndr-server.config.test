@@ -3,9 +3,6 @@ bind-port = 7402
 
 # lndr addresses
 lndr-ucacs {
-    usd = "0x6804f48233f6ff2b468f7636560d525ca951931e"
-    jpy = "0x106c743c55d69afac2c49dae5fa9e75273c3bea4"
-    krw = "0xc643de39dd15b7787d1b87dd48e6e7e2b1a1f118"
     aud = "0x3599a0abda08069e8e66544a2860e628c5dc1190"
     cad = "0xc40aed3a0e5a7996d11802c33190e3cc2a4be054"
     chf = "0xc75dc45521f4dd3852db72a95c581b2fd89992fa"
@@ -14,17 +11,21 @@ lndr-ucacs {
     eur = "0xececfc5436bd8ee0c8e98379f3d99dfde6e15fb9"
     gbp = "0x92571ad90b03ea60419fc66353db9c39ff9db5e1"
     hkd = "0xb52a2db8ae67a51b1906e4b333930641d62272fd"
+    idr = "0xfc0f4fe61f23ca895f7e8a51d4e08462f4926687"
+    ils = "0x77ee746c16a817109567b895ff9b9a75bf354bf4"
+    inr = "0x24c7763f5a10370f5b431926f94daa53398182cc"
+    jpy = "0x106c743c55d69afac2c49dae5fa9e75273c3bea4"
+    krw = "0xc643de39dd15b7787d1b87dd48e6e7e2b1a1f118"
+    myr = "0x79a5f8d6cc432c1f017648c4fae840dff4cfcaf2"
     nok = "0x385540be0f17e1fae8ed83e46f5fb52545dc588b"
     nzd = "0xce12dfd31dbc83bd24af7fd2e193f3073e3b53ec"
-    sek = "0x6fd660b6f92395901544f637e06ca4b67a30f7c9"
-    idr = "0xfc0f4fe61f23ca895f7e8a51d4e08462f4926687"
-    myr = "0x79a5f8d6cc432c1f017648c4fae840dff4cfcaf2"
-    sgd = "0x3ac772c0f927df3c07cd90c17b536fcab86e0a53"
-    thb = "0x9a76e6a7a56b72d8750f00240363dc06d09c7161"
-    vnd = "0x815dcbb2008757a469d0daf8c310fae2fc41e96b"
-    ils = "0x77ee746c16a817109567b895ff9b9a75bf354bf4"
     rub = "0x14eb816e20af23ef81cc1deeba71d8642edcb621"
+    sek = "0x6fd660b6f92395901544f637e06ca4b67a30f7c9"
+    sgd = "0x3ac772c0f927df3c07cd90c17b536fcab86e0a53"
     try = "0xfe2bbfbe30f835096ccbc9c12a38ac749d8402b2"
+    thb = "0x9a76e6a7a56b72d8750f00240363dc06d09c7161"
+    usd = "0x6804f48233f6ff2b468f7636560d525ca951931e"
+    vnd = "0x815dcbb2008757a469d0daf8c310fae2fc41e96b"
 }
 
 # Credit Protocol contract address, called for 'issueCredit' among others

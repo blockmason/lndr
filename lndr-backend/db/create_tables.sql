@@ -58,7 +58,8 @@ CREATE TABLE push_data (
 );
 
 CREATE TABLE paypal_requests (
-    friend      CHAR(40) PRIMARY KEY,
+    friend      CHAR(40),
     requestor   CHAR(40),
-    created_at  TIMESTAMP DEFAULT now()
+    created_at  TIMESTAMP DEFAULT now(),
+    PRIMARY KEY (friend, requestor)
 );

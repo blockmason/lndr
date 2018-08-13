@@ -19,6 +19,7 @@ lndr-ucacs {
     myr = "0x79a5f8d6cc432c1f017648c4fae840dff4cfcaf2"
     nok = "0x385540be0f17e1fae8ed83e46f5fb52545dc588b"
     nzd = "0xce12dfd31dbc83bd24af7fd2e193f3073e3b53ec"
+    pln = "0xc552e50a5829507bd575063c0c77dbee49c9fe58"
     rub = "0x14eb816e20af23ef81cc1deeba71d8642edcb621"
     sek = "0x6fd660b6f92395901544f637e06ca4b67a30f7c9"
     sgd = "0x3ac772c0f927df3c07cd90c17b536fcab86e0a53"

@@ -39,6 +39,7 @@ loadConfig configPath = do
                                       , ("MYR", loadEntry "lndr-ucacs.myr")
                                       , ("NOK", loadEntry "lndr-ucacs.nok")
                                       , ("NZD", loadEntry "lndr-ucacs.nzd")
+                                      , ("PLN", loadEntry "lndr-ucacs.pln")
                                       , ("RUB", loadEntry "lndr-ucacs.rub")
                                       , ("SEK", loadEntry "lndr-ucacs.sek")
                                       , ("SGD", loadEntry "lndr-ucacs.sgd")

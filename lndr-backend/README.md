@@ -263,13 +263,13 @@ Clients must supply the following data
 -
 
 ```javascript
-{"lndrAddresses":{"USD":"0x7899b83071d9704af0b132859a04bb1698a3acaf"},"creditProtocolAddress":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","gasPrice":1000,"ethereumPrices":{"usd":420.0,"jpy":45000.0,"krw":460000.0,"dkk":2500.0,"chf":400.0,"cny":2600.0,"eur":340.0,"aud":550.0,"gbp":300.0,"hkd":3000,"cad":540.0,"nok":3250.0,"sek":3450.0,"nzd":575.0, "inr":28000},"weekAgoBlock":5122553}
+{"lndrAddresses":{"USD":"0x7899b83071d9704af0b132859a04bb1698a3acaf"},"creditProtocolAddress":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","gasPrice":1000,"ethereumPrices":{"usd":420.0,"jpy":45000.0,"krw":460000.0,"dkk":2500.0,"chf":400.0,"cny":2600.0,"eur":340.0,"aud":550.0,"gbp":300.0,"hkd":3000,"cad":540.0,"nok":3250.0,"sek":3450.0,"nzd":575.0, "pln":1430, "inr":28000},"weekAgoBlock":5122553}
 ```
 
 -
 
 ```javascript
-{"lndrAddresses":{"USD":"0x7899b83071d9704af0b132859a04bb1698a3acaf"},"creditProtocolAddress":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","gasPrice":1000,"ethereumPrices":{"usd":420.0,"jpy":45000.0,"krw":460000.0,"dkk":2500.0,"chf":400.0,"cny":2600.0,"eur":340.0,"aud":550.0,"gbp":300.0,"hkd":3000,"cad":540.0,"nok":3250.0,"sek":3450.0,"nzd":575.0, "inr":28000},"weekAgoBlock":5122553}
+{"lndrAddresses":{"USD":"0x7899b83071d9704af0b132859a04bb1698a3acaf"},"creditProtocolAddress":"0x6a362e5cee1cf5a5408ff1e12b0bc546618dffcb","gasPrice":1000,"ethereumPrices":{"usd":420.0,"jpy":45000.0,"krw":460000.0,"dkk":2500.0,"chf":400.0,"cny":2600.0,"eur":340.0,"aud":550.0,"gbp":300.0,"hkd":3000,"cad":540.0,"nok":3250.0,"sek":3450.0,"nzd":575.0, "pln":1430 "inr":28000},"weekAgoBlock":5122553}
 ```
 
 ## GET /counterparties/:user

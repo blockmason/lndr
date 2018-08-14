@@ -15,6 +15,7 @@ const LndrGBP = artifacts.require('./LndrGBP.sol');
 const LndrHKD = artifacts.require('./LndrHKD.sol');
 const LndrNOK = artifacts.require('./LndrNOK.sol');
 const LndrNZD = artifacts.require('./LndrNZD.sol');
+const LndrPLN = artifacts.require('./LndrPLN.sol');
 const LndrSEK = artifacts.require('./LndrSEK.sol');
 const LndrIDR = artifacts.require('./LndrIDR.sol');
 const LndrMYR = artifacts.require('./LndrMYR.sol');
@@ -40,6 +41,7 @@ module.exports = async function (deployer, network, accounts) {
         const hkd = web3.fromAscii("HKD");
         const nok = web3.fromAscii("NOK");
         const nzd = web3.fromAscii("NZD");
+        const pln = web3.fromAscii("PLN");
         const sek = web3.fromAscii("SEK");
         const idr = web3.fromAscii("IDR");
         const myr = web3.fromAscii("MYR");
@@ -65,6 +67,7 @@ module.exports = async function (deployer, network, accounts) {
         var lndrHkdContract;
         var lndrNokContract;
         var lndrNzdContract;
+        var lndrPlnContract;
         var lndrSekContract;
         var lndrIdrContract;
         var lndrMyrContract;
@@ -96,6 +99,7 @@ module.exports = async function (deployer, network, accounts) {
         await deployer.deploy(LndrHKD, {from: web3.eth.accounts[0]});
         await deployer.deploy(LndrNOK, {from: web3.eth.accounts[0]});
         await deployer.deploy(LndrNZD, {from: web3.eth.accounts[0]});
+        await deployer.deploy(LndrPLN, {from: web3.eth.accounts[0]});
         await deployer.deploy(LndrSEK, {from: web3.eth.accounts[0]});
         await deployer.deploy(LndrIDR, {from: web3.eth.accounts[0]});
         await deployer.deploy(LndrMYR, {from: web3.eth.accounts[0]});
@@ -118,6 +122,7 @@ module.exports = async function (deployer, network, accounts) {
         lndrHkdContract = await LndrHKD.deployed();
         lndrNokContract = await LndrNOK.deployed();
         lndrNzdContract = await LndrNZD.deployed();
+        lndrPlnContract = await LndrPLN.deployed();
         lndrSekContract = await LndrSEK.deployed();
         lndrIdrContract = await LndrIDR.deployed();
         lndrMyrContract = await LndrMYR.deployed();
@@ -184,6 +189,10 @@ module.exports = async function (deployer, network, accounts) {
                                                        , {from: web3.eth.accounts[0]});
         await creditProtocolContract.createAndStakeUcac( lndrNzdContract.address
                                                        , nzd
+                                                       , web3.toWei(100)
+                                                       , {from: web3.eth.accounts[0]});
+        await creditProtocolContract.createAndStakeUcac( lndrPlnContract.address
+                                                       , pln
                                                        , web3.toWei(100)
                                                        , {from: web3.eth.accounts[0]});
         await creditProtocolContract.createAndStakeUcac( lndrSekContract.address

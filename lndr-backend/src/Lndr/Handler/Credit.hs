@@ -187,6 +187,7 @@ calculateSettlementCreditRecord config cr@(CreditRecord _ _ amount _ _ _ _ _ uca
             Just "MYR" -> myr prices * priceAdjustmentForCents
             Just "NOK" -> nok prices * priceAdjustmentForCents
             Just "NZD" -> nzd prices * priceAdjustmentForCents
+            Just "PLN" -> pln prices * priceAdjustmentForCents
             Just "RUB" -> rub prices * priceAdjustmentForCents
             Just "SEK" -> sek prices * priceAdjustmentForCents
             Just "SGD" -> sgd prices * priceAdjustmentForCents

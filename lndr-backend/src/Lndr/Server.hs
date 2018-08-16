@@ -73,6 +73,7 @@ type LndrAPI =
                :> Get '[JSON] UserInfo
    :<|> "friends" :> Capture "user" Address :> Get '[JSON] [UserInfo]
    :<|> "friend_requests" :> Capture "user" Address :> Get '[JSON] [UserInfo]
+   :<|> "outbound_friend_requests" :> Capture "user" Address :> Get '[JSON] [UserInfo]
    :<|> "add_friends" :> Capture "user" Address
                       :> ReqBody '[JSON] [Address]
                       :> PostNoContent '[JSON] NoContent
@@ -114,7 +115,8 @@ server = transactionsHandler
     :<|> photoUploadHandler
     :<|> userHandler
     :<|> friendHandler
-    :<|> friendRequestsHandler
+    :<|> inboundFriendRequestsHandler
+    :<|> outboundFriendRequestsHandler
     :<|> addFriendsHandler
     :<|> removeFriendsHandler
     :<|> counterpartiesHandler

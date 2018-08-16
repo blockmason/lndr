@@ -56,10 +56,16 @@ friendHandler addr = do
     liftIO . withResource pool $ Db.lookupFriends addr
 
 
-friendRequestsHandler :: Address -> LndrHandler [UserInfo]
-friendRequestsHandler address = do
+inboundFriendRequestsHandler :: Address -> LndrHandler [UserInfo]
+inboundFriendRequestsHandler address = do
     pool <- asks dbConnectionPool
-    liftIO . withResource pool $ Db.lookupFriendRequests address
+    liftIO . withResource pool $ Db.lookupInboundFriendRequests address
+    
+    
+outboundFriendRequestsHandler :: Address -> LndrHandler [UserInfo]
+outboundFriendRequestsHandler address = do
+    pool <- asks dbConnectionPool
+    liftIO . withResource pool $ Db.lookupOutboundFriendRequests address
 
 
 userHandler :: Maybe EmailAddress -> Maybe Nick -> LndrHandler UserInfo

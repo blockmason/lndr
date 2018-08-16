@@ -221,6 +221,7 @@ data EthereumPrices = EthereumPrices { aud :: Double --
                                      , myr :: Double
                                      , nok :: Double
                                      , nzd :: Double
+                                     , pln :: Double
                                      , rub :: Double
                                      , sek :: Double
                                      , sgd :: Double
@@ -232,7 +233,7 @@ data EthereumPrices = EthereumPrices { aud :: Double --
 $(deriveToJSON defaultOptions ''EthereumPrices)
 
 instance Default EthereumPrices where
-    def = EthereumPrices 675 650 500 3400 3200 428 380 3900 7265 1830 34475 55620 564600 2030 4100 735 31665 4410 680 17000 2440 500 11625
+    def = EthereumPrices 675 650 500 3400 3200 428 380 3900 7265 1830 34475 55620 564600 2030 4100 735 1890 31665 4410 680 17000 2440 500 11625
 
 instance FromJSON EthereumPrices where
         parseJSON (Object v) = do
@@ -254,6 +255,7 @@ instance FromJSON EthereumPrices where
             myr <- read <$> ratesObject .: "MYR"
             nok <- read <$> ratesObject .: "NOK"
             nzd <- read <$> ratesObject .: "NZD"
+            pln <- read <$> ratesObject .: "PLN"
             rub <- read <$> ratesObject .: "RUB"
             sek <- read <$> ratesObject .: "SEK"
             sgd <- read <$> ratesObject .: "SGD"
@@ -261,7 +263,7 @@ instance FromJSON EthereumPrices where
             try <- read <$> ratesObject .: "TRY"
             usd <- read <$> ratesObject .: "USD"
             vnd <- read <$> ratesObject .: "VND"
-            return $ EthereumPrices aud cad chf cny dkk eur gbp hkd idr ils inr jpy krw myr nok nzd rub sek sgd thb try usd vnd
+            return $ EthereumPrices aud cad chf cny dkk eur gbp hkd idr ils inr jpy krw myr nok nzd pln rub sek sgd thb try usd vnd
 
 data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Address
                                  , bindAddress              :: !Text
@@ -324,6 +326,7 @@ instance FromJSON ConfigResponse where
                                          <*> ethereumPricesObject .: "myr"
                                          <*> ethereumPricesObject .: "nok"
                                          <*> ethereumPricesObject .: "nzd"
+                                         <*> ethereumPricesObject .: "pln"
                                          <*> ethereumPricesObject .: "rub"
                                          <*> ethereumPricesObject .: "sek"
                                          <*> ethereumPricesObject .: "sgd"

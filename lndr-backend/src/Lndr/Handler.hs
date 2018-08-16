@@ -25,7 +25,8 @@ module Lndr.Handler (
     , nickLookupHandler
     , nickSearchHandler
     , friendHandler
-    , friendRequestsHandler
+    , inboundFriendRequestsHandler
+    , outboundFriendRequestsHandler
     , addFriendsHandler
     , removeFriendsHandler
     , userHandler

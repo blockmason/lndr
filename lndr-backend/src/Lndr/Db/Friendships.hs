@@ -22,9 +22,14 @@ lookupFriends addr conn =
     query conn "SELECT inbound.origin, nicknames.nickname FROM friendships inbound INNER JOIN friendships outbound ON inbound.friend = outbound.origin AND inbound.origin = outbound.friend LEFT JOIN nicknames ON nicknames.address = inbound.origin WHERE inbound.friend = ?" (Only addr) :: IO [UserInfo]
 
 
-lookupFriendRequests :: Address -> Connection -> IO [UserInfo]
-lookupFriendRequests addr conn =
+lookupInboundFriendRequests :: Address -> Connection -> IO [UserInfo]
+lookupInboundFriendRequests addr conn =
     query conn "SELECT inbound.origin, nicknames.nickname FROM friendships inbound LEFT JOIN friendships outbound ON inbound.friend = outbound.origin AND inbound.origin = outbound.friend LEFT JOIN nicknames ON nicknames.address = inbound.origin WHERE inbound.friend = ? AND outbound.friend IS NULL" (Only addr) :: IO [UserInfo]
+
+
+lookupOutboundFriendRequests :: Address -> Connection -> IO [UserInfo]
+lookupOutboundFriendRequests addr conn =
+    query conn "SELECT outbound.friend, nicknames.nickname FROM friendships outbound LEFT JOIN friendships inbound ON outbound.friend = inbound.origin AND outbound.origin = inbound.friend LEFT JOIN nicknames ON nicknames.address = outbound.friend WHERE outbound.origin = ? AND inbound.friend IS NULL" (Only addr) :: IO [UserInfo]
 
 
 sentFriendRequestTo :: Address -> [Address] -> Connection -> IO [Address]

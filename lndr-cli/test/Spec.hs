@@ -171,6 +171,14 @@ nickTest = do
     friends <- getFriendRequests testUrl testAddress3
     assertEqual "requesting user does not have friend request from target user" [] friends
 
+    -- verify that user2 does not have an outbound friend request to user1
+    friends <- getOutboundFriendRequests testUrl testAddress4
+    assertEqual "target user does not have outbound friend request from requesting user" [] friends
+
+    -- verify that user1 has an outbound friend request to user2
+    friends <- getOutboundFriendRequests testUrl testAddress3
+    assertEqual "requesting user has an outbound friend request to target user" [UserInfo testAddress4 (Just testNick1)] friends
+
     -- user2 confirms user1 as a friend
     httpCode <- addFriend testUrl testAddress4 testAddress3
     assertEqual "target user confirms friend request" 204 httpCode

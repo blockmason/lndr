@@ -46,6 +46,10 @@ module Lndr.CLI.Actions (
     , retrievePayPalRequests
     , deletePayPalRequest
 
+    -- * kyc requests
+    , verifyIdentity
+    , verifyIdentityCallback
+
     -- * notifications-related requests
     , registerChannel
     , deleteChannel
@@ -479,3 +483,19 @@ retrievePayPalRequests :: String -> Address -> IO [PayPalRequestPair]
 retrievePayPalRequests url addr = do
     req <- HTTP.parseRequest $ url ++ "/request_paypal/" ++ T.unpack (Addr.toText addr)
     HTTP.getResponseBody <$> HTTP.httpJSON req
+
+
+verifyIdentity :: String -> Text -> IdentityVerificationRequest -> IO Int
+verifyIdentity url sk idenVerReq = do
+    initReq <- HTTP.parseRequest $ url ++ "/verify_identity"
+    let Right signature = generateSignature idenVerReq sk
+        req = HTTP.setRequestBodyJSON (idenVerReq { identitySignature = signature }) $
+                HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req
+
+
+verifyIdentityCallback :: String -> IdentityVerificationStatus -> IO Int
+verifyIdentityCallback url idenVerStat = do
+    initReq <- HTTP.parseRequest $ url ++ "/verify_identity_callback"
+    let req = HTTP.setRequestBodyJSON idenVerStat $ HTTP.setRequestMethod "POST" initReq
+    HTTP.getResponseStatusCode <$> HTTP.httpNoBody req

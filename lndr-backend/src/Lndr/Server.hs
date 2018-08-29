@@ -89,6 +89,9 @@ type LndrAPI =
                         :> PostNoContent '[JSON] NoContent
    :<|> "unregister_push" :> ReqBody '[JSON] PushRequest
                         :> PostNoContent '[JSON] NoContent
+   :<|> "verify_identity" :> ReqBody '[JSON] IdentityVerificationRequest :> PostNoContent '[JSON] NoContent
+   :<|> "verify_identity_callback" :> ReqBody '[JSON] IdentityVerificationStatus :> PostNoContent '[JSON] NoContent
+--    :<|> "check_verification_status" :> ReqBody '[JSON] VerificationStatusRequest :> Get '[JSON] String
    :<|> "config" :> Get '[JSON] ConfigResponse
    :<|> "docs" :> Raw
 
@@ -124,6 +127,9 @@ server = transactionsHandler
     :<|> twoPartyBalanceHandler
     :<|> registerPushHandler
     :<|> deletePushHandler
+    :<|> verifyIdentityHandler
+    :<|> verifyIdentityCallbackHandler
+    -- :<|> checkIdentityVerificationHandler
     :<|> configHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =

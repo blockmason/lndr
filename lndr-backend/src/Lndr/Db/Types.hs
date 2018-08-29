@@ -118,3 +118,14 @@ instance ToRow IssueCreditLog where
         , toField ucac
         , toField creditor
         ]
+
+instance ToRow VerificationStatusEntry where
+    toRow entry@(VerificationStatusEntry user applicantId status) = 
+        [ toField user
+        , toField applicantId
+        , toField status
+        ]
+
+instance FromRow VerificationStatusEntry where
+    fromRow =
+        VerificationStatusEntry <$> field <*> field <*> field

@@ -67,6 +67,8 @@ loadConfig configPath = do
                           (loadEntry "aws.secret-access-key")
                           (loadEntry "notifications.api-url")
                           (loadEntry "notifications.api-key")
+                          (loadEntry "sumsub.api-url")
+                          (loadEntry "sumsub.api-key")
                           (loadEntry "web3-url")
                           privateKey
                           execAddress

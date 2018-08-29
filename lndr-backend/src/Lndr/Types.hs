@@ -26,11 +26,25 @@ module Lndr.Types
     , PayPalRequest(..)
     , PayPalRequestPair(..)
 
-    -- * push notifications-relatd types
+    -- * push notifications-related types
     , PushRequest(..)
     , Notification(..)
     , NotificationAction(..)
     , DevicePlatform(..)
+
+    -- * identity verification types
+    , IdentityVerificationRequest(..)
+    , IdentityVerificationInfo(..)
+    , IdentityAddress(..)
+    , IdentityDocument(..)
+    , IdentityStatusReview(..)
+    , IdentityVerificationStatus(..)
+    , VerificationStatusRequest(..)
+    , VerificationStatusEntry(..)
+    , IdentityResponseInfo(..)
+    , IdentityVerificationResponse(..)
+    , RequiredIdentityDocuments(..)
+    , IdentityDocumentType(..)
 
     -- * network statistics api response types
     , EthereumPrices(..)
@@ -286,6 +300,8 @@ data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Addr
                                  , awsSecretAccessKey       :: !ByteString
                                  , notificationsApiUrl      :: !String
                                  , notificationsApiKey      :: !ByteString
+                                 , sumsubApiUrl      :: !String
+                                 , sumsubApiKey      :: !String
                                  , web3Url                  :: !String
                                  , executionPrivateKey      :: !Text
                                  , executionAddress         :: !Address
@@ -369,3 +385,103 @@ data PayPalRequestPair = PayPalRequestPair { friend :: UserInfo
                                            , requestor :: UserInfo
                                            } deriving Show
 $(deriveJSON defaultOptions ''PayPalRequestPair)
+
+data IdentityAddress = IdentityAddress { street :: Text	-- String	No	3-letter country code
+                                       , flatNumber :: Text	-- String	No	Flat or apartment number
+                                       , town :: Text	-- String	No	Town or city name
+                                       , state :: Text	-- String	No	State name if applicable
+                                       , postCode :: Text	-- String	No	Postal code
+                                       , country :: Text	-- String	No	Street name
+                                       } deriving Show
+$(deriveJSON defaultOptions ''IdentityAddress)
+
+data IdentityDocument = IdentityDocument { idDocType :: Text -- String	Yes	See supported document types below
+                                         , idDocSubType :: Text -- String	No	FRONT_SIDE, BACK_SIDE or null
+                                         , country :: Text -- String	Yes	3-letter country code (Wikipedia)
+                                         , firstName :: Text -- String	No	First name
+                                         , middleName :: Text -- String	No	Middle name
+                                         , lastName :: Text -- String	No	Last name
+                                        --  , issuedDate :: Text -- String	No	Issued date (yyyy-MM-dd)
+                                        --  , validUntil :: Text -- String	No	Valid until date (yyyy-MM-dd)
+                                         } deriving Show
+$(deriveJSON defaultOptions ''IdentityDocument)
+
+data IdentityDocumentType = IdentityDocumentType { idDocSetType :: Text
+                                                 , types :: [Text]
+                                                 , subTypes :: Maybe [Text]
+                                                 } deriving Show
+$(deriveJSON defaultOptions ''IdentityDocumentType)
+
+data RequiredIdentityDocuments = RequiredIdentityDocuments { country :: Text
+                                                           , docSets :: [IdentityDocumentType]
+                                                           } deriving Show
+$(deriveJSON defaultOptions ''RequiredIdentityDocuments)
+
+data IdentityVerificationInfo = IdentityVerificationInfo { country :: Text
+                                           , firstName :: Text
+                                           , middleName :: Text
+                                           , lastName :: Text
+                                           , phone :: Text
+                                           , dob :: Text
+                                           , nationality :: Text
+                                           , addresses :: [IdentityAddress]
+                                           , idDocs :: [IdentityDocument]
+                                           , requiredIdDocs :: RequiredIdentityDocuments
+                                           } deriving Show
+$(deriveJSON defaultOptions ''IdentityVerificationInfo)
+
+data IdentityVerificationRequest = IdentityVerificationRequest { email :: EmailAddress
+                                           , externalUserId :: Address
+                                           , info :: IdentityVerificationInfo
+                                           , identitySignature :: Signature
+                                           } deriving Show
+$(deriveJSON defaultOptions ''IdentityVerificationRequest)
+
+data IdentityResponseInfo = IdentityResponseInfo { firstName :: Text --"Serge",
+                                             , middleName :: Text --"Sergeevich",
+                                             , lastName :: Text --"Sergeew",
+                                             , dob :: Text --"2000-03-04",
+                                             , placeOfBirth :: Text --"Saint-Petersburg",
+                                             , country :: Text --"RUS",
+                                             , phone :: Text --"+7-911-2081223"
+                                             } deriving Show
+$(deriveJSON defaultOptions ''IdentityResponseInfo)
+
+data IdentityVerificationResponse = IdentityVerificationResponse { id :: Text--"596eb3c93a0eb985b8ade34d",
+                                            , createdAt :: Text--"2017-07-19 03:20:09",
+                                            , inspectionId :: Text--"596eb3c83a0eb985b8ade349",
+                                            , jobId :: Text--"a8f77946-14ff-4398-aa23-a1027e16f627",
+                                            , info :: IdentityResponseInfo
+                                            , email :: EmailAddress
+                                            }
+$(deriveJSON defaultOptions ''IdentityVerificationResponse)
+
+data IdentityStatusReview = IdentityStatusReview { reviewAnswer :: Text
+                                            , clientComment :: Text
+                                            , moderationComment :: Maybe Text
+                                            , rejectLabels :: Maybe [String]
+                                            , reviewRejectType :: Maybe Text
+                                            } deriving Show
+$(deriveJSON defaultOptions ''IdentityStatusReview)
+
+data IdentityVerificationStatus = IdentityVerificationStatus { applicantId :: Text
+                                            , inspectionId :: Text
+                                            , correlationId :: Text
+                                            , externalUserId :: Address
+                                            , success :: Bool
+                                            , details :: Maybe Text
+                                            , _type :: Text
+                                            , review :: IdentityStatusReview
+                                            } deriving Show
+$(deriveJSON defaultOptions {fieldLabelModifier = \x -> if x == "_type" then "type" else x} ''IdentityVerificationStatus)
+
+data VerificationStatusRequest = VerificationStatusRequest { user :: Address
+                                           , verificationStatusSignature :: Signature
+                                           } deriving Show
+$(deriveJSON defaultOptions ''VerificationStatusRequest)
+
+data VerificationStatusEntry = VerificationStatusEntry { user :: Address
+                                           , sumsubId :: Text
+                                           , status :: Text
+                                           } deriving Show
+$(deriveJSON defaultOptions ''VerificationStatusEntry)

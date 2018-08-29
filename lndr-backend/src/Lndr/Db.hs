@@ -44,22 +44,25 @@ module Lndr.Db (
     , deleteExpiredSettlementsAndAssociatedCredits
     , updateSettlementTxHash
 
-
     -- * 'push_data' table functions
     , insertPushDatum
     , deletePushDatum
     , lookupPushDatumByAddress
-    
 
     -- * 'paypal_requests' table functions
     , insertPayPalRequest
     , deletePayPalRequest
     , lookupPayPalRequestsByAddress
-    ) where
 
+    -- * 'identity_verification' table functions
+    , addVerificationStatus
+    , removeVerificationStatus
+    , lookupVerificationStatus
+    ) where
 
 import           Lndr.Db.Friendships
 import           Lndr.Db.Nicknames
 import           Lndr.Db.PendingCredits
 import           Lndr.Db.PushData
 import           Lndr.Db.VerifiedCredits
+import           Lndr.Db.Identity

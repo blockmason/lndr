@@ -80,3 +80,16 @@ instance VerifiableSignature PayPalRequest where
     generateHash (PayPalRequest friend requestor _) = EU.hashText . T.concat $
         stripHexPrefix <$> [ T.pack (show friend)
                            , T.pack (show requestor) ]
+
+instance VerifiableSignature IdentityVerificationRequest where
+    extractSignature (IdentityVerificationRequest _ _ _ sig) = sig
+
+    generateHash (IdentityVerificationRequest email externalUserId info _) = EU.hashText . T.concat $
+        stripHexPrefix <$> [ T.pack (show externalUserId)
+                           , T.pack (show email) ]
+
+instance VerifiableSignature VerificationStatusRequest where
+    extractSignature (VerificationStatusRequest _ sig) = sig
+
+    generateHash (VerificationStatusRequest addr _) = EU.hashText . T.concat $
+        stripHexPrefix <$> [ T.pack (show addr) ]

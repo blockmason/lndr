@@ -41,7 +41,6 @@ module Lndr.Types
     , IdentityVerificationStatus(..)
     , VerificationStatusRequest(..)
     , VerificationStatusEntry(..)
-    , IdentityResponseInfo(..)
     , IdentityVerificationResponse(..)
     , RequiredIdentityDocuments(..)
     , IdentityDocumentType(..)
@@ -300,8 +299,8 @@ data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Addr
                                  , awsSecretAccessKey       :: !ByteString
                                  , notificationsApiUrl      :: !String
                                  , notificationsApiKey      :: !ByteString
-                                 , sumsubApiUrl      :: !String
-                                 , sumsubApiKey      :: !String
+                                , sumsubApiUrl              :: !String
+                                , sumsubApiKey              :: !String
                                  , web3Url                  :: !String
                                  , executionPrivateKey      :: !Text
                                  , executionAddress         :: !Address
@@ -386,23 +385,19 @@ data PayPalRequestPair = PayPalRequestPair { friend :: UserInfo
                                            } deriving Show
 $(deriveJSON defaultOptions ''PayPalRequestPair)
 
-data IdentityAddress = IdentityAddress { street :: Text	-- String	No	3-letter country code
-                                       , flatNumber :: Text	-- String	No	Flat or apartment number
-                                       , town :: Text	-- String	No	Town or city name
-                                       , state :: Text	-- String	No	State name if applicable
-                                       , postCode :: Text	-- String	No	Postal code
-                                       , country :: Text	-- String	No	Street name
+data IdentityAddress = IdentityAddress { street :: Text
+                                       , flatNumber :: Text
+                                       , town :: Text
+                                       , state :: Text
+                                       , postCode :: Text
+                                       , country :: Text
                                        } deriving Show
 $(deriveJSON defaultOptions ''IdentityAddress)
 
-data IdentityDocument = IdentityDocument { idDocType :: Text -- String	Yes	See supported document types below
-                                         , idDocSubType :: Text -- String	No	FRONT_SIDE, BACK_SIDE or null
-                                         , country :: Text -- String	Yes	3-letter country code (Wikipedia)
-                                         , firstName :: Text -- String	No	First name
-                                         , middleName :: Text -- String	No	Middle name
-                                         , lastName :: Text -- String	No	Last name
-                                        --  , issuedDate :: Text -- String	No	Issued date (yyyy-MM-dd)
-                                        --  , validUntil :: Text -- String	No	Valid until date (yyyy-MM-dd)
+data IdentityDocument = IdentityDocument { idDocType :: Text
+                                         , idDocSubType :: Text
+                                         , country :: Text
+                                         , file :: Maybe Text
                                          } deriving Show
 $(deriveJSON defaultOptions ''IdentityDocument)
 
@@ -426,33 +421,27 @@ data IdentityVerificationInfo = IdentityVerificationInfo { country :: Text
                                            , nationality :: Text
                                            , addresses :: [IdentityAddress]
                                            , idDocs :: [IdentityDocument]
-                                           , requiredIdDocs :: RequiredIdentityDocuments
                                            } deriving Show
 $(deriveJSON defaultOptions ''IdentityVerificationInfo)
 
 data IdentityVerificationRequest = IdentityVerificationRequest { email :: EmailAddress
                                            , externalUserId :: Address
                                            , info :: IdentityVerificationInfo
+                                           , requiredIdDocs :: RequiredIdentityDocuments
                                            , identitySignature :: Signature
                                            } deriving Show
 $(deriveJSON defaultOptions ''IdentityVerificationRequest)
 
-data IdentityResponseInfo = IdentityResponseInfo { firstName :: Text --"Serge",
-                                             , middleName :: Text --"Sergeevich",
-                                             , lastName :: Text --"Sergeew",
-                                             , dob :: Text --"2000-03-04",
-                                             , placeOfBirth :: Text --"Saint-Petersburg",
-                                             , country :: Text --"RUS",
-                                             , phone :: Text --"+7-911-2081223"
-                                             } deriving Show
-$(deriveJSON defaultOptions ''IdentityResponseInfo)
-
 data IdentityVerificationResponse = IdentityVerificationResponse { id :: Text--"596eb3c93a0eb985b8ade34d",
                                             , createdAt :: Text--"2017-07-19 03:20:09",
                                             , inspectionId :: Text--"596eb3c83a0eb985b8ade349",
+                                            , clientId :: Text
                                             , jobId :: Text--"a8f77946-14ff-4398-aa23-a1027e16f627",
-                                            , info :: IdentityResponseInfo
+                                            , externalUserId :: Text
+                                            , info :: IdentityVerificationInfo
                                             , email :: EmailAddress
+                                            , env :: Text
+                                            , requiredIdDocs :: RequiredIdentityDocuments
                                             }
 $(deriveJSON defaultOptions ''IdentityVerificationResponse)
 

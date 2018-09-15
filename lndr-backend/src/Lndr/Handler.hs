@@ -40,7 +40,7 @@ module Lndr.Handler (
     -- * KYC Handlers
     , verifyIdentityHandler
     , verifyIdentityCallbackHandler
-    -- , checkIdentityVerificationHandler
+    , checkIdentityVerificationHandler
 
     -- * Email Handlers
     , emailHandler

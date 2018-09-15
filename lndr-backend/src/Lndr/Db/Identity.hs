@@ -14,8 +14,8 @@ import           Text.EmailAddress
 import qualified Text.EmailAddress as Email
 
 addVerificationStatus :: VerificationStatusEntry -> Connection -> IO Int
-addVerificationStatus statusValues@(VerificationStatusEntry user id status) conn = fromIntegral <$>
-    execute conn "INSERT INTO identity_verification (user, applicant_id, status) VALUES (?,?,?) ON CONFLICT (user) DO UPDATE SET status = EXCLUDED.status" (user, id, status)
+addVerificationStatus statusValues@(VerificationStatusEntry address id status) conn = fromIntegral <$>
+    execute conn "INSERT INTO identity_verification (address, applicant_id, status) VALUES (?,?,?) ON CONFLICT (address) DO UPDATE SET status = EXCLUDED.status" (address, id, status)
 
 
 removeVerificationStatus :: Address -> Connection -> IO Int

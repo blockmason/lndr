@@ -82,11 +82,10 @@ instance VerifiableSignature PayPalRequest where
                            , T.pack (show requestor) ]
 
 instance VerifiableSignature IdentityVerificationRequest where
-    extractSignature (IdentityVerificationRequest _ _ _ sig) = sig
+    extractSignature (IdentityVerificationRequest _ _ _ _ sig) = sig
 
-    generateHash (IdentityVerificationRequest email externalUserId info _) = EU.hashText . T.concat $
-        stripHexPrefix <$> [ T.pack (show externalUserId)
-                           , T.pack (show email) ]
+    generateHash (IdentityVerificationRequest email externalUserId info _ _ ) = EU.hashText . T.concat $
+        stripHexPrefix <$> [ T.pack (show externalUserId) ]
 
 instance VerifiableSignature VerificationStatusRequest where
     extractSignature (VerificationStatusRequest _ sig) = sig

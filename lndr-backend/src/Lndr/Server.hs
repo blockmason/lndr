@@ -49,8 +49,7 @@ import           Text.EmailAddress
 type LndrAPI =
         "transactions" :> QueryParam "user" Address :> Get '[JSON] [IssueCreditLog]
    :<|> "pending_settlements" :> Capture "user" Address :> Get '[JSON] SettlementsResponse
-   :<|> "verify_settlement" :> ReqBody '[JSON] VerifySettlementRequest
-                            :> PostNoContent '[JSON] NoContent
+   :<|> "verify_settlement" :> ReqBody '[JSON] VerifySettlementRequest :> PostNoContent '[JSON] NoContent
    :<|> "tx_hash" :> Capture "hash" Text :> Get '[JSON] Text
    :<|> "pending" :> Capture "user" Address :> Get '[JSON] [CreditRecord]
    :<|> "lend" :> ReqBody '[JSON] CreditRecord :> PostNoContent '[JSON] NoContent
@@ -66,32 +65,21 @@ type LndrAPI =
    :<|> "search_nick" :> Capture "nick" Text :> Get '[JSON] [UserInfo]
    :<|> "email" :> ReqBody '[JSON] EmailRequest :> PostNoContent '[JSON] NoContent
    :<|> "email" :> Capture "user" Address :> Get '[JSON] EmailAddress
-   :<|> "profile_photo" :> ReqBody '[JSON] ProfilePhotoRequest
-                        :> PostNoContent '[JSON] NoContent
-   :<|> "user" :> QueryParam "email" EmailAddress
-               :> QueryParam "nick" Nick
-               :> Get '[JSON] UserInfo
+   :<|> "profile_photo" :> ReqBody '[JSON] ProfilePhotoRequest :> PostNoContent '[JSON] NoContent
+   :<|> "user" :> QueryParam "email" EmailAddress :> QueryParam "nick" Nick :> Get '[JSON] UserInfo
    :<|> "friends" :> Capture "user" Address :> Get '[JSON] [UserInfo]
    :<|> "friend_requests" :> Capture "user" Address :> Get '[JSON] [UserInfo]
    :<|> "outbound_friend_requests" :> Capture "user" Address :> Get '[JSON] [UserInfo]
-   :<|> "add_friends" :> Capture "user" Address
-                      :> ReqBody '[JSON] [Address]
-                      :> PostNoContent '[JSON] NoContent
-   :<|> "remove_friends" :> Capture "user" Address
-                         :> ReqBody '[JSON] [Address]
-                         :> PostNoContent '[JSON] NoContent
+   :<|> "add_friends" :> Capture "user" Address :> ReqBody '[JSON] [Address] :> PostNoContent '[JSON] NoContent
+   :<|> "remove_friends" :> Capture "user" Address :> ReqBody '[JSON] [Address] :> PostNoContent '[JSON] NoContent
    :<|> "counterparties" :> Capture "user" Address :> Get '[JSON] [Address]
-   :<|> "balance" :> Capture "user" Address :> QueryParam "currency" Text
-                  :> Get '[JSON] Integer
-   :<|> "balance" :> Capture "p1" Address :> Capture "p2" Address
-                  :> QueryParam "currency" Text :> Get '[JSON] Integer
-   :<|> "register_push" :> ReqBody '[JSON] PushRequest
-                        :> PostNoContent '[JSON] NoContent
-   :<|> "unregister_push" :> ReqBody '[JSON] PushRequest
-                        :> PostNoContent '[JSON] NoContent
+   :<|> "balance" :> Capture "user" Address :> QueryParam "currency" Text :> Get '[JSON] Integer
+   :<|> "balance" :> Capture "p1" Address :> Capture "p2" Address :> QueryParam "currency" Text :> Get '[JSON] Integer
+   :<|> "register_push" :> ReqBody '[JSON] PushRequest :> PostNoContent '[JSON] NoContent
+   :<|> "unregister_push" :> ReqBody '[JSON] PushRequest :> PostNoContent '[JSON] NoContent
    :<|> "verify_identity" :> ReqBody '[JSON] IdentityVerificationRequest :> PostNoContent '[JSON] NoContent
    :<|> "verify_identity_callback" :> ReqBody '[JSON] IdentityVerificationStatus :> PostNoContent '[JSON] NoContent
---    :<|> "check_verification_status" :> ReqBody '[JSON] VerificationStatusRequest :> Get '[JSON] String
+   :<|> "check_verification_status" :> ReqBody '[JSON] VerificationStatusRequest :> Post '[JSON] VerificationStatusEntry
    :<|> "config" :> Get '[JSON] ConfigResponse
    :<|> "docs" :> Raw
 
@@ -129,7 +117,7 @@ server = transactionsHandler
     :<|> deletePushHandler
     :<|> verifyIdentityHandler
     :<|> verifyIdentityCallbackHandler
-    -- :<|> checkIdentityVerificationHandler
+    :<|> checkIdentityVerificationHandler
     :<|> configHandler
     :<|> Tagged serveDocs
     where serveDocs _ respond =

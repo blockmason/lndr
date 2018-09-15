@@ -110,12 +110,11 @@ instance ToSample IdentityAddress where
 
 instance ToSample IdentityDocument where
     toSamples _ = singleSample $
-        IdentityDocument "idDocType" "idDocSubType" "country" "firstName" "middleName" "lastName"
+        IdentityDocument "idDocType" "idDocSubType" "country" (Just "file")
 
 instance ToSample IdentityVerificationInfo where
     toSamples _ = singleSample $
         IdentityVerificationInfo "country" "firstName" "middleName" "lastName" "phone" "dob" "nationality" [] []
-        (RequiredIdentityDocuments "country" [] )
 
 instance ToSample RequiredIdentityDocuments where
     toSamples _ = singleSample $
@@ -128,8 +127,9 @@ instance ToSample IdentityDocumentType where
 instance ToSample IdentityVerificationRequest where
     toSamples _ = singleSample $
         IdentityVerificationRequest (fromJust $ Email.emailAddressFromText "email@email.com")
-            "0xf357c689de57464713697787d4c40a78feda913162911e191e545343ff769999"
-            (IdentityVerificationInfo "country" "firstName" "middleName" "lastName" "phone" "dob" "nationality" [] [] (RequiredIdentityDocuments "country" [] ))
+            "0x11edd217a875063583dd1b638d16810c5d34d54b"
+            (IdentityVerificationInfo "country" "firstName" "middleName" "lastName" "phone" "dob" "nationality" [] [] )
+            (RequiredIdentityDocuments "country" [] )
             "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
 
 instance ToSample IdentityStatusReview where
@@ -138,27 +138,24 @@ instance ToSample IdentityStatusReview where
 
 instance ToSample IdentityVerificationStatus where
     toSamples _ = singleSample $
-        IdentityVerificationStatus "applicantId" "inspectionId" "correlationId" "0xf357c689de57464713697787d4c40a78feda913162911e191e545343ff769999" True (Just "details")
+        IdentityVerificationStatus "applicantId" "inspectionId" "correlationId" "0x11edd217a875063583dd1b638d16810c5d34d54b" True (Just "details")
         "_type" (IdentityStatusReview "reviewAnswer" "clientComment" (Just "moderationComment") (Just ["rejectLabels"]) (Just "reviewRejectType") )
 
 instance ToSample VerificationStatusRequest where
     toSamples _ = singleSample $ 
-        VerificationStatusRequest "0xf357c689de57464713697787d4c40a78feda913162911e191e545343ff769999"
+        VerificationStatusRequest "0x11edd217a875063583dd1b638d16810c5d34d54b"
         "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
 
 instance ToSample VerificationStatusEntry where
     toSamples _ = singleSample $
-        VerificationStatusEntry "0xf357c689de57464713697787d4c40a78feda913162911e191e545343ff769999" "bob" "Good"
-
-instance ToSample IdentityResponseInfo where
-    toSamples _ = singleSample $
-        IdentityResponseInfo "firstName" "middleName" "lastName" "dob" "placeOfBirth" "country" "phone"
+        VerificationStatusEntry "0x11edd217a875063583dd1b638d16810c5d34d54b" "bob" "Good"
 
 instance ToSample IdentityVerificationResponse where
     toSamples _ = singleSample $
-        IdentityVerificationResponse "id" "createdAt" "inspectionId" "jobId"
-        (IdentityResponseInfo "firstName" "middleName" "lastName" "dob" "placeOfBirth" "country" "phone")
-        (fromJust $ Email.emailAddressFromText "email@email.com")
+        IdentityVerificationResponse "id" "createdAt" "inspectionId" "clientId" "jobId" "0x11edd217a875063583dd1b638d16810c5d34d54b"
+        (IdentityVerificationInfo "country" "firstName" "middleName" "lastName" "phone" "dob" "nationality" [] [] )
+        (fromJust $ Email.emailAddressFromText "email@email.com") "env"
+        (RequiredIdentityDocuments "country" [] )
 
 instance ToSample ProfilePhotoRequest where
     toSamples _ = singleSample $ ProfilePhotoRequest "2394" "239048"

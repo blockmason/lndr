@@ -5,12 +5,15 @@ module Lndr.IdentityVerification where
 import qualified Data.Map            as M
 import           Data.Text                       (Text)
 import qualified Data.Text                       as T
-import qualified Data.Text.Encoding              as T
+import qualified Data.Text.Encoding              as TE
+import qualified Data.ByteString.Base64  as B64
+import qualified Data.ByteString.Char8   as BS
 import           Lndr.Types
-import qualified Network.HTTP.Client as HTTP (applyBasicAuth)
+import qualified Network.HTTP.Client as HTTP (applyBasicAuth, RequestBody(RequestBodyBS))
 import qualified Network.HTTP.Simple as HTTP
 import qualified Network.HTTP.Types  as HTTP (hAccept)
-
+import qualified Network.HTTP.Client.MultipartFormData as LM
+import           System.Log.FastLogger
 
 sendVerificationRequest :: ServerConfig -> IdentityVerificationRequest -> IO IdentityVerificationResponse
 sendVerificationRequest config reqInfo = do
@@ -19,6 +22,19 @@ sendVerificationRequest config reqInfo = do
                     HTTP.setRequestBodyJSON reqInfo $ HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseBody <$> HTTP.httpJSON req
     where acceptContent = "application/json"
+
+
+sendVerificationDocument :: LoggerSet -> ServerConfig -> Text -> IdentityDocument -> IO IdentityDocument
+sendVerificationDocument loggerSet config sumsubId idenDoc@(IdentityDocument idDocType idDocSubType country (Just file)) = do
+    let content = B64.decodeLenient $ TE.encodeUtf8 file
+        metadata = foldr1 T.append ["{\"idDocType\":\"", idDocType, "\",\"idDocSubType\":\"", idDocSubType, "\",\"country\":\"", country, "\"}"]
+  
+    -- pushLogStrLn loggerSet . toLogStr $ metadata
+
+    initReq <- HTTP.parseRequest $ (sumsubApiUrl config) ++ "/resources/applicants/" ++ T.unpack sumsubId ++ "/info/idDoc?key=" ++ (sumsubApiKey config)
+    bodyReq <- LM.formDataBody [ LM.partBS "metadata" $ TE.encodeUtf8 metadata
+        , LM.partFileRequestBody "content" "image.jpg" $ HTTP.RequestBodyBS content ] initReq
+    HTTP.getResponseBody <$> HTTP.httpJSON bodyReq
 
 
 getVerificationStatus :: ServerConfig -> Text -> IO IdentityVerificationStatus

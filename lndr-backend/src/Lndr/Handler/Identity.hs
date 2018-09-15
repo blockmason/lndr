@@ -28,11 +28,13 @@ import           Text.EmailAddress
 import           System.Log.FastLogger
 
 verifyIdentityHandler :: IdentityVerificationRequest -> LndrHandler NoContent
-verifyIdentityHandler req@(IdentityVerificationRequest email addr info signature) = do
+verifyIdentityHandler req@(IdentityVerificationRequest email addr info requiredDocs signature) = do
+  unless (Right addr == recoverSigner req) $ throwError (err401 {errBody = "Bad signature."})
   (ServerState pool configTVar loggerSet) <- ask
   config <- liftIO $ readTVarIO configTVar
-  
   response <- liftIO $ sendVerificationRequest config req
+
+  liftIO . mapM (\doc -> sendVerificationDocument loggerSet config (Types.id response) doc) $ idDocs info
   
   -- store in db
   liftIO . withResource pool . Db.addVerificationStatus $ VerificationStatusEntry addr (Types.id response) ""
@@ -49,6 +51,7 @@ verifyIdentityCallbackHandler status@(IdentityVerificationStatus applicantId _ _
 
 checkIdentityVerificationHandler :: VerificationStatusRequest -> LndrHandler VerificationStatusEntry
 checkIdentityVerificationHandler req@(VerificationStatusRequest addr sig) = do
+  unless (Right addr == recoverSigner req) $ throwError (err401 {errBody = "Bad signature."})
   (ServerState pool configTVar loggerSet) <- ask
   config <- liftIO $ readTVarIO configTVar
   -- check db for status entry

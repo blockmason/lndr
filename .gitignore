@@ -6,3 +6,4 @@ lndr-server.config
 /lndr-backend/data/lndr-server.dev.config
 /lndr-server
 .stack-work/
+run-dev.sh

@@ -69,6 +69,7 @@ loadConfig configPath = do
                           (loadEntry "notifications.api-key")
                           (loadEntry "sumsub.api-url")
                           (loadEntry "sumsub.api-key")
+                          (loadEntry "sumsub.api-callback-secret")
                           (loadEntry "web3-url")
                           privateKey
                           execAddress

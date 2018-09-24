@@ -44,6 +44,7 @@ module Lndr.Types
     , IdentityVerificationResponse(..)
     , RequiredIdentityDocuments(..)
     , IdentityDocumentType(..)
+    , VerificationMetaData(..)
 
     -- * network statistics api response types
     , EthereumPrices(..)
@@ -299,8 +300,9 @@ data ServerConfig = ServerConfig { lndrUcacAddrs            :: B.Bimap Text Addr
                                  , awsSecretAccessKey       :: !ByteString
                                  , notificationsApiUrl      :: !String
                                  , notificationsApiKey      :: !ByteString
-                                , sumsubApiUrl              :: !String
-                                , sumsubApiKey              :: !String
+                                 , sumsubApiUrl             :: !String
+                                 , sumsubApiKey             :: !String
+                                 , sumsubApiCallbackSecret  :: !String
                                  , web3Url                  :: !String
                                  , executionPrivateKey      :: !Text
                                  , executionAddress         :: !Address
@@ -456,6 +458,7 @@ $(deriveJSON defaultOptions ''IdentityStatusReview)
 data IdentityVerificationStatus = IdentityVerificationStatus { applicantId :: Text
                                             , inspectionId :: Text
                                             , correlationId :: Text
+                                            , jobId :: Text
                                             , externalUserId :: Address
                                             , success :: Bool
                                             , details :: Maybe Text
@@ -474,3 +477,9 @@ data VerificationStatusEntry = VerificationStatusEntry { user :: Address
                                            , status :: Text
                                            } deriving Show
 $(deriveJSON defaultOptions ''VerificationStatusEntry)
+
+data VerificationMetaData = VerificationMetaData { idDocType :: Text
+                                         , idDocSubType :: Text
+                                         , country :: Text
+                                         } deriving Show
+$(deriveJSON defaultOptions ''VerificationMetaData)

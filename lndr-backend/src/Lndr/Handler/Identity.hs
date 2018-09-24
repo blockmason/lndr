@@ -9,11 +9,16 @@ import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Resource
 import qualified Data.ByteString.Base64  as B64
+import qualified Data.ByteString.Base16  as B16
 import qualified Data.ByteString.Lazy    as LBS
+import qualified Data.ByteString.Char8   as BS8
 import           Data.Pool               (withResource)
 import           Data.Text               (Text)
 import qualified Data.Text               as T
-import qualified Data.Text.Encoding      as T
+import qualified Data.Text.Encoding      as TE
+import qualified Data.Aeson              as A
+import qualified Data.HexString          as H
+import qualified Crypto.Hash.SHA1        as SHA
 import qualified Lndr.Db                 as Db
 import           Lndr.Handler.Types
 import           Lndr.IdentityVerification
@@ -42,9 +47,16 @@ verifyIdentityHandler req@(IdentityVerificationRequest email addr info requiredD
   pure NoContent
 
 
-verifyIdentityCallbackHandler :: IdentityVerificationStatus -> LndrHandler NoContent
-verifyIdentityCallbackHandler status@(IdentityVerificationStatus applicantId _ _ addr _ _ _ rev) = do
+verifyIdentityCallbackHandler :: Maybe Text -> IdentityVerificationStatus -> LndrHandler NoContent
+verifyIdentityCallbackHandler Nothing status@(IdentityVerificationStatus applicantId _ _ _ addr _ _ _ rev) = do
+  throwError (err401 {errBody = "No digest parameter."})
+verifyIdentityCallbackHandler (Just digest) status@(IdentityVerificationStatus applicantId _ _ _ addr _ _ _ rev) = do
   (ServerState pool configTVar loggerSet) <- ask
+  config <- liftIO $ readTVarIO configTVar
+
+  let computedDigest = TE.decodeUtf8 $ B16.encode $ SHA.hmac (BS8.pack $ sumsubApiCallbackSecret config) (LBS.toStrict . A.encode $ A.toJSON status)
+  unless (digest == computedDigest) $ throwError (err401 {errBody = "Digest parameter does not match message body."})
+
   liftIO . withResource pool . Db.addVerificationStatus $ VerificationStatusEntry addr applicantId $ reviewAnswer rev
   pure NoContent
 

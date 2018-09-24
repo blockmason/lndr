@@ -8,6 +8,7 @@ import qualified Data.Text                       as T
 import qualified Data.Text.Encoding              as TE
 import qualified Data.ByteString.Base64  as B64
 import qualified Data.ByteString.Char8   as BS
+import qualified Data.Aeson as A
 import           Lndr.Types
 import qualified Network.HTTP.Client as HTTP (applyBasicAuth, RequestBody(RequestBodyBS))
 import qualified Network.HTTP.Simple as HTTP
@@ -27,12 +28,12 @@ sendVerificationRequest config reqInfo = do
 sendVerificationDocument :: LoggerSet -> ServerConfig -> Text -> IdentityDocument -> IO IdentityDocument
 sendVerificationDocument loggerSet config sumsubId idenDoc@(IdentityDocument idDocType idDocSubType country (Just file)) = do
     let content = B64.decodeLenient $ TE.encodeUtf8 file
-        metadata = foldr1 T.append ["{\"idDocType\":\"", idDocType, "\",\"idDocSubType\":\"", idDocSubType, "\",\"country\":\"", country, "\"}"]
+        metadata = (VerificationMetaData idDocType idDocSubType country)
   
     -- pushLogStrLn loggerSet . toLogStr $ metadata
 
     initReq <- HTTP.parseRequest $ (sumsubApiUrl config) ++ "/resources/applicants/" ++ T.unpack sumsubId ++ "/info/idDoc?key=" ++ (sumsubApiKey config)
-    bodyReq <- LM.formDataBody [ LM.partBS "metadata" $ TE.encodeUtf8 metadata
+    bodyReq <- LM.formDataBody [ LM.partLBS "metadata" $ A.encode $ A.toJSON metadata
         , LM.partFileRequestBody "content" "image.jpg" $ HTTP.RequestBodyBS content ] initReq
     HTTP.getResponseBody <$> HTTP.httpJSON bodyReq
 

@@ -138,7 +138,7 @@ instance ToSample IdentityStatusReview where
 
 instance ToSample IdentityVerificationStatus where
     toSamples _ = singleSample $
-        IdentityVerificationStatus "applicantId" "inspectionId" "correlationId" "0x11edd217a875063583dd1b638d16810c5d34d54b" True (Just "details")
+        IdentityVerificationStatus "applicantId" "inspectionId" "correlationId" "jobId" "0x11edd217a875063583dd1b638d16810c5d34d54b" True (Just "details")
         "_type" (IdentityStatusReview "reviewAnswer" "clientComment" (Just "moderationComment") (Just ["rejectLabels"]) (Just "reviewRejectType") )
 
 instance ToSample VerificationStatusRequest where
@@ -157,6 +157,10 @@ instance ToSample IdentityVerificationResponse where
         (fromJust $ Email.emailAddressFromText "email@email.com") "env"
         (RequiredIdentityDocuments "country" [] )
 
+instance ToSample VerificationMetaData where
+    toSamples _ = singleSample $
+        VerificationMetaData "PASSPORT" "FRONT_SIDE" "USA"
+        
 instance ToSample ProfilePhotoRequest where
     toSamples _ = singleSample $ ProfilePhotoRequest "2394" "239048"
 
@@ -244,3 +248,11 @@ instance ToParam (QueryParam "nick" Nick) where
                   , "willbach" ]
                   "nickname whose corresponding user address is requested"
                   Normal
+
+instance ToParam (QueryParam "digest" Nick) where
+  toParam _ =
+    DocQueryParam "digest"
+                [ "fgkjr54twrijt"
+                , "t4roiety34io3" ]
+                "digest value provided by SumSub to authenticate callback"
+                Normal

@@ -74,6 +74,7 @@ notifications {
 sumsub {
     api-key = ""
     api-url = ""
+    api-callback-secret = ""
 }
 
 # ethereum node config

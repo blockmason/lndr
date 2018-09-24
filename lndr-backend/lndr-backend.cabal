@@ -26,13 +26,16 @@ library
                , Lndr.Db.PushData
                , Lndr.Db.Types
                , Lndr.Db.VerifiedCredits
+               , Lndr.Db.Identity
                , Lndr.Docs
                , Lndr.Handler
                , Lndr.Handler.Admin
                , Lndr.Handler.Credit
                , Lndr.Handler.Friend
                , Lndr.Handler.Types
+               , Lndr.Handler.Identity
                , Lndr.Notifications
+               , Lndr.IdentityVerification
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , amazonka
@@ -44,6 +47,7 @@ library
                      , configurator
                      , containers
                      , cryptonite
+                     , cryptohash-sha1
                      , data-default
                      , directory
                      , either
@@ -52,6 +56,7 @@ library
                      , filepath
                      , fast-logger
                      , hashable
+                     , hexstring
                      , http-client
                      , http-conduit
                      , http-types

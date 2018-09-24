@@ -71,5 +71,11 @@ notifications {
     api-url = "https://vpz2hgy54f.execute-api.us-east-2.amazonaws.com/test/testNotificationUA"
 }
 
+sumsub {
+    api-key = ""
+    api-url = ""
+    api-callback-secret = ""
+}
+
 # ethereum node config
 web3-url = "http://localhost:8545"

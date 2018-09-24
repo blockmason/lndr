@@ -37,6 +37,11 @@ module Lndr.Handler (
     , deletePushHandler
     , configHandler
 
+    -- * KYC Handlers
+    , verifyIdentityHandler
+    , verifyIdentityCallbackHandler
+    , checkIdentityVerificationHandler
+
     -- * Email Handlers
     , emailHandler
     , emailLookupHandler
@@ -46,3 +51,4 @@ import           Lndr.Handler.Admin
 import           Lndr.Handler.Friend
 import           Lndr.Handler.Credit
 import           Lndr.Handler.Types
+import           Lndr.Handler.Identity

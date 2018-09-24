@@ -72,7 +72,10 @@ ENV \
   NOTIFICATIONS_API_KEY="" \
   NOTIFICATIONS_API_URL="" \
   S3_PHOTO_BUCKET="lndr-avatars" \
-  SCAN_START_BLOCK="0"
+  SCAN_START_BLOCK="0" \
+  SUMSUB_API_KEY="" \
+  SUMSUB_API_URL="" \
+  SUMSUB_API_CALLBACK_SECRET=""
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["start"]

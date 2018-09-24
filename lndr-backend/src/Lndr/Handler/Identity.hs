@@ -33,7 +33,7 @@ import           Text.EmailAddress
 import           System.Log.FastLogger
 
 verifyIdentityHandler :: IdentityVerificationRequest -> LndrHandler NoContent
-verifyIdentityHandler req@(IdentityVerificationRequest email addr info requiredDocs signature) = do
+verifyIdentityHandler req@(IdentityVerificationRequest _ addr info _ _) = do
   unless (Right addr == recoverSigner req) $ throwError (err401 {errBody = "Bad signature."})
   (ServerState pool configTVar loggerSet) <- ask
   config <- liftIO $ readTVarIO configTVar

@@ -16,6 +16,9 @@ import           Network.Ethereum.Web3.Address
 import           Servant.API
 import           Servant.Docs
 import           Text.EmailAddress             as Email
+import           Data.ByteString.Lazy          (ByteString)
+import qualified Data.ByteString.Lazy.Char8    as LBS8
+import qualified Data.Text.Lazy                as LT
 
 creditHash :: Text
 creditHash = "0x7e2e9ff3a5fc148cf76261755c4c666630bfc3a28d02733cfbe721fc965aca28"
@@ -140,6 +143,10 @@ instance ToSample IdentityVerificationStatus where
     toSamples _ = singleSample $
         IdentityVerificationStatus "applicantId" "inspectionId" "correlationId" "jobId" "0x11edd217a875063583dd1b638d16810c5d34d54b" True (Just "details")
         "_type" (IdentityStatusReview "reviewAnswer" "clientComment" (Just "moderationComment") (Just ["rejectLabels"]) (Just "reviewRejectType") )
+
+instance ToSample LT.Text where
+    toSamples _ = singleSample $
+        "Hello"
 
 instance ToSample VerificationStatusRequest where
     toSamples _ = singleSample $ 

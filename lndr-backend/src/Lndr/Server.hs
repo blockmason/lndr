@@ -78,7 +78,7 @@ type LndrAPI =
    :<|> "register_push" :> ReqBody '[JSON] PushRequest :> PostNoContent '[JSON] NoContent
    :<|> "unregister_push" :> ReqBody '[JSON] PushRequest :> PostNoContent '[JSON] NoContent
    :<|> "verify_identity" :> ReqBody '[JSON] IdentityVerificationRequest :> PostNoContent '[JSON] NoContent
-   :<|> "verify_identity_callback" :> QueryParam "digest" Text :> ReqBody '[JSON] IdentityVerificationStatus :> PostNoContent '[JSON] NoContent
+   :<|> "verify_identity_callback" :> QueryParam "digest" Text :> ReqBody '[RawJSON] LT.Text :> PostNoContent '[JSON] NoContent
    :<|> "check_verification_status" :> ReqBody '[JSON] VerificationStatusRequest :> Post '[JSON] VerificationStatusEntry
    :<|> "config" :> Get '[JSON] ConfigResponse
    :<|> "docs" :> Raw

@@ -60,6 +60,7 @@ library
                      , http-client
                      , http-conduit
                      , http-types
+                     , http-media
                      , lens
                      , listsafe
                      , list-t

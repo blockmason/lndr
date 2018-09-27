@@ -3,6 +3,8 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Lndr.Types
     (
@@ -50,6 +52,7 @@ module Lndr.Types
     , EthereumPrices(..)
     , GasStationResponse(..)
     , ConfigResponse(..)
+    , RawJSON(..)
 
     -- * descriptive bytestring types
     , TransactionHash
@@ -80,7 +83,12 @@ import qualified Network.Ethereum.Web3.Address as Addr
 import           Servant.API
 import           System.Log.FastLogger
 import           Text.EmailAddress
-
+import qualified Network.HTTP.Media            as M
+import qualified Data.Text.Lazy.Encoding       as TL
+import qualified Data.List.NonEmpty            as NE
+import           Control.Arrow                 (left)
+import qualified Data.Text.Lazy                as LT
+import           Data.Text.Lazy.Encoding       (encodeUtf8)
 
 type TransactionHash = Text
 
@@ -483,3 +491,16 @@ data VerificationMetaData = VerificationMetaData { idDocType :: Text
                                          , country :: Text
                                          } deriving Show
 $(deriveJSON defaultOptions ''VerificationMetaData)
+
+data RawJSON = RawJSON LT.Text
+
+instance Accept RawJSON where
+    contentTypes _ =
+        "application" M.// "json" M./: ("charset", "utf-8") NE.:|
+        [ "application" M.// "json" ]
+
+instance MimeRender RawJSON LT.Text where
+    mimeRender _ = TL.encodeUtf8
+
+instance MimeUnrender RawJSON LT.Text where
+    mimeUnrender _ = left show . TL.decodeUtf8'

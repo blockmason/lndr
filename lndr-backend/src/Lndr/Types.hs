@@ -405,7 +405,6 @@ data IdentityAddress = IdentityAddress { street :: Text
 $(deriveJSON defaultOptions ''IdentityAddress)
 
 data IdentityDocument = IdentityDocument { idDocType :: Text
-                                         , idDocSubType :: Text
                                          , country :: Text
                                          , file :: Maybe Text
                                          } deriving Show
@@ -487,7 +486,6 @@ data VerificationStatusEntry = VerificationStatusEntry { user :: Address
 $(deriveJSON defaultOptions ''VerificationStatusEntry)
 
 data VerificationMetaData = VerificationMetaData { idDocType :: Text
-                                         , idDocSubType :: Text
                                          , country :: Text
                                          } deriving Show
 $(deriveJSON defaultOptions ''VerificationMetaData)

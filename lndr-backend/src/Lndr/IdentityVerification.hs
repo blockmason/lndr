@@ -26,9 +26,9 @@ sendVerificationRequest config reqInfo = do
 
 
 sendVerificationDocument :: LoggerSet -> ServerConfig -> Text -> IdentityDocument -> IO IdentityDocument
-sendVerificationDocument loggerSet config sumsubId idenDoc@(IdentityDocument idDocType idDocSubType country (Just file)) = do
+sendVerificationDocument loggerSet config sumsubId idenDoc@(IdentityDocument idDocType country (Just file)) = do
     let content = B64.decodeLenient $ TE.encodeUtf8 file
-        metadata = (VerificationMetaData idDocType idDocSubType country)
+        metadata = (VerificationMetaData idDocType country)
   
     -- pushLogStrLn loggerSet . toLogStr $ metadata
 

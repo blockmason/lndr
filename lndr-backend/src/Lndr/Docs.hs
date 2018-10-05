@@ -113,7 +113,7 @@ instance ToSample IdentityAddress where
 
 instance ToSample IdentityDocument where
     toSamples _ = singleSample $
-        IdentityDocument "idDocType" "idDocSubType" "country" (Just "file")
+        IdentityDocument "idDocType" "country" (Just "file")
 
 instance ToSample IdentityVerificationInfo where
     toSamples _ = singleSample $
@@ -166,7 +166,7 @@ instance ToSample IdentityVerificationResponse where
 
 instance ToSample VerificationMetaData where
     toSamples _ = singleSample $
-        VerificationMetaData "PASSPORT" "FRONT_SIDE" "USA"
+        VerificationMetaData "PASSPORT" "USA"
         
 instance ToSample ProfilePhotoRequest where
     toSamples _ = singleSample $ ProfilePhotoRequest "2394" "239048"

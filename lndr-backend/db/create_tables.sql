@@ -52,8 +52,8 @@ CREATE TABLE nicknames (
 );
 
 CREATE TABLE push_data (
-    address     CHAR(40) PRIMARY KEY,
-    channel_id  TEXT UNIQUE,
+    channel_id  CHAR(36) PRIMARY KEY,
+    address     CHAR(40),
     platform    TEXT
 );
 

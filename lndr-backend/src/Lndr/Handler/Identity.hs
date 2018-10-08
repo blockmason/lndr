@@ -21,6 +21,7 @@ import qualified Data.Text.Lazy.Encoding as TL
 import qualified Data.Text.Encoding      as TE
 import qualified Data.Aeson              as A
 import qualified Data.HexString          as H
+import           Data.Maybe              (fromMaybe)
 import qualified Crypto.Hash.SHA1        as SHA
 import qualified Lndr.Db                 as Db
 import           Lndr.Handler.Types
@@ -36,13 +37,13 @@ import           Text.EmailAddress
 import           System.Log.FastLogger
 
 verifyIdentityHandler :: IdentityVerificationRequest -> LndrHandler NoContent
-verifyIdentityHandler req@(IdentityVerificationRequest _ addr info _ _) = do
+verifyIdentityHandler req@(IdentityVerificationRequest _ addr _ _ _ idDocs) = do
   unless (Right addr == recoverSigner req) $ throwError (err401 {errBody = "Bad signature."})
   (ServerState pool configTVar loggerSet) <- ask
   config <- liftIO $ readTVarIO configTVar
   response <- liftIO $ sendVerificationRequest config req
 
-  liftIO . mapM (\doc -> sendVerificationDocument loggerSet config (Types.id response) doc) $ idDocs info
+  liftIO . mapM (\doc -> sendVerificationDocument loggerSet config (Types.id response) doc) $ fromMaybe [] idDocs
   
   -- store in db
   liftIO . withResource pool . Db.addVerificationStatus $ VerificationStatusEntry addr (Types.id response) ""

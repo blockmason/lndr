@@ -117,7 +117,7 @@ instance ToSample IdentityDocument where
 
 instance ToSample IdentityVerificationInfo where
     toSamples _ = singleSample $
-        IdentityVerificationInfo "country" "firstName" "middleName" "lastName" "phone" "dob" "nationality" [] []
+        IdentityVerificationInfo "country" "firstName" "middleName" "lastName" "phone" "dob" "nationality" []
 
 instance ToSample RequiredIdentityDocuments where
     toSamples _ = singleSample $
@@ -131,9 +131,10 @@ instance ToSample IdentityVerificationRequest where
     toSamples _ = singleSample $
         IdentityVerificationRequest (fromJust $ Email.emailAddressFromText "email@email.com")
             "0x11edd217a875063583dd1b638d16810c5d34d54b"
-            (IdentityVerificationInfo "country" "firstName" "middleName" "lastName" "phone" "dob" "nationality" [] [] )
+            (IdentityVerificationInfo "country" "firstName" "middleName" "lastName" "phone" "dob" "nationality" [])
             (RequiredIdentityDocuments "country" [] )
             "0x457b0db63b83199f305ef29ba2d7678820806d98abbe3f6aafe015957ecfc5892368b4432869830456c335ade4f561603499d0216cda3af7b6b6cadf6f273c101b"
+            Nothing
 
 instance ToSample IdentityStatusReview where
     toSamples _ = singleSample $
@@ -160,7 +161,7 @@ instance ToSample VerificationStatusEntry where
 instance ToSample IdentityVerificationResponse where
     toSamples _ = singleSample $
         IdentityVerificationResponse "id" "createdAt" "inspectionId" "clientId" "jobId" "0x11edd217a875063583dd1b638d16810c5d34d54b"
-        (IdentityVerificationInfo "country" "firstName" "middleName" "lastName" "phone" "dob" "nationality" [] [] )
+        (IdentityVerificationInfo "country" "firstName" "middleName" "lastName" "phone" "dob" "nationality" [])
         (fromJust $ Email.emailAddressFromText "email@email.com") "env"
         (RequiredIdentityDocuments "country" [] )
 

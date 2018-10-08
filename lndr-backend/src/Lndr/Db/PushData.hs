@@ -11,7 +11,7 @@ import           Network.Ethereum.Web3
 
 insertPushDatum :: Address -> Text -> Text -> Connection -> IO Int
 insertPushDatum addr channelID platform conn = fromIntegral <$>
-    execute conn "INSERT INTO push_data (address, channel_id, platform) VALUES (?,?,?) ON CONFLICT (address) DO UPDATE SET (channel_id, platform) = (EXCLUDED.channel_id, EXCLUDED.platform)" (addr, channelID, platform)
+    execute conn "INSERT INTO push_data (channel_id, address, platform) VALUES (?,?,?) ON CONFLICT (channel_id) DO UPDATE SET (address, platform) = (EXCLUDED.address, EXCLUDED.platform)" (channelID, addr, platform)
 
 
 lookupPushDatumByAddress :: Address -> Connection -> IO (Maybe (Text, DevicePlatform))

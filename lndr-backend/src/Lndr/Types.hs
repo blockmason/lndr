@@ -429,7 +429,6 @@ data IdentityVerificationInfo = IdentityVerificationInfo { country :: Text
                                            , dob :: Text
                                            , nationality :: Text
                                            , addresses :: [IdentityAddress]
-                                           , idDocs :: [IdentityDocument]
                                            } deriving Show
 $(deriveJSON defaultOptions ''IdentityVerificationInfo)
 
@@ -438,6 +437,7 @@ data IdentityVerificationRequest = IdentityVerificationRequest { email :: EmailA
                                            , info :: IdentityVerificationInfo
                                            , requiredIdDocs :: RequiredIdentityDocuments
                                            , identitySignature :: Signature
+                                           , idDocs :: Maybe [IdentityDocument]
                                            } deriving Show
 $(deriveJSON defaultOptions ''IdentityVerificationRequest)
 

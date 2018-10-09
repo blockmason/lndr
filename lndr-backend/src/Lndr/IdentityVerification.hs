@@ -17,10 +17,11 @@ import qualified Network.HTTP.Client.MultipartFormData as LM
 import           System.Log.FastLogger
 
 sendVerificationRequest :: ServerConfig -> IdentityVerificationRequest -> IO IdentityVerificationResponse
-sendVerificationRequest config reqInfo = do
+sendVerificationRequest config reqInfo@(IdentityVerificationRequest _ _ _ _ _ idDocs) = do
+    let newReqInfo = reqInfo { idDocs = Nothing }
     initReq <- HTTP.parseRequest $ (sumsubApiUrl config) ++ "/resources/applicants?key=" ++ (sumsubApiKey config)
     let req = HTTP.addRequestHeader HTTP.hAccept acceptContent $
-                    HTTP.setRequestBodyJSON reqInfo $ HTTP.setRequestMethod "POST" initReq
+                    HTTP.setRequestBodyJSON newReqInfo $ HTTP.setRequestMethod "POST" initReq
     HTTP.getResponseBody <$> HTTP.httpJSON req
     where acceptContent = "application/json"
 
